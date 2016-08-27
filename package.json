@@ -17,7 +17,7 @@
     "coveralls": "istanbul cover _mocha --report lcovonly -- --compilers js:babel-register src/*.mocha.js src/**/*.mocha.js -R spec -t 5000 && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage",
     "cover": "istanbul cover _mocha --report html -- --compilers js:babel-register src/*.mocha.js src/**/*.mocha.js -R spec -t 5000",
     "lint": "eslint src/*.js",
-    "doc": "cat src/*.js src/**/*.js | jsdoc2md > API.md"
+    "doc": "cat src/*.js | jsdoc2md > API.md"
   },
   "keywords": [
     "process",
