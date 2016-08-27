@@ -22,6 +22,11 @@ It is largely inspired from the Angular service system except is should not
 - easy end to end testing: just replace your services per your own mocks and
  stubs.
 - isolation: isolate processing in a clean manner, per concerns.
+- functional programming ready: encapsulate global states allowing the rest of
+ your application to be purely functional.
+- no circular dependencies for services: while circular dependencies is not a
+ problem within purely functional libraries (require allows it), it may be
+ harmful for your services, knifecycle impeach that.
 
 ## Usage
 
@@ -219,3 +224,27 @@ function main({ waitSignal, exit, $shutdown }) {
 
 }
 ```
+
+## Debugging
+
+Simply use the DEBUG env var by setting it to 'knifecycle':
+```sh
+DEBUG=knifecycle npm t
+```
+
+## Plans
+
+Use this lib for real world applications. I plan to use it with the
+ [Trip Story](https://github.com/nfroidure/TripStory) toy project first and use
+ it at work then. Maybe for front-end stuffs too.
+
+The scope of this library won't change. However the plan is:
+- improve performances
+- allow to declare singleton services
+- use next JavaScript feature that ships to Node if it make sense:
+depends, constant, service, provider may become decorators;
+WeakMap may be used to share singleton services between runs
+- track bugs
+
+I'll also share most of my own services/providers and their stubs/mocks in order
+to let you reuse it through your projects easily.
