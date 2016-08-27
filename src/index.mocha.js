@@ -176,6 +176,56 @@ describe('Knifecycle', () => {
       .catch(done);
     });
 
+    it('should provide a fatal error handler', (done) => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+      $.provider('db', $.depends(['ENV'], dbProvider));
+      $.provider('process', $.depends(['$fatalError'], processProvider));
+
+      function processProvider({ $fatalError }) {
+        return Promise.resolve({
+          servicePromise: Promise.resolve({
+            fatalErrorPromise: $fatalError.promise,
+          }),
+        });
+      }
+
+      function dbProvider({ ENV }) {
+        return Promise.resolve()
+        .then(() => {
+          let servicePromise;
+          const errorPromise = new Promise((resolve, reject) => {
+            servicePromise = Promise.resolve({
+              resolve,
+              reject,
+              ENV,
+            });
+          });
+
+          return {
+            servicePromise,
+            errorPromise,
+          };
+        });
+      }
+
+      $.run(['time', 'hash', 'db', 'process'])
+      .then(({ process, db }) => {
+        process.fatalErrorPromise
+        .then(() => {
+          done(new Error('E_UNEXPECTED_SUCCESS'));
+        })
+        .catch((err) => {
+          assert.deepEqual(err.message, 'E_DB_ERROR');
+          done();
+        })
+        .catch(done);
+        db.reject(new Error('E_DB_ERROR'));
+      })
+      .catch(done);
+    });
+
   });
 
   describe('shutdown', () => {

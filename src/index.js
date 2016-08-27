@@ -4,6 +4,7 @@ import initDebug from 'debug';
 const debug = initDebug('knifecycle');
 
 const SHUTDOWN = '$shutdown';
+const FATAL_ERROR = '$fatalError';
 const E_UNMATCHED_DEPENDENCY = 'E_UNMATCHED_DEPENDENCY';
 const E_CIRCULAR_DEPENDENCY = 'E_CIRCULAR_DEPENDENCY';
 
@@ -210,7 +211,20 @@ export default class Knifecycle {
     const siloContext = {
       servicesDescriptors: new Map(),
       servicesSequence: [],
+      errorsPromises: [],
     };
+
+    // Create a provider for the special fatal error service
+    siloContext.servicesDescriptors.set(FATAL_ERROR, {
+      servicePromise: Promise.resolve({
+        promise: new Promise((resolve, reject) => {
+          siloContext.throwFatalError = (err) => {
+            debug('Handled a fatal error', err);
+            reject(err);
+          };
+        }),
+      }),
+    });
 
     // Create a provider for the shutdown special dependency
     siloContext.servicesDescriptors.set(SHUTDOWN, {
@@ -242,7 +256,12 @@ export default class Knifecycle {
       shutdownProvider: Promise.resolve.bind(Promise),
     });
 
-    return this._initializeDependencies(siloContext, 'silo', dependenciesNames);
+    return this._initializeDependencies(siloContext, 'silo', dependenciesNames)
+    .then((servicesHash) => {
+      debug('Handling fatal errors:', siloContext.errorsPromises);
+      Promise.all(siloContext.errorsPromises).catch(siloContext.throwFatalError);
+      return servicesHash;
+    });
   }
 
   /**
@@ -292,9 +311,13 @@ export default class Knifecycle {
       return deps;
     })
     .then(serviceProvider)
-    .then((servicesDescriptor) => {
+    .then((serviceDescriptor) => {
       debug('Successfully initialized a service descriptor:', serviceName);
-      return servicesDescriptor;
+      if(serviceDescriptor.errorPromise) {
+        debug('Registering service descriptor error promise:', serviceName);
+        siloContext.errorsPromises.push(serviceDescriptor.errorPromise);
+      }
+      return serviceDescriptor;
     })
     .catch((err) => {
       debug('Error initializing a service descriptor:', serviceName, err.stack);
