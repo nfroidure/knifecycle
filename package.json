@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "description": "Manage your NodeJS processes's lifecycle.",
   "main": "dist/index.js",
+  "engines" : { "node" : ">=4" },
   "scripts": {
     "cli": "env NPM_RUN_CLI=1",
     "test": "mocha --compilers js:babel-register src/*.mocha.js",
