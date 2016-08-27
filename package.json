@@ -8,6 +8,7 @@
     "test": "mocha --compilers js:babel-register src/*.mocha.js",
     "compile": "babel src --out-dir=dist",
     "preversion": "npm t && npm run lint && npm run compile",
+    "prepublish": "npm run compile",
     "coveralls": "istanbul cover _mocha --report lcovonly -- --compilers js:babel-register src/*.mocha.js src/**/*.mocha.js -R spec -t 5000 && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage",
     "cover": "istanbul cover _mocha --report html -- --compilers js:babel-register src/*.mocha.js src/**/*.mocha.js -R spec -t 5000",
     "lint": "eslint src/*.js",
