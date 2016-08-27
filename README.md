@@ -1,6 +1,14 @@
 # knifecycle
 > Manage your NodeJS processes's lifecycle.
 
+[![NPM version](https://img.shields.io/npm/v/knifecycle.svg)](https://www.npmjs.com/package/knifecycle)
+[![Build Status](https://travis-ci.org/nfroidure/knifecycle.svg?branch=master)](https://travis-ci.org/nfroidure/knifecycle)
+[![Dependency Status](https://david-dm.org/nfroidure/knifecycle.svg)](https://david-dm.org/nfroidure/knifecycle)
+[![devDependency Status](https://david-dm.org/nfroidure/knifecycle/dev-status.svg)](https://david-dm.org/nfroidure/knifecycle#info=devDependencies)
+[![Coverage Status](https://coveralls.io/repos/nfroidure/knifecycle/badge.svg?branch=master)](https://coveralls.io/r/nfroidure/knifecycle?branch=master)
+[![Code Climate](https://codeclimate.com/github/nfroidure/knifecycle/badges/gpa.svg)](https://codeclimate.com/github/nfroidure/knifecycle)
+[![Dependency Status](https://dependencyci.com/github/nfroidure/knifecycle/badge)](https://dependencyci.com/github/nfroidure/knifecycle)
+
 Most (maybe all) applications rely on two kinds of dependencies.
 
 **The code dependencies** are fully covered by require/system modules in a
