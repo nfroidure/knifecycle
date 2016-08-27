@@ -84,7 +84,7 @@ export default class Knifecycle {
    *       }
    *       try {
    *         config = JSON.parse(data.toString);
-   *       } catch(err) {
+   *       } catch (err) {
    *         return reject(err);
    *       }
    *     resolve({
@@ -128,12 +128,12 @@ export default class Knifecycle {
    *         }
    *         try {
    *           config = JSON.parse(data.toString);
-   *         } catch(err) {
+   *         } catch (err) {
    *           return reject(err);
    *         }
-   *   			 resolve({
-   *   			   service: config,
-   *   			 });
+   *         resolve({
+   *           service: config,
+   *         });
    *       });
    *     });
    *   });
@@ -145,7 +145,7 @@ export default class Knifecycle {
     uniqueServiceProvider[DEPENDENCIES] = serviceProvider[DEPENDENCIES] || [];
 
     uniqueServiceProvider[DEPENDENCIES].forEach((dependencyName) => {
-      var dependencyProvider = this._servicesProviders.get(dependencyName);
+      let dependencyProvider = this._servicesProviders.get(dependencyName);
 
       if(dependencyProvider && -1 !== dependencyProvider[DEPENDENCIES].indexOf(serviceName)) {
         throw new YError(E_CIRCULAR_DEPENDENCY, dependencyName, serviceName);
@@ -179,12 +179,12 @@ export default class Knifecycle {
    *       }
    *       try {
    *         config = JSON.parse(data.toString);
-   *       } catch(err) {
+   *       } catch (err) {
    *         return reject(err);
    *       }
-   * 			 resolve({
-   * 			   service: config,
-   * 			 });
+   *       resolve({
+   *         service: config,
+   *       });
    *     });
    *   });
    * });
@@ -343,24 +343,21 @@ export default class Knifecycle {
   _initializeDependencies(siloContext, serviceName, servicesNames) {
     debug('Initializing dependencies:', serviceName, servicesNames);
     return Promise.resolve()
-    .then(() => {
-      return Promise.all(
+    .then(
+      () => Promise.all(
         servicesNames.map(this._getServiceDescriptor.bind(this, siloContext))
       )
       .then((servicesDescriptors) => {
         debug('Initialized dependencies descriptors:', serviceName, servicesNames);
         siloContext.servicesSequence.push(servicesNames);
-        return Promise.all(servicesDescriptors.map((serviceDescriptor) => {
-          return serviceDescriptor.servicePromise
-            .then((service) => service);
-        }));
+        return Promise.all(servicesDescriptors.map(
+          serviceDescriptor => serviceDescriptor.servicePromise.then(service => service)
+        ));
       })
-      .then((services) => {
-        return services.reduce((hash, service, index) => {
-          hash[servicesNames[index]] = service;
-          return hash;
-        }, {});
-      });
-    });
+      .then(services => services.reduce((hash, service, index) => {
+        hash[servicesNames[index]] = service;
+        return hash;
+      }, {}))
+    );
   }
 }

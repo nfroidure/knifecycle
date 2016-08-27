@@ -67,7 +67,7 @@ describe('Knifecycle', () => {
         $.provider('hash1', $.depends(['hash'], hashProvider));
         $.provider('hash2', $.depends(['hash1'], hashProvider));
         $.provider('hash3', $.depends(['hash'], hashProvider));
-      } catch(err) {
+      } catch (err) {
         assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
         assert.deepEqual(err.params, ['hash', 'hash3']);
       }
