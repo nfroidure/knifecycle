@@ -110,6 +110,23 @@ describe('Knifecycle', () => {
       .catch(done);
     });
 
+    it('should work with service dependencies', (done) => {
+      $.service('sample', $.depends(['time'], function sampleService({ time }) {
+        return Promise.resolve(typeof time);
+      }));
+      $.constant('time', time);
+
+      $.run(['sample'])
+      .then((dependencies) => {
+        assert.deepEqual(Object.keys(dependencies), ['sample']);
+        assert.deepEqual(dependencies, {
+          sample: 'function',
+        });
+        done();
+      })
+      .catch(done);
+    });
+
     it('should work with simple dependencies', (done) => {
       $.constant('ENV', ENV);
       $.constant('time', time);

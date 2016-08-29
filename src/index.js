@@ -94,13 +94,14 @@ export default class Knifecycle {
    * });
    */
   service(serviceName, service) {
-    function serviceProvider() {
+    function serviceProvider(hash) {
       return {
         servicePromise: 'function' === typeof service ?
-        service() :
+        service(hash) :
         service,
       };
     }
+    serviceProvider[DEPENDENCIES] = service[DEPENDENCIES] || [];
     this.provider(serviceName, serviceProvider);
     debug('Registered a new service:', serviceName);
     return serviceProvider;
