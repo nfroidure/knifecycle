@@ -318,6 +318,7 @@ export default class Knifecycle {
         debug('Registering service descriptor error promise:', serviceName);
         siloContext.errorsPromises.push(serviceDescriptor.errorPromise);
       }
+      siloContext.servicesDescriptors.set(serviceName, serviceDescriptor);
       return serviceDescriptor;
     })
     .catch((err) => {
@@ -330,7 +331,6 @@ export default class Knifecycle {
       }
       throw err;
     });
-    siloContext.servicesDescriptors.set(serviceName, serviceDescriptorPromise);
     return serviceDescriptorPromise;
   }
 

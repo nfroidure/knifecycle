@@ -1,4 +1,5 @@
 import assert from 'assert';
+import sinon from 'sinon';
 
 import Knifecycle from './index';
 
@@ -291,6 +292,18 @@ describe('Knifecycle', () => {
     });
 
     it('should work with deeper dependencies', (done) => {
+      let shutdownCallResolve;
+      let shutdownResolve;
+      const shutdownCallPromise = new Promise((resolve) => {
+        shutdownCallResolve = resolve;
+      });
+      const shutdownStub = sinon.spy(() => {
+        shutdownCallResolve();
+        return new Promise((resolve) => {
+          shutdownResolve = resolve;
+        });
+      });
+
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', $.depends(['ENV'], hashProvider));
@@ -299,15 +312,29 @@ describe('Knifecycle', () => {
       $.provider('hash3', $.depends(['hash2'], hashProvider));
       $.provider('hash4', $.depends(['hash3'], hashProvider));
       $.provider('hash5', $.depends(['hash4'], hashProvider));
+      $.provider('shutdownChecker', $.depends(['hash4'], () => Promise.resolve({
+        servicePromise: Promise.resolve({
+          shutdownStub,
+          shutdownResolve,
+        }),
+        shutdownProvider: shutdownStub,
+      })));
 
-      $.run(['hash5', 'time', '$shutdown'])
+      $.run(['hash5', 'time', '$shutdown', 'shutdownChecker'])
       .then((dependencies) => {
-        assert.deepEqual(Object.keys(dependencies), ['hash5', 'time', '$shutdown']);
+        assert.deepEqual(Object.keys(dependencies), [
+          'hash5', 'time', '$shutdown', 'shutdownChecker',
+        ]);
 
-        dependencies.$shutdown()
-        .then(done)
+        shutdownCallPromise.then(() => {
+          assert.deepEqual(shutdownStub.args, [[]]);
+          shutdownResolve();
+        })
         .catch(done);
+
+        return dependencies.$shutdown();
       })
+      .then(done)
       .catch(done);
     });
 
