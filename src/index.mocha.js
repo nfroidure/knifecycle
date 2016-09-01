@@ -163,6 +163,24 @@ describe('Knifecycle', () => {
       .catch(done);
     });
 
+    it('should instanciate services once', (done) => {
+      const timeServiceStub = sinon.spy(timeService);
+
+      $.constant('ENV', ENV);
+      $.service('time', timeServiceStub);
+      $.provider('hash', $.depends(['ENV', 'time'], hashProvider));
+      $.provider('hash2', $.depends(['ENV', 'time'], hashProvider));
+      $.provider('hash3', $.depends(['ENV', 'time'], hashProvider));
+
+      $.run(['hash', 'hash2', 'hash3', 'time'])
+      .then((dependencies) => {
+        assert.deepEqual(Object.keys(dependencies), ['hash', 'hash2', 'hash3', 'time']);
+        assert.deepEqual(timeServiceStub.args, [[{}]]);
+        done();
+      })
+      .catch(done);
+    });
+
     it('should fail with undeclared dependencies', (done) => {
       $.run(['lol'])
       .then(() => {

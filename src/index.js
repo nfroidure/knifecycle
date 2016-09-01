@@ -331,6 +331,7 @@ export default class Knifecycle {
       }
       throw err;
     });
+    siloContext.servicesDescriptors.set(serviceName, serviceDescriptorPromise);
     return serviceDescriptorPromise;
   }
 
