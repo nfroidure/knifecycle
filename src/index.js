@@ -7,6 +7,8 @@ const SHUTDOWN = '$shutdown';
 const FATAL_ERROR = '$fatalError';
 const E_UNMATCHED_DEPENDENCY = 'E_UNMATCHED_DEPENDENCY';
 const E_CIRCULAR_DEPENDENCY = 'E_CIRCULAR_DEPENDENCY';
+const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
+const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
 
 // Constants that should use Symbol whenever possible
 const INSTANCE = '__instance';
@@ -306,13 +308,19 @@ export default class Knifecycle {
       siloContext,
       serviceName,
       serviceProvider[DEPENDENCIES]
-    )
+    );
+
+    serviceDescriptorPromise = serviceDescriptorPromise
     .then((deps) => {
       debug('Successfully initialized service dependencies:', serviceName);
       return deps;
     })
     .then(serviceProvider)
     .then((serviceDescriptor) => {
+      if((!serviceDescriptor)) {
+        debug('Provider did not return a descriptor:', serviceName);
+        return Promise.reject(new YError(E_BAD_SERVICE_PROVIDER, serviceName));
+      }
       debug('Successfully initialized a service descriptor:', serviceName);
       if(serviceDescriptor.errorPromise) {
         debug('Registering service descriptor error promise:', serviceName);
@@ -353,7 +361,12 @@ export default class Knifecycle {
         debug('Initialized dependencies descriptors:', serviceName, servicesNames);
         siloContext.servicesSequence.push(servicesNames);
         return Promise.all(servicesDescriptors.map(
-          serviceDescriptor => serviceDescriptor.servicePromise.then(service => service)
+          (serviceDescriptor, index) => {
+            if((!serviceDescriptor.servicePromise) || !serviceDescriptor.servicePromise.then) {
+              return Promise.reject(new YError(E_BAD_SERVICE_PROMISE, servicesNames[index]));
+            }
+            return serviceDescriptor.servicePromise.then(service => service);
+          }
         ));
       })
       .then(services => services.reduce((hash, service, index) => {

@@ -181,6 +181,48 @@ describe('Knifecycle', () => {
       .catch(done);
     });
 
+    it('should fail with bad service', (done) => {
+      $.service('lol', () => {});
+      $.run(['lol'])
+      .then(() => {
+        done(new Error('E_UNEXPECTED_SUCCESS'));
+      })
+      .catch((err) => {
+        assert.deepEqual(err.code, 'E_BAD_SERVICE_PROMISE');
+        assert.deepEqual(err.params, ['lol']);
+        done();
+      })
+      .catch(done);
+    });
+
+    it('should fail with bad provider', (done) => {
+      $.provider('lol', () => {});
+      $.run(['lol'])
+      .then(() => {
+        done(new Error('E_UNEXPECTED_SUCCESS'));
+      })
+      .catch((err) => {
+        assert.deepEqual(err.code, 'E_BAD_SERVICE_PROVIDER');
+        assert.deepEqual(err.params, ['lol']);
+        done();
+      })
+      .catch(done);
+    });
+
+    it('should fail with bad service in a provider', (done) => {
+      $.provider('lol', () => Promise.resolve({}));
+      $.run(['lol'])
+      .then(() => {
+        done(new Error('E_UNEXPECTED_SUCCESS'));
+      })
+      .catch((err) => {
+        assert.deepEqual(err.code, 'E_BAD_SERVICE_PROMISE');
+        assert.deepEqual(err.params, ['lol']);
+        done();
+      })
+      .catch(done);
+    });
+
     it('should fail with undeclared dependencies', (done) => {
       $.run(['lol'])
       .then(() => {
