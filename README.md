@@ -249,7 +249,7 @@ The scope of this library won't change. However the plan is:
 I'll also share most of my own services/providers and their stubs/mocks in order
 to let you reuse it through your projects easily.
 
-## Functions
+## API
 
 <dl>
 <dt><a href="#getInstance">getInstance()</a> ⇒ <code>Knifecycle</code></dt>
@@ -270,13 +270,13 @@ to let you reuse it through your projects easily.
 <dt><a href="#run">run(dependenciesNames)</a> ⇒ <code>Promise</code></dt>
 <dd><p>Creates a new execution silo</p>
 </dd>
-<dt><a href="#_getServiceDescriptor">_getServiceDescriptor(siloContext, serviceName, serviceProvider)</a> ⇒ <code>Promise</code></dt>
+<dt><a href="#_getServiceDescriptor">_getServiceDescriptor(siloContext, injectOnly, serviceName, serviceProvider)</a> ⇒ <code>Promise</code></dt>
 <dd><p>Initialize or return a service descriptor</p>
 </dd>
 <dt><a href="#_initializeServiceDescriptor">_initializeServiceDescriptor(siloContext, serviceName, serviceProvider)</a> ⇒ <code>Promise</code></dt>
 <dd><p>Initialize a service</p>
 </dd>
-<dt><a href="#_initializeDependencies">_initializeDependencies(siloContext, serviceName, servicesNames)</a> ⇒ <code>Promise</code></dt>
+<dt><a href="#_initializeDependencies">_initializeDependencies(siloContext, serviceName, servicesNames, injectOnly)</a> ⇒ <code>Promise</code></dt>
 <dd><p>Initialize a service dependencies</p>
 </dd>
 </dl>
@@ -290,7 +290,7 @@ Returns a Knifecycle instance (always the same)
 **Returns**: <code>Knifecycle</code> - The created/saved instance  
 **Example**  
 ```js
-import Knifecycle from 'sf-knifecycle'
+import Knifecycle from 'knifecycle'
 
 const $ = Knifecycle.getInstance();
 ```
@@ -309,7 +309,7 @@ Register a constant service
 
 **Example**  
 ```js
-import Knifecycle from 'sf-knifecycle'
+import Knifecycle from 'knifecycle'
 
 const $ = new Knifecycle();
 
@@ -331,7 +331,7 @@ Register a service
 
 **Example**  
 ```js
-import Knifecycle from 'sf-knifecycle'
+import Knifecycle from 'knifecycle'
 import fs from 'fs';
 
 const $ = new Knifecycle();
@@ -369,7 +369,7 @@ Register a service provider
 
 **Example**  
 ```js
-import Knifecycle from 'sf-knifecycle'
+import Knifecycle from 'knifecycle'
 import fs from 'fs';
 
 const $ = new Knifecycle();
@@ -447,7 +447,7 @@ Creates a new execution silo
 
 <a name="_getServiceDescriptor"></a>
 
-## _getServiceDescriptor(siloContext, serviceName, serviceProvider) ⇒ <code>Promise</code>
+## _getServiceDescriptor(siloContext, injectOnly, serviceName, serviceProvider) ⇒ <code>Promise</code>
 Initialize or return a service descriptor
 
 **Kind**: global function  
@@ -456,6 +456,7 @@ Initialize or return a service descriptor
 | Param | Type | Description |
 | --- | --- | --- |
 | siloContext | <code>Object</code> | Current execution silo context |
+| injectOnly | <code>Boolean</code> | Flag indicating if existing services only should be used |
 | serviceName | <code>String</code> | Service name. |
 | serviceProvider | <code>String</code> | Service provider. |
 
@@ -475,14 +476,15 @@ Initialize a service
 
 <a name="_initializeDependencies"></a>
 
-## _initializeDependencies(siloContext, serviceName, servicesNames) ⇒ <code>Promise</code>
+## _initializeDependencies(siloContext, serviceName, servicesNames, injectOnly) ⇒ <code>Promise</code>
 Initialize a service dependencies
 
 **Kind**: global function  
 **Returns**: <code>Promise</code> - Service dependencies hash promise.  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| siloContext | <code>Object</code> | Current execution silo siloContext |
-| serviceName | <code>String</code> | Service name. |
-| servicesNames | <code>String</code> | Dependencies names. |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| siloContext | <code>Object</code> |  | Current execution silo siloContext |
+| serviceName | <code>String</code> |  | Service name. |
+| servicesNames | <code>String</code> |  | Dependencies names. |
+| injectOnly | <code>Boolean</code> | <code>false</code> | Flag indicating if existing services only should be used |

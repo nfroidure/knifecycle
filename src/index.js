@@ -22,7 +22,7 @@ export default class Knifecycle {
    * @return {Knifecycle}     The Knifecycle instance
    * @example
    *
-   * import Knifecycle from 'sf-knifecycle'
+   * import Knifecycle from 'knifecycle'
    *
    * const $ = new Knifecycle();
    */
@@ -35,7 +35,7 @@ export default class Knifecycle {
    * @return {Knifecycle}         The created/saved instance
    * @example
    *
-   * import Knifecycle from 'sf-knifecycle'
+   * import Knifecycle from 'knifecycle'
    *
    * const $ = Knifecycle.getInstance();
    */
@@ -52,7 +52,7 @@ export default class Knifecycle {
    * @return {Function}               The created service provider
    * @example
    *
-   * import Knifecycle from 'sf-knifecycle'
+   * import Knifecycle from 'knifecycle'
    *
    * const $ = new Knifecycle();
    *
@@ -74,7 +74,7 @@ export default class Knifecycle {
    * @return {Function}                              The created service provider
    * @example
    *
-   * import Knifecycle from 'sf-knifecycle'
+   * import Knifecycle from 'knifecycle'
    * import fs from 'fs';
    *
    * const $ = new Knifecycle();
@@ -118,7 +118,7 @@ export default class Knifecycle {
    * @return {Promise}                       The actual service descriptor promise
    * @example
    *
-   * import Knifecycle from 'sf-knifecycle'
+   * import Knifecycle from 'knifecycle'
    * import fs from 'fs';
    *
    * const $ = new Knifecycle();
