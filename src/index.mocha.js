@@ -398,6 +398,49 @@ describe('Knifecycle', () => {
       .catch(done);
     });
 
+    it('should work with deeper multi used dependencies', (done) => {
+      let shutdownCallResolve;
+      let shutdownResolve;
+      const shutdownCallPromise = new Promise((resolve) => {
+        shutdownCallResolve = resolve;
+      });
+      const shutdownStub = sinon.spy(() => {
+        shutdownCallResolve();
+        return new Promise((resolve) => {
+          shutdownResolve = resolve;
+        });
+      });
+
+      $.constant('ENV', ENV);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+      $.provider('shutdownChecker', $.depends(['hash'], () => Promise.resolve({
+        servicePromise: Promise.resolve({
+          shutdownStub,
+          shutdownResolve,
+        }),
+        shutdownProvider: shutdownStub,
+      })));
+      $.provider('hash1', $.depends(['shutdownChecker'], hashProvider));
+      $.provider('hash2', $.depends(['shutdownChecker'], hashProvider));
+
+      $.run(['hash1', 'hash2', '$shutdown', 'shutdownChecker'])
+      .then((dependencies) => {
+        assert.deepEqual(Object.keys(dependencies), [
+          'hash1', 'hash2', '$shutdown', 'shutdownChecker',
+        ]);
+
+        shutdownCallPromise.then(() => {
+          assert.deepEqual(shutdownStub.args, [[]]);
+          shutdownResolve();
+        })
+        .catch(done);
+
+        return dependencies.$shutdown();
+      })
+      .then(done)
+      .catch(done);
+    });
+
   });
 
 });

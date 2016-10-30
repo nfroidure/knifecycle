@@ -214,6 +214,7 @@ export default class Knifecycle {
     const siloContext = {
       servicesDescriptors: new Map(),
       servicesSequence: [],
+      servicesShutdownsPromises: new Map(),
       errorsPromises: [],
     };
 
@@ -246,11 +247,19 @@ export default class Knifecycle {
           return Promise.all(
             reversedServiceSequence.pop().map((serviceName) => {
               const serviceDescriptor = siloContext.servicesDescriptors.get(serviceName);
+              let serviceShutdownPromise = siloContext.servicesShutdownsPromises.get(serviceName);
+
+              if(serviceShutdownPromise) {
+                debug('Reusing a service shutdown promise:', serviceName);
+                return serviceShutdownPromise;
+              }
 
               debug('Shutting down a service:', serviceName);
-              return serviceDescriptor.shutdownProvider ?
+              serviceShutdownPromise = serviceDescriptor.shutdownProvider ?
                 serviceDescriptor.shutdownProvider() :
                 Promise.resolve();
+              siloContext.servicesShutdownsPromises.set(serviceName, serviceShutdownPromise);
+              return serviceShutdownPromise;
             })
           )
           .then(_shutdownNextServices.bind(null, reversedServiceSequence));
