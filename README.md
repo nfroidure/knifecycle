@@ -17,31 +17,32 @@ Most (maybe all) applications rely on two kinds of dependencies.
  (involve no global states at all).
 
 Unfortunately, applications often rely on **global states** where the JavaScript
- module system show its limits. This is where `knifecycle` enters the game.
+ module system shows its limits. This is where `knifecycle` enters the game.
 
-It is largely inspired from the Angular service system except is should not
- provide code but access to global stuffs (time, filesystem, dbs). It also
- have an important additional feature to shutdown processes which is less
- useful for front-end applications and doesn't exists in Angular.
+It is largely inspired by the Angular service system except it should not
+ provide code but access to global states (time, filesystem, db). It also
+ have an important additional feature to shutdown processes which is really
+ useful for back-end servers and doesn't exists in Angular.
 
 ## Features
 - services management: start services taking their dependencies in count and
- shut them down the same way to gracefully exit.
+ shut them down the same way for graceful exits.
 - easy end to end testing: just replace your services per your own mocks and
- stubs.
+ stubs while ensuring your application integrity between testing and production.
 - isolation: isolate processing in a clean manner, per concerns.
 - functional programming ready: encapsulate global states allowing the rest of
  your application to be purely functional.
-- no circular dependencies for services: while circular dependencies is not a
+- no circular dependencies for services: while circular dependencies are not a
  problem within purely functional libraries (require allows it), it may be
- harmful for your services, knifecycle impeach that.
+ harmful for your services, knifecycle impeach that while providing an `$inject`
+ service à la Angular to allow accessing existing services references.
 
 ## Usage
 
 First we create a Knifecycle instance:
 ```js
 // services/knifecycle.js
-// For this sample application, we know we won't need several lifecycle
+// For this sample application, we know we won't need several Knifecycle
 // instances so we will use the module singleton instead of injecting the
 // lifecycle instance everywhere.
 import Knifecycle from 'knifecycle';

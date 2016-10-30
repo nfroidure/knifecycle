@@ -306,6 +306,71 @@ describe('Knifecycle', () => {
 
   });
 
+  describe('inject', () => {
+
+    it('should work with no dependencies', (done) => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+
+      $.run(['time', 'hash', '$inject'])
+      .then((dependencies) => {
+        assert.deepEqual(Object.keys(dependencies), ['time', 'hash', '$inject']);
+        return dependencies.$inject([])
+        .then((injectDependencies) => {
+          assert.deepEqual(Object.keys(injectDependencies), []);
+          assert.deepEqual(injectDependencies, {});
+
+          done();
+        });
+      })
+      .catch(done);
+
+    });
+
+    it('should work with same dependencies then the running silo', (done) => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+
+      $.run(['time', 'hash', '$inject'])
+      .then((dependencies) => {
+        assert.deepEqual(Object.keys(dependencies), ['time', 'hash', '$inject']);
+        return dependencies.$inject(['time', 'hash'])
+        .then((injectDependencies) => {
+          assert.deepEqual(Object.keys(injectDependencies), ['time', 'hash']);
+          assert.deepEqual(injectDependencies, {
+            hash: { ENV },
+            time,
+          });
+
+          done();
+        });
+      })
+      .catch(done);
+
+    });
+
+    it('should fail with non instanciated dependencies', (done) => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+
+      $.run(['time', '$inject'])
+      .then((dependencies) => {
+        assert.deepEqual(Object.keys(dependencies), ['time', '$inject']);
+        return dependencies.$inject(['time', 'hash'])
+        .catch((err) => {
+          assert.equal(err.code, 'E_BAD_INJECTION');
+          done();
+        });
+      })
+      .catch(done);
+
+    });
+
+  });
+
   describe('shutdown', () => {
 
     it('should work with no dependencies', (done) => {

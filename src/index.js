@@ -4,11 +4,13 @@ import initDebug from 'debug';
 const debug = initDebug('knifecycle');
 
 const SHUTDOWN = '$shutdown';
+const INJECT = '$inject';
 const FATAL_ERROR = '$fatalError';
 const E_UNMATCHED_DEPENDENCY = 'E_UNMATCHED_DEPENDENCY';
 const E_CIRCULAR_DEPENDENCY = 'E_CIRCULAR_DEPENDENCY';
 const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
 const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
+const E_BAD_INJECTION = 'E_BAD_INJECTION';
 
 // Constants that should use Symbol whenever possible
 const INSTANCE = '__instance';
@@ -212,6 +214,7 @@ export default class Knifecycle {
    */
   run(dependenciesNames) {
     const siloContext = {
+      name: 'silo-' + Date.now(),
       servicesDescriptors: new Map(),
       servicesSequence: [],
       servicesShutdownsPromises: new Map(),
@@ -268,7 +271,14 @@ export default class Knifecycle {
       shutdownProvider: Promise.resolve.bind(Promise),
     });
 
-    return this._initializeDependencies(siloContext, 'silo', dependenciesNames)
+    // Create a provider for the special inject service
+    siloContext.servicesDescriptors.set(INJECT, {
+      servicePromise: Promise.resolve(dependenciesNames =>
+        this._initializeDependencies(siloContext, siloContext.name, dependenciesNames, true)
+      ),
+    });
+
+    return this._initializeDependencies(siloContext, siloContext.name, dependenciesNames)
     .then((servicesHash) => {
       debug('Handling fatal errors:', siloContext.errorsPromises);
       Promise.all(siloContext.errorsPromises).catch(siloContext.throwFatalError);
@@ -279,15 +289,23 @@ export default class Knifecycle {
   /**
    * Initialize or return a service descriptor
    * @param  {Object}     siloContext       Current execution silo context
+   * @param  {Boolean}    injectOnly        Flag indicating if existing services only should be used
    * @param  {String}     serviceName       Service name.
    * @param  {String}     serviceProvider   Service provider.
    * @return {Promise}                      Service dependencies hash promise.
    */
-  _getServiceDescriptor(siloContext, serviceName) {
+  _getServiceDescriptor(siloContext, injectOnly, serviceName) {
     const serviceDescriptor = siloContext.servicesDescriptors.get(serviceName);
 
     if(serviceDescriptor) {
       return Promise.resolve(serviceDescriptor);
+    }
+
+    // The inject service is intended to be used as a workaround for unavoidable
+    // circular dependencies. It wouldn't make sense to instanciate new services
+    // at this level so throwing an error
+    if(injectOnly) {
+      return Promise.reject(new YError(E_BAD_INJECTION, serviceName));
     }
 
     return this._initializeServiceDescriptor(siloContext, serviceName);
@@ -357,14 +375,15 @@ export default class Knifecycle {
    * @param  {Object}     siloContext       Current execution silo siloContext
    * @param  {String}     serviceName       Service name.
    * @param  {String}     servicesNames     Dependencies names.
+   * @param  {Boolean}    injectOnly        Flag indicating if existing services only should be used
    * @return {Promise}                      Service dependencies hash promise.
    */
-  _initializeDependencies(siloContext, serviceName, servicesNames) {
+  _initializeDependencies(siloContext, serviceName, servicesNames, injectOnly = false) {
     debug('Initializing dependencies:', serviceName, servicesNames);
     return Promise.resolve()
     .then(
       () => Promise.all(
-        servicesNames.map(this._getServiceDescriptor.bind(this, siloContext))
+        servicesNames.map(this._getServiceDescriptor.bind(this, siloContext, injectOnly))
       )
       .then((servicesDescriptors) => {
         debug('Initialized dependencies descriptors:', serviceName, servicesNames);
