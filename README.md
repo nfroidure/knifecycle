@@ -39,27 +39,16 @@ It is largely inspired by the Angular service system except it should not
 
 ## Usage
 
-First we create a Knifecycle instance:
-```js
-// services/knifecycle.js
-// For this sample application, we know we won't need several Knifecycle
-// instances so we will use the module singleton instead of injecting the
-// lifecycle instance everywhere.
-import Knifecycle from 'knifecycle';
-
-const $ = Knifecycle.getInstance();
-
-export default $;
-```
-
-Then we create the services our application need. Some of them are simple
- constants:
+Using Knifecycle is all about declaring the services our application need. Some
+ of them are simple constants:
 ```js
 // services/core.js
 // Core services that are often needed. The constant decorator allows you to
 // declare values or simple functions managing global states
-import { constant } from './knifecycle';
-import Winston from 'winston';
+
+// Notice we are directly using the instance module that prepare the Knifecycle
+// instance for us
+import { constant } from 'knifecycle/instance';
 
 // Add the process environment as a simple constant
 constant('ENV', process.env);
@@ -81,10 +70,11 @@ constant('exit', process.exit.bind(exit));
 
 While others are services that may depend on higher level ones. By example a
  logger.
+
 ```js
 // services/logger.js
 // A log service that depends on the process environment
-import { depends, service } from './knifecycle';
+import { depends, service } from 'knifecycle/instance';
 import Logger from 'logger';
 
 // Register a service with the service method.
@@ -108,7 +98,7 @@ service('logger',
 Let's add a db service too:
 ```js
 // services/db.js
-import { depends, provider } from './knifecycle';
+import { depends, provider } from 'knifecycle/instance';
 import MongoClient from 'mongodb';
 
 // Register a service with the provider method.
@@ -138,10 +128,10 @@ provider('db',
 );
 ```
 
-Adding an express server
+Adding an Express server
 ```js
 // services/server.js
-import { depends, constant, provider, service } from './knifecycle';
+import { depends, constant, provider, service } from 'knifecycle/instance';
 import express from 'express';
 
 // Create an express app
@@ -203,7 +193,7 @@ Let's wire it altogether to bootstrap an express application:
 ```js
 // app.js
 
-import { run } from './services/knifecycle';
+import { run } from 'knifecycle/instance';
 import * from './services/core';
 import * from './services/log';
 import * from './services/db';
@@ -220,7 +210,7 @@ function main({ waitSignal, exit, $shutdown }) {
     waitSignal('SIGTERM'),
   ])
   // The shutdown service will disable silos progressively and then the services
-  // they rely on to finaly resolve the returned promise when done
+  // they rely on to finally resolve the returned promise once done
   .then($shutdown)
   .then(() => {
     // graceful shutdown was successful let's exit in peace
@@ -243,17 +233,18 @@ DEBUG=knifecycle npm t
 
 ## Plans
 
-Use this lib for real world applications. I plan to use it with the
- [Trip Story](https://github.com/nfroidure/TripStory) toy project first and use
- it at work then. Maybe for front-end stuffs too.
+This library is already used by the microservices i am working on at 7Digital
+ but I plan to use it with the
+ [Trip Story](https://github.com/nfroidure/TripStory) toy project in order to
+ illustrate its usage on an open-source project. I think i will also use it for
+ front-end projects too.
 
 The scope of this library won't change. However the plan is:
 - improve performances
-- allow to declare singleton services
-- use next JavaScript feature that ships to Node if it make sense:
-depends, constant, service, provider may become decorators;
-WeakMap may be used to share singleton services between runs
-- track bugs
+- [allow to declare singleton services](https://github.com/nfroidure/knifecycle/issues/3)
+- evolve with Node. You will never have to transpile this library to use it with Node.
+- `depends`, `constant`, `service`, `provider` may become decorators;
+- track bugs ;)
 
 I'll also share most of my own services/providers and their stubs/mocks in order
 to let you reuse it through your projects easily.
