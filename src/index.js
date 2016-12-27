@@ -150,7 +150,7 @@ export default class Knifecycle {
     uniqueServiceProvider[DEPENDENCIES] = serviceProvider[DEPENDENCIES] || [];
 
     uniqueServiceProvider[DEPENDENCIES].forEach((dependencyName) => {
-      let dependencyProvider = this._servicesProviders.get(dependencyName);
+      const dependencyProvider = this._servicesProviders.get(dependencyName);
 
       if(dependencyProvider && -1 !== dependencyProvider[DEPENDENCIES].indexOf(serviceName)) {
         throw new YError(E_CIRCULAR_DEPENDENCY, dependencyName, serviceName);
@@ -174,8 +174,7 @@ export default class Knifecycle {
    *
    * const $ = new Knifecycle();
    *
-   * \@$.depends(['ENV'])
-   * $.service('config', function configProvider({ ENV }) {
+   * $.service('config', $.depends(['ENV'], function configProvider({ ENV }) {
    *   return new Promise((resolve, reject) {
    *     fs.readFile(ENV.CONFIG_FILE, function(err, data) {
    *       let config;
@@ -192,7 +191,7 @@ export default class Knifecycle {
    *       });
    *     });
    *   });
-   * });
+   * }));
    */
   depends(dependenciesNames, serviceProvider) {
     const uniqueServiceProvider = serviceProvider.bind();
@@ -236,13 +235,13 @@ export default class Knifecycle {
     // Create a provider for the shutdown special dependency
     siloContext.servicesDescriptors.set(SHUTDOWN, {
       servicePromise: Promise.resolve(() => {
-        const shutdownPromise = _shutdownNextServices(siloContext.servicesSequence.reverse());
+        const shutdownPromise = _shutdownNextServices(siloContext.servicesSequence);
 
         debug('Shutting down services');
 
         return shutdownPromise;
 
-        // Shutdown services in the reverse instanciation order
+        // Shutdown services in their instanciation order
         function _shutdownNextServices(reversedServiceSequence) {
           if(0 === reversedServiceSequence.length) {
             return Promise.resolve();
@@ -256,7 +255,12 @@ export default class Knifecycle {
                 debug('Reusing a service shutdown promise:', serviceName);
                 return serviceShutdownPromise;
               }
-
+              if(reversedServiceSequence.some(
+                servicesNames => servicesNames.includes(serviceName)
+              )) {
+                debug('Delaying service shutdown:', serviceName);
+                return Promise.resolve();
+              }
               debug('Shutting down a service:', serviceName);
               serviceShutdownPromise = serviceDescriptor.shutdownProvider ?
                 serviceDescriptor.shutdownProvider() :

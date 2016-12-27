@@ -506,6 +506,42 @@ describe('Knifecycle', () => {
       .catch(done);
     });
 
+    it('should delay service shutdown to their deeper dependencies', (done) => {
+      const servicesShutdownCalls = sinon.spy(() => Promise.resolve());
+
+      $.provider('hash', () => Promise.resolve({
+        servicePromise: Promise.resolve({}),
+        shutdownProvider: servicesShutdownCalls.bind(null, 'hash'),
+      }));
+      $.provider('hash1', $.depends(['hash'], () => Promise.resolve({
+        servicePromise: Promise.resolve({}),
+        shutdownProvider: servicesShutdownCalls.bind(null, 'hash1'),
+      })));
+      $.provider('hash2', $.depends(['hash1', 'hash'], () => Promise.resolve({
+        servicePromise: Promise.resolve({}),
+        shutdownProvider: servicesShutdownCalls.bind(null, 'hash2'),
+      })));
+
+      $.run(['hash2', '$shutdown'])
+      .then((dependencies) => {
+        assert.deepEqual(Object.keys(dependencies), [
+          'hash2', '$shutdown',
+        ]);
+        return dependencies.$shutdown();
+      })
+      .then(() => {
+        assert.deepEqual(servicesShutdownCalls.args, [[
+          'hash2',
+        ], [
+          'hash1',
+        ], [
+          'hash',
+        ]]);
+      })
+      .then(done)
+      .catch(done);
+    });
+
   });
 
 });
