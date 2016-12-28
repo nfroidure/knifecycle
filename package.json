@@ -1,6 +1,6 @@
 {
   "name": "knifecycle",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Manage your NodeJS processes's lifecycle.",
   "main": "dist/index.js",
   "engines": {
