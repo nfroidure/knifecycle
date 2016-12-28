@@ -1,10 +1,11 @@
 {
-  "extends": "eslint-config-simplifield/lib/backend",
+  extends: 'eslint-config-simplifield/lib/backend',
   parserOptions: {
     sourceType: 'module',
     modules: true,
   },
   rules: {
     'no-magic-numbers': 0,
+    'node/no-unsupported-features': 0,
   },
 }

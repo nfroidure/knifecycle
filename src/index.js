@@ -193,7 +193,7 @@ export default class Knifecycle {
    *   });
    * }));
    */
-  depends(dependenciesNames, serviceProvider) {
+  depends(dependenciesNames, serviceProvider) { // eslint-disable-line
     const uniqueServiceProvider = serviceProvider.bind();
 
     uniqueServiceProvider[DEPENDENCIES] = (
