@@ -402,7 +402,20 @@ Decorator to claim that a service depends on others ones.
 
 **Kind**: global function  
 **Returns**: <code>function</code> - Returns the decorator function  
-**$.depends([&#x27;env&#x27;])**: $.service('config', function configProvider({ ENV }) {
+
+| Param | Type | Description |
+| --- | --- | --- |
+| dependenciesNames | <code>Array.&lt;String&gt;</code> | Dependencies the decorated service provider depends on. |
+| serviceProvider | <code>function</code> | Service provider or a service provider promise |
+
+**Example**  
+```js
+import Knifecycle from 'knifecycle'
+import fs from 'fs';
+
+const $ = new Knifecycle();
+
+$.service('config', $.depends(['ENV'], function configProvider({ ENV }) {
   return new Promise((resolve, reject) {
     fs.readFile(ENV.CONFIG_FILE, function(err, data) {
       let config;
@@ -419,19 +432,7 @@ Decorator to claim that a service depends on others ones.
       });
     });
   });
-});  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| dependenciesNames | <code>Array.&lt;String&gt;</code> | Dependencies the decorated service provider depends on. |
-| serviceProvider | <code>function</code> | Service provider or a service provider promise |
-
-**Example**  
-```js
-import Knifecycle from 'knifecycle'
-import fs from 'fs';
-
-const $ = new Knifecycle();
+}));
 ```
 <a name="run"></a>
 
@@ -439,12 +440,24 @@ const $ = new Knifecycle();
 Creates a new execution silo
 
 **Kind**: global function  
-**Returns**: <code>Promise</code> - Service descriptor promise.  
+**Returns**: <code>Promise</code> - Service descriptor promise                   Returns the decorator function  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | dependenciesNames | <code>Array.&lt;String&gt;</code> | Service name. |
 
+**Example**  
+```js
+import Knifecycle from 'knifecycle'
+
+const $ = new Knifecycle();
+
+$.constant('ENV', process.env);
+$.run(['ENV'])
+.then(({ ENV }) => {
+ // Here goes your code
+})
+```
 <a name="_getServiceDescriptor"></a>
 
 ## _getServiceDescriptor(siloContext, injectOnly, serviceName, serviceProvider) ⇒ <code>Promise</code>

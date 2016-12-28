@@ -209,7 +209,18 @@ export default class Knifecycle {
   /**
    * Creates a new execution silo
    * @param  {String[]}   dependenciesNames    Service name.
-   * @return {Promise}                         Service descriptor promise.
+   * @return {Promise}                         Service descriptor promise                   Returns the decorator function
+   * @example
+   *
+   * import Knifecycle from 'knifecycle'
+   *
+   * const $ = new Knifecycle();
+   *
+   * $.constant('ENV', process.env);
+   * $.run(['ENV'])
+   * .then(({ ENV }) => {
+   *  // Here goes your code
+   * })
    */
   run(dependenciesNames) {
     const siloContext = {
