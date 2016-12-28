@@ -4,7 +4,7 @@
   "description": "Manage your NodeJS processes's lifecycle.",
   "main": "dist/index.js",
   "engines": {
-    "node": ">=4"
+    "node": ">=6"
   },
   "files": [
     "dist",
