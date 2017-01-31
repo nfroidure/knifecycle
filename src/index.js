@@ -11,6 +11,7 @@ const E_CIRCULAR_DEPENDENCY = 'E_CIRCULAR_DEPENDENCY';
 const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
 const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
 const E_BAD_INJECTION = 'E_BAD_INJECTION';
+const DECLARATION_SEPARATOR = ':';
 
 // Constants that should use Symbol whenever possible
 const INSTANCE = '__instance';
@@ -149,11 +150,19 @@ export default class Knifecycle {
 
     uniqueServiceProvider[DEPENDENCIES] = serviceProvider[DEPENDENCIES] || [];
 
-    uniqueServiceProvider[DEPENDENCIES].forEach((dependencyName) => {
-      const dependencyProvider = this._servicesProviders.get(dependencyName);
+    uniqueServiceProvider[DEPENDENCIES].forEach((dependencyDeclaration) => {
+      const serviceName = _pickServiceNameFromDeclaration(dependencyDeclaration);
+      const dependencyProvider = this._servicesProviders.get(serviceName);
 
-      if(dependencyProvider && -1 !== dependencyProvider[DEPENDENCIES].indexOf(serviceName)) {
-        throw new YError(E_CIRCULAR_DEPENDENCY, dependencyName, serviceName);
+      if(
+        dependencyProvider &&
+        dependencyProvider[DEPENDENCIES]
+        .some((childDependencyDeclaration) => {
+          const childServiceName = _pickServiceNameFromDeclaration(childDependencyDeclaration);
+          return childServiceName === serviceName;
+        })
+      ) {
+        throw new YError(E_CIRCULAR_DEPENDENCY, dependencyDeclaration, serviceName);
       }
     });
 
@@ -164,7 +173,7 @@ export default class Knifecycle {
 
   /**
    * Decorator to claim that a service depends on others ones.
-   * @param  {String[]}  dependenciesNames   Dependencies the decorated service provider depends on.
+   * @param  {String[]}  dependenciesDeclarations   Dependencies the decorated service provider depends on.
    * @param  {Function}  serviceProvider     Service provider or a service provider promise
    * @return {Function}                      Returns the decorator function
    * @example
@@ -193,22 +202,22 @@ export default class Knifecycle {
    *   });
    * }));
    */
-  depends(dependenciesNames, serviceProvider) { // eslint-disable-line
+  depends(dependenciesDeclarations, serviceProvider) { // eslint-disable-line
     const uniqueServiceProvider = serviceProvider.bind();
 
     uniqueServiceProvider[DEPENDENCIES] = (
       serviceProvider[DEPENDENCIES] ||
       []
-    ).concat(dependenciesNames);
+    ).concat(dependenciesDeclarations);
 
-    debug('Wrapped a service provider with dependencies:', dependenciesNames);
+    debug('Wrapped a service provider with dependencies:', dependenciesDeclarations);
 
     return uniqueServiceProvider;
   }
 
   /**
    * Creates a new execution silo
-   * @param  {String[]}   dependenciesNames    Service name.
+   * @param  {String[]}   dependenciesDeclarations    Service name.
    * @return {Promise}                         Service descriptor promise                   Returns the decorator function
    * @example
    *
@@ -222,7 +231,7 @@ export default class Knifecycle {
    *  // Here goes your code
    * })
    */
-  run(dependenciesNames) {
+  run(dependenciesDeclarations) {
     const siloContext = {
       name: 'silo-' + Date.now(),
       servicesDescriptors: new Map(),
@@ -267,7 +276,7 @@ export default class Knifecycle {
                 return serviceShutdownPromise;
               }
               if(reversedServiceSequence.some(
-                servicesNames => servicesNames.includes(serviceName)
+                servicesDeclarations => servicesDeclarations.includes(serviceName)
               )) {
                 debug('Delaying service shutdown:', serviceName);
                 return Promise.resolve();
@@ -288,12 +297,12 @@ export default class Knifecycle {
 
     // Create a provider for the special inject service
     siloContext.servicesDescriptors.set(INJECT, {
-      servicePromise: Promise.resolve(dependenciesNames =>
-        this._initializeDependencies(siloContext, siloContext.name, dependenciesNames, true)
+      servicePromise: Promise.resolve(dependenciesDeclarations =>
+        this._initializeDependencies(siloContext, siloContext.name, dependenciesDeclarations, true)
       ),
     });
 
-    return this._initializeDependencies(siloContext, siloContext.name, dependenciesNames)
+    return this._initializeDependencies(siloContext, siloContext.name, dependenciesDeclarations)
     .then((servicesHash) => {
       debug('Handling fatal errors:', siloContext.errorsPromises);
       Promise.all(siloContext.errorsPromises).catch(siloContext.throwFatalError);
@@ -389,33 +398,46 @@ export default class Knifecycle {
    * Initialize a service dependencies
    * @param  {Object}     siloContext       Current execution silo siloContext
    * @param  {String}     serviceName       Service name.
-   * @param  {String}     servicesNames     Dependencies names.
+   * @param  {String}     servicesDeclarations     Dependencies names.
    * @param  {Boolean}    injectOnly        Flag indicating if existing services only should be used
    * @return {Promise}                      Service dependencies hash promise.
    */
-  _initializeDependencies(siloContext, serviceName, servicesNames, injectOnly = false) {
-    debug('Initializing dependencies:', serviceName, servicesNames);
+  _initializeDependencies(siloContext, serviceName, servicesDeclarations, injectOnly = false) {
+    debug('Initializing dependencies:', serviceName, servicesDeclarations);
     return Promise.resolve()
     .then(
       () => Promise.all(
-        servicesNames.map(this._getServiceDescriptor.bind(this, siloContext, injectOnly))
+        servicesDeclarations
+        .map(_pickMappedNameFromDeclaration)
+        .map(this._getServiceDescriptor.bind(this, siloContext, injectOnly))
       )
       .then((servicesDescriptors) => {
-        debug('Initialized dependencies descriptors:', serviceName, servicesNames);
-        siloContext.servicesSequence.push(servicesNames);
+        debug('Initialized dependencies descriptors:', serviceName, servicesDeclarations);
+        siloContext.servicesSequence.push(servicesDeclarations.map(_pickMappedNameFromDeclaration));
         return Promise.all(servicesDescriptors.map(
           (serviceDescriptor, index) => {
             if((!serviceDescriptor.servicePromise) || !serviceDescriptor.servicePromise.then) {
-              return Promise.reject(new YError(E_BAD_SERVICE_PROMISE, servicesNames[index]));
+              return Promise.reject(new YError(E_BAD_SERVICE_PROMISE, servicesDeclarations[index]));
             }
             return serviceDescriptor.servicePromise.then(service => service);
           }
         ));
       })
       .then(services => services.reduce((hash, service, index) => {
-        hash[servicesNames[index]] = service;
+        const serviceName = _pickServiceNameFromDeclaration(servicesDeclarations[index]);
+        hash[serviceName] = service;
         return hash;
       }, {}))
     );
   }
+}
+
+function _pickServiceNameFromDeclaration(serviceDeclaration) {
+  const [serviceName] = serviceDeclaration.split(DECLARATION_SEPARATOR);
+  return serviceName;
+}
+
+function _pickMappedNameFromDeclaration(serviceDeclaration) {
+  const [serviceName, mappedName] = serviceDeclaration.split(DECLARATION_SEPARATOR);
+  return mappedName || serviceName;
 }

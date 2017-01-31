@@ -74,12 +74,28 @@ describe('Knifecycle', () => {
       }
     });
 
+    it('should fail with circular dependencies on mapped services', () => {
+      try {
+        $.provider('aHash', $.depends(['hash3:aHash3'], hashProvider));
+        $.provider('aHash1', $.depends(['hash:aHash'], hashProvider));
+        $.provider('aHash2', $.depends(['hash1:aHash1'], hashProvider));
+        $.provider('aHash3', $.depends(['hash:aHash'], hashProvider));
+      } catch (err) {
+        assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
+        assert.deepEqual(err.params, ['hash', 'hash3']);
+      }
+    });
+
   });
 
   describe('depends', () => {
 
     it('should allow to decorate service registration with dependencies', () => {
       $.service('hash', $.depends(['ENV'], hashProvider));
+    });
+
+    it('should allow to map services dependencies', () => {
+      $.service('hash', $.depends(['ANOTHER_ENV:ENV'], hashProvider));
     });
 
   });
@@ -175,6 +191,24 @@ describe('Knifecycle', () => {
       $.run(['hash', 'hash2', 'hash3', 'time'])
       .then((dependencies) => {
         assert.deepEqual(Object.keys(dependencies), ['hash', 'hash2', 'hash3', 'time']);
+        assert.deepEqual(timeServiceStub.args, [[{}]]);
+        done();
+      })
+      .catch(done);
+    });
+
+    it('should instanciate services with mappings', (done) => {
+      const timeServiceStub = sinon.spy(timeService);
+
+      $.constant('ENV', ENV);
+      $.service('aTime', timeServiceStub);
+      $.provider('aHash', $.depends(['ENV', 'time:aTime'], hashProvider));
+      $.provider('aHash2', $.depends(['ENV', 'hash:aHash'], hashProvider));
+      $.provider('aHash3', $.depends(['ENV', 'hash:aHash'], hashProvider));
+
+      $.run(['hash2:aHash2', 'hash3:aHash3', 'time:aTime'])
+      .then((dependencies) => {
+        assert.deepEqual(Object.keys(dependencies), ['hash2', 'hash3', 'time']);
         assert.deepEqual(timeServiceStub.args, [[{}]]);
         done();
       })
