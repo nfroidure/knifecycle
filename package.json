@@ -4,22 +4,33 @@
   "description": "Manage your NodeJS processes's lifecycle.",
   "main": "dist/index.js",
   "engines": {
-    "node": ">=6"
+    "node": ">=6.9.5"
+  },
+  "metapak": {
+    "data": {
+      "files": "src/*.js",
+      "testsFiles": "src/*.mocha.js"
+    },
+    "configs": [
+      "babel"
+    ]
   },
   "files": [
     "dist",
     "src"
   ],
   "scripts": {
-    "cli": "env NPM_RUN_CLI=1",
-    "test": "mocha --compilers js:babel-register src/*.mocha.js",
+    "cli": "env NODE_ENV=${NODE_ENV:-cli}",
     "compile": "babel src --out-dir=dist",
-    "preversion": "npm t && npm run lint && npm run compile",
-    "prepublish": "npm run compile",
-    "coveralls": "istanbul cover _mocha --report lcovonly -- --compilers js:babel-register src/*.mocha.js src/**/*.mocha.js -R spec -t 5000 && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage",
-    "cover": "istanbul cover _mocha --report html -- --compilers js:babel-register src/*.mocha.js src/**/*.mocha.js -R spec -t 5000",
+    "cover": "istanbul cover _mocha --report html -- --compilers js:babel-register src/*.mocha.js -R spec -t 5000",
+    "coveralls": "istanbul cover _mocha --report lcovonly -- --compilers js:babel-register src/*.mocha.js -R spec -t 5000 && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage",
+    "doc": "cat src/*.js | jsdoc2md > API.md",
     "lint": "eslint src/*.js",
-    "doc": "cat src/*.js | jsdoc2md > API.md"
+    "metapak": "metapak || echo 'Please `npm install --save-dev metapak`' exit 0",
+    "postinstall": "npm run metapak",
+    "prepublish": "npm run compile",
+    "preversion": "npm t && npm run lint && npm run compile",
+    "test": "mocha --compilers js:babel-register src/*.mocha.js"
   },
   "keywords": [
     "process",
@@ -27,7 +38,7 @@
     "shutdown",
     "service"
   ],
-  "author": "Nicolas Froidure (7Digital)",
+  "author": "Nicolas Froidure",
   "license": "MIT",
   "devDependencies": {
     "babel-cli": "^6.9.0",
@@ -38,17 +49,19 @@
     "babel-plugin-transform-es2015-modules-systemjs": "^6.9.0",
     "babel-preset-es2015": "^6.9.0",
     "babel-register": "^6.9.0",
-    "coveralls": "^2.11.12",
-    "eslint": "^3.4.0",
-    "eslint-config-simplifield": "^4.1.1",
+    "coveralls": "2.11.15",
+    "eslint": "3.4.0",
+    "eslint-config-simplifield": "4.1.1",
     "istanbul": "^1.0.0-alpha.2",
     "jsdoc-to-markdown": "^2.0.1",
-    "mocha": "^3.0.2",
-    "mocha-lcov-reporter": "^1.2.0",
+    "metapak": "0.0.13",
+    "metapak-nfroidure": "0.0.9",
+    "mocha": "3.2.0",
+    "mocha-lcov-reporter": "1.2.0",
     "sinon": "^1.16.1"
   },
   "dependencies": {
-    "debug": "^2.2.0",
+    "debug": "1.0.0",
     "yerror": "^1.0.2"
   }
 }
