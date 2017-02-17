@@ -140,7 +140,7 @@ constant('app', express());
 // Setting a route to serve the current timestamp.
 service('routes/time',
   depends('app', 'now', 'logger',
-  function timeRoutesProvider() {
+  function timeRoutesProvider(app, now, logger) {
     return Promise.resolve()
     .then(() => {
       app.get('/time', (req, res, next) => {
