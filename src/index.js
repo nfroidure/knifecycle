@@ -1,3 +1,4 @@
+/* eslint max-len: ["warn", { "ignoreComments": true }] */
 import YError from 'yerror';
 import initDebug from 'debug';
 
