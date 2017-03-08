@@ -538,13 +538,19 @@ function _applyClasses(classes, styles, links) {
 
 function _applyStyles(classes, styles, { serviceName, dependedServiceName }) {
   return styles.reduce((classesApplications, style) => {
-    if(style.pattern.test(serviceName)) {
+    if(
+      style.pattern.test(serviceName) &&
+      !classesApplications[serviceName]
+    ) {
       if(!classes[style.className]) {
         throw new YError('E_BAD_CLASS', style.className, serviceName);
       }
       classesApplications[serviceName] = style.className;
     }
-    if(style.pattern.test(dependedServiceName)) {
+    if(
+      style.pattern.test(dependedServiceName) &&
+      !classesApplications[dependedServiceName]
+    ) {
       if(!classes[style.className]) {
         throw new YError('E_BAD_CLASS', style.className, dependedServiceName);
       }

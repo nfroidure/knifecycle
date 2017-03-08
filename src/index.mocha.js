@@ -653,6 +653,9 @@ describe('Knifecycle', () => {
         styles: [{
           pattern: /^hash([0-9]+)$/,
           className: 'exotic',
+        }, {
+          pattern: /^hash([0-9]+)$/,
+          className: 'notapplied',
         }],
         shapes: [{
           pattern: /^hash([0-9]+)$/,
