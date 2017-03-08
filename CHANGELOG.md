@@ -1,3 +1,21 @@
+<a name="1.3.0"></a>
+# [1.3.0](https://github.com/nfroidure/knifecycle/compare/v1.2.0...v1.3.0) (2017-03-08)
+
+
+### Bug Fixes
+
+* **mermaid:** Only apply first style ([d78ecd3](https://github.com/nfroidure/knifecycle/commit/d78ecd3))
+* **package:** update yerror to version 2.0.0 ([5697a89](https://github.com/nfroidure/knifecycle/commit/5697a89))
+
+
+### Features
+
+* **mermaid:** Add the ability to generate dependencies graphs ([b2ac582](https://github.com/nfroidure/knifecycle/commit/b2ac582))
+* **mermaid:** Allow to add styles to graphs ([520b7a1](https://github.com/nfroidure/knifecycle/commit/520b7a1))
+* **mermaid:** Allow to shape Mermaid diagrams node ([ced9dad](https://github.com/nfroidure/knifecycle/commit/ced9dad))
+
+
+
 
 ### v1.2.0 (2017/01/31 16:46 +00:00)
 - [320ee35](https://github.com/nfroidure/knifecycle/commit/320ee354d9fcdb6ee4d9b9689c609ed92f29ab2a) 1.2.0 (@nfroidure)
