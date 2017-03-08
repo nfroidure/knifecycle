@@ -578,4 +578,34 @@ describe('Knifecycle', () => {
 
   });
 
+  describe('toMermaidGraph', () => {
+
+    it('should print nothing when no dependency', () => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      assert.equal($.toMermaidGraph(), '');
+    });
+
+    it('should print a dependency graph', () => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+      $.provider('hash1', $.depends(['hash'], hashProvider));
+      $.provider('hash2', $.depends(['hash1'], hashProvider));
+      $.provider('hash3', $.depends(['hash2'], hashProvider));
+      $.provider('hash4', $.depends(['hash3'], hashProvider));
+      $.provider('hash5', $.depends(['hash4'], hashProvider));
+      assert.equal($.toMermaidGraph(),
+        'graph TD\n' +
+        '  hash-->ENV\n' +
+        '  hash1-->hash\n' +
+        '  hash2-->hash1\n' +
+        '  hash3-->hash2\n' +
+        '  hash4-->hash3\n' +
+        '  hash5-->hash4'
+      );
+    });
+
+  });
+
 });

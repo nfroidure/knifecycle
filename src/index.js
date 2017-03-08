@@ -217,9 +217,59 @@ export default class Knifecycle {
   }
 
   /**
+   * Outputs a Mermaid compatible dependency graph of the declared services.
+   * See [Mermaid docs](https://github.com/knsv/mermaid)
+   * @return {String}   Returns a string containing the Mermaid dependency graph
+   * @example
+   *
+   * import Knifecycle from 'knifecycle'
+   *
+   * const $ = new Knifecycle();
+   *
+   * $.constant('ENV', process.env);
+   * $.constant('OS', require('os'));
+   * $.service('app', $.depends(['ENV', 'OS'], () => Promise.resolve()));
+   * $.toMermaidGraph();
+   *
+   * // returns
+   * graph TD
+   *   app-->ENV
+   *   app-->OS
+   */
+  toMermaidGraph() {
+    const servicesProviders = this._servicesProviders;
+    const links = Array.from(servicesProviders.keys())
+    .reduce((links, serviceName) => {
+      const serviceProvider = servicesProviders.get(serviceName);
+
+      if(!serviceProvider[DEPENDENCIES].length) {
+        return links;
+      }
+      return links.concat(serviceProvider[DEPENDENCIES]
+      .map((dependencyDeclaration) => {
+        const dependedServiceName = _pickServiceNameFromDeclaration(
+          dependencyDeclaration
+        );
+
+        return { serviceName, dependedServiceName };
+      }));
+    }, []);
+    if(!links.length) {
+      return '';
+    }
+    return ['graph TD'].concat(
+      links.map(
+        ({ serviceName, dependedServiceName }) =>
+        '  ' + serviceName + '-->' + dependedServiceName
+      )
+    )
+    .join('\n');
+  }
+
+  /**
    * Creates a new execution silo
    * @param  {String[]}   dependenciesDeclarations    Service name.
-   * @return {Promise}                         Service descriptor promise                   Returns the decorator function
+   * @return {Promise}                         Service descriptor promise
    * @example
    *
    * import Knifecycle from 'knifecycle'

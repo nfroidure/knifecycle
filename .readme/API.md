@@ -17,6 +17,10 @@
 <dt><a href="#depends">depends(dependenciesDeclarations, serviceProvider)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to claim that a service depends on others ones.</p>
 </dd>
+<dt><a href="#toMermaidGraph">toMermaidGraph()</a> ⇒ <code>String</code></dt>
+<dd><p>Outputs a Mermaid compatible dependency graph of the declared services.
+See <a href="https://github.com/knsv/mermaid">Mermaid docs</a></p>
+</dd>
 <dt><a href="#run">run(dependenciesDeclarations)</a> ⇒ <code>Promise</code></dt>
 <dd><p>Creates a new execution silo</p>
 </dd>
@@ -184,13 +188,37 @@ $.service('config', $.depends(['ENV'], function configProvider({ ENV }) {
   });
 }));
 ```
+<a name="toMermaidGraph"></a>
+
+## toMermaidGraph() ⇒ <code>String</code>
+Outputs a Mermaid compatible dependency graph of the declared services.
+See [Mermaid docs](https://github.com/knsv/mermaid)
+
+**Kind**: global function  
+**Returns**: <code>String</code> - Returns a string containing the Mermaid dependency graph  
+**Example**  
+```js
+import Knifecycle from 'knifecycle'
+
+const $ = new Knifecycle();
+
+$.constant('ENV', process.env);
+$.constant('OS', require('os'));
+$.service('app', $.depends(['ENV', 'OS'], () => Promise.resolve()));
+$.toMermaidGraph();
+
+// returns
+graph TD
+  app-->ENV
+  app-->OS
+```
 <a name="run"></a>
 
 ## run(dependenciesDeclarations) ⇒ <code>Promise</code>
 Creates a new execution silo
 
 **Kind**: global function  
-**Returns**: <code>Promise</code> - Service descriptor promise                   Returns the decorator function  
+**Returns**: <code>Promise</code> - Service descriptor promise  
 
 | Param | Type | Description |
 | --- | --- | --- |
