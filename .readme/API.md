@@ -17,7 +17,7 @@
 <dt><a href="#depends">depends(dependenciesDeclarations, serviceProvider)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to claim that a service depends on others ones.</p>
 </dd>
-<dt><a href="#toMermaidGraph">toMermaidGraph(options, shapes)</a> ⇒ <code>String</code></dt>
+<dt><a href="#toMermaidGraph">toMermaidGraph(options)</a> ⇒ <code>String</code></dt>
 <dd><p>Outputs a Mermaid compatible dependency graph of the declared services.
 See <a href="https://github.com/knsv/mermaid">Mermaid docs</a></p>
 </dd>
@@ -190,7 +190,7 @@ $.service('config', $.depends(['ENV'], function configProvider({ ENV }) {
 ```
 <a name="toMermaidGraph"></a>
 
-## toMermaidGraph(options, shapes) ⇒ <code>String</code>
+## toMermaidGraph(options) ⇒ <code>String</code>
 Outputs a Mermaid compatible dependency graph of the declared services.
 See [Mermaid docs](https://github.com/knsv/mermaid)
 
@@ -200,7 +200,9 @@ See [Mermaid docs](https://github.com/knsv/mermaid)
 | Param | Type | Description |
 | --- | --- | --- |
 | options | <code>Object</code> | Options for generating the graph (destructured) |
-| shapes | <code>Array.&lt;Object&gt;</code> | Various shapes to apply |
+| options.shapes | <code>Array.&lt;Object&gt;</code> | Various shapes to apply |
+| options.styles | <code>Array.&lt;Object&gt;</code> | Various styles to apply |
+| options.classes | <code>Object</code> | A hash of various classes contents |
 
 **Example**  
 ```js

@@ -220,7 +220,9 @@ export default class Knifecycle {
    * Outputs a Mermaid compatible dependency graph of the declared services.
    * See [Mermaid docs](https://github.com/knsv/mermaid)
    * @param {Object} options    Options for generating the graph (destructured)
-   * @param {Array<Object>} shapes    Various shapes to apply
+   * @param {Array<Object>} options.shapes    Various shapes to apply
+   * @param {Array<Object>} options.styles    Various styles to apply
+   * @param {Object} options.classes    A hash of various classes contents
    * @return {String}   Returns a string containing the Mermaid dependency graph
    * @example
    *
@@ -238,7 +240,7 @@ export default class Knifecycle {
    *   app-->ENV
    *   app-->OS
    */
-  toMermaidGraph({ shapes = [] } = {}) {
+  toMermaidGraph({ shapes = [], styles = [], classes = {} } = {}) {
     const servicesProviders = this._servicesProviders;
     const links = Array.from(servicesProviders.keys())
     .reduce((links, serviceName) => {
@@ -253,21 +255,29 @@ export default class Knifecycle {
           dependencyDeclaration
         );
 
-        return {
-          serviceName: _applyShapes(shapes, serviceName) ||
-            serviceName,
-          dependedServiceName: _applyShapes(shapes, dependedServiceName) ||
-            dependedServiceName,
-        };
+        return { serviceName, dependedServiceName };
       }));
     }, []);
+    const classesApplications = _applyClasses(classes, styles, links);
+
     if(!links.length) {
       return '';
     }
+
     return ['graph TD'].concat(
       links.map(
         ({ serviceName, dependedServiceName }) =>
-        '  ' + serviceName + '-->' + dependedServiceName
+        '  ' + (_applyShapes(shapes, serviceName) || serviceName) + '-->' +
+        (_applyShapes(shapes, dependedServiceName) || dependedServiceName)
+      )
+    )
+    .concat(Object.keys(classes).map(
+      className => '  classDef ' + className + ' ' + classes[className]
+    ))
+    .concat(
+      Object.keys(classesApplications).map(
+        serviceName =>
+        '  class ' + serviceName + ' ' + classesApplications[serviceName] + ';'
       )
     )
     .join('\n');
@@ -516,4 +526,30 @@ function _applyShapes(shapes, serviceName) {
       ($, $1) => matches[parseInt($1, 10)]
     );
   }, '');
+}
+
+function _applyClasses(classes, styles, links) {
+  return links.reduce(
+    (classesApplications, link) =>
+    Object.assign(classesApplications, _applyStyles(classes, styles, link)),
+    {}
+  );
+}
+
+function _applyStyles(classes, styles, { serviceName, dependedServiceName }) {
+  return styles.reduce((classesApplications, style) => {
+    if(style.pattern.test(serviceName)) {
+      if(!classes[style.className]) {
+        throw new YError('E_BAD_CLASS', style.className, serviceName);
+      }
+      classesApplications[serviceName] = style.className;
+    }
+    if(style.pattern.test(dependedServiceName)) {
+      if(!classes[style.className]) {
+        throw new YError('E_BAD_CLASS', style.className, dependedServiceName);
+      }
+      classesApplications[dependedServiceName] = style.className;
+    }
+    return classesApplications;
+  }, {});
 }

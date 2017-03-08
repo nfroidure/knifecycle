@@ -637,6 +637,50 @@ describe('Knifecycle', () => {
       );
     });
 
+    it('should allow custom styles', () => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+      $.provider('hash1', $.depends(['hash'], hashProvider));
+      $.provider('hash2', $.depends(['hash1'], hashProvider));
+      $.provider('hash3', $.depends(['hash2'], hashProvider));
+      $.provider('hash4', $.depends(['hash3'], hashProvider));
+      $.provider('hash5', $.depends(['hash4'], hashProvider));
+      assert.equal($.toMermaidGraph({
+        classes: {
+          exotic: 'fill:#f9f,stroke:#333,stroke-width:4px;',
+        },
+        styles: [{
+          pattern: /^hash([0-9]+)$/,
+          className: 'exotic',
+        }],
+        shapes: [{
+          pattern: /^hash([0-9]+)$/,
+          template: '$0(($1))',
+        }, {
+          pattern: /^[A-Z_]+$/,
+          template: '$0{$0}',
+        }, {
+          pattern: /^.+$/,
+          template: '$0[$0]',
+        }],
+      }),
+        'graph TD\n' +
+        '  hash[hash]-->ENV{ENV}\n' +
+        '  hash1((1))-->hash[hash]\n' +
+        '  hash2((2))-->hash1((1))\n' +
+        '  hash3((3))-->hash2((2))\n' +
+        '  hash4((4))-->hash3((3))\n' +
+        '  hash5((5))-->hash4((4))\n' +
+        '  classDef exotic fill:#f9f,stroke:#333,stroke-width:4px;\n' +
+        '  class hash1 exotic;\n' +
+        '  class hash2 exotic;\n' +
+        '  class hash3 exotic;\n' +
+        '  class hash4 exotic;\n' +
+        '  class hash5 exotic;'
+      );
+    });
+
   });
 
 });
