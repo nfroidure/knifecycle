@@ -219,6 +219,8 @@ export default class Knifecycle {
   /**
    * Outputs a Mermaid compatible dependency graph of the declared services.
    * See [Mermaid docs](https://github.com/knsv/mermaid)
+   * @param {Object} options    Options for generating the graph (destructured)
+   * @param {Array<Object>} shapes    Various shapes to apply
    * @return {String}   Returns a string containing the Mermaid dependency graph
    * @example
    *
@@ -236,7 +238,7 @@ export default class Knifecycle {
    *   app-->ENV
    *   app-->OS
    */
-  toMermaidGraph() {
+  toMermaidGraph({ shapes = [] } = {}) {
     const servicesProviders = this._servicesProviders;
     const links = Array.from(servicesProviders.keys())
     .reduce((links, serviceName) => {
@@ -251,7 +253,12 @@ export default class Knifecycle {
           dependencyDeclaration
         );
 
-        return { serviceName, dependedServiceName };
+        return {
+          serviceName: _applyShapes(shapes, serviceName) ||
+            serviceName,
+          dependedServiceName: _applyShapes(shapes, dependedServiceName) ||
+            dependedServiceName,
+        };
       }));
     }, []);
     if(!links.length) {
@@ -491,4 +498,22 @@ function _pickServiceNameFromDeclaration(serviceDeclaration) {
 function _pickMappedNameFromDeclaration(serviceDeclaration) {
   const [serviceName, mappedName] = serviceDeclaration.split(DECLARATION_SEPARATOR);
   return mappedName || serviceName;
+}
+
+function _applyShapes(shapes, serviceName) {
+  return shapes.reduce((shapedService, shape) => {
+    let matches;
+
+    if(shapedService) {
+      return shapedService;
+    }
+    matches = shape.pattern.exec(serviceName);
+    if(!matches) {
+      return shapedService;
+    }
+    return shape.template.replace(
+      /\$([0-9])+/g,
+      ($, $1) => matches[parseInt($1, 10)]
+    );
+  }, '');
 }

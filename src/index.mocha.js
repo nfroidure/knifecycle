@@ -606,6 +606,37 @@ describe('Knifecycle', () => {
       );
     });
 
+    it('should allow custom shapes', () => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+      $.provider('hash1', $.depends(['hash'], hashProvider));
+      $.provider('hash2', $.depends(['hash1'], hashProvider));
+      $.provider('hash3', $.depends(['hash2'], hashProvider));
+      $.provider('hash4', $.depends(['hash3'], hashProvider));
+      $.provider('hash5', $.depends(['hash4'], hashProvider));
+      assert.equal($.toMermaidGraph({
+        shapes: [{
+          pattern: /^hash([0-9]+)$/,
+          template: '$0(($1))',
+        }, {
+          pattern: /^[A-Z_]+$/,
+          template: '$0{$0}',
+        }, {
+          pattern: /^.+$/,
+          template: '$0[$0]',
+        }],
+      }),
+        'graph TD\n' +
+        '  hash[hash]-->ENV{ENV}\n' +
+        '  hash1((1))-->hash[hash]\n' +
+        '  hash2((2))-->hash1((1))\n' +
+        '  hash3((3))-->hash2((2))\n' +
+        '  hash4((4))-->hash3((3))\n' +
+        '  hash5((5))-->hash4((4))'
+      );
+    });
+
   });
 
 });
