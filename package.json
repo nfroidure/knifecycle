@@ -31,7 +31,7 @@
     "doc": "mkdir -p .readme; echo \"# API\" > .readme/API.md; jsdoc2md src/*.js >> .readme/API.md",
     "lint": "eslint src/*.js",
     "metapak": "metapak || echo 'Please `npm install --save-dev metapak`' && exit 0",
-    "postinstall": "npm run metapak; npm run metapak --silent",
+    "postinstall": "npm run metapak --silent",
     "prepublish": "npm run compile",
     "preversion": "npm t && npm run lint && npm run compile",
     "test": "mocha --compilers js:babel-register src/*.mocha.js",

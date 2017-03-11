@@ -16,21 +16,24 @@ It is largely inspired by the Angular service system except it should not
 
 ## Features
 - services management: start services taking their dependencies in count and
- shut them down the same way for graceful exits.
+ shut them down the same way for graceful exits (namely dependency injection
+ with inverted control);
 - easy end to end testing: just replace your services per your own mocks and
- stubs while ensuring your application integrity between testing and production.
-- isolation: isolate processing in a clean manner, per concerns.
+ stubs while ensuring your application integrity between testing and production;
+- isolation: isolate processing in a clean manner, per concerns;
 - functional programming ready: encapsulate global states allowing the rest of
- your application to be purely functional.
+ your application to be purely functional;
 - no circular dependencies for services: while circular dependencies are not a
  problem within purely functional libraries (require allows it), it may be
- harmful for your services, knifecycle impeach that while providing an `$inject`
- service à la Angular to allow accessing existing services references.
+ harmful for your services, `knifecycle` impeach that while providing an `$inject`
+ service à la Angular to allow accessing existing services references if you
+ really need to;
+- generate Mermaid graphs of the dependency tree.
 
 ## Usage
 
-Using Knifecycle is all about declaring the services our application need. Some
- of them are simple constants:
+Using Knifecycle is all about declaring the services our application needs.
+ Some of them are simple constants:
 ```js
 // services/core.js
 // Core services that are often needed. The constant decorator allows you to
@@ -88,34 +91,51 @@ service('logger',
 Let's add a db service too:
 ```js
 // services/db.js
-import { depends, provider } from 'knifecycle/instance';
+import { depends, provider, constant } from 'knifecycle/instance';
 import MongoClient from 'mongodb';
 
+constant('DB_CONFIG', { uri: 'mongo:xxxxx' });
+
 // Register a service with the provider method.
+provider('db',
+  // Declare the service dependencies with the depends decorator
+  depends(['DB_CONFIG', 'logger'],
+    dbProvider
+  )
+);
+
 // A service provider returns a service descriptor promise exposing:
 // - a mandatory service property containing the actual service
 // - an optional shutdown function allowing to gracefully close the service
 // - an optional error promise to handle the service failure
-provider('db',
-  // Declare the service dependencies with the depends decorator
-  depends(['ENV', 'logger'],
-  function dbProvider({ ENV, logger }) {
-    return MongoClient.connect(ENV.DB_URI)
-    .then(function(db) {
-      let fatalErrorPromise = new Promise((resolve, reject) {
-        db.once('error', reject);
-      });
-
-      logger.log('info', 'db service initialized!');
-
-      return {
-        servicePromise: db,
-        shutdownProvider: db.close.bind(db, true),
-        errorPromise: fatalErrorPromise,
-      };
+function dbProvider({ DB_CONFIG, logger }) {
+  return MongoClient.connect(DB_CONFIG.uri)
+  .then(function(db) {
+    let fatalErrorPromise = new Promise((resolve, reject) {
+      db.once('error', reject);
     });
-  })
+
+    logger.log('info', 'db service initialized!');
+
+    return {
+      servicePromise: db,
+      shutdownProvider: db.close.bind(db, true),
+      errorPromise: fatalErrorPromise,
+    };
+  });
+}
+
+// What if we need 2 mongodb clients?
+// Just use service mapping!
+constant('DB_CONFIG2', { uri: 'mongo:xxxxx' });
+provider('db2',
+  // You can wire a dependency with an different name
+  // than the one expected by your service provider with
+  // the mapping feature
+  depends(['DB_CONFIG2:DB_CONFIG', 'logger'],
+  dbProvider
 );
+
 ```
 
 Adding an Express server
