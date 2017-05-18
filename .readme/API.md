@@ -81,7 +81,7 @@ Register a service
 | Param | Type | Description |
 | --- | --- | --- |
 | serviceName | <code>String</code> | Service name |
-| service | <code>function</code> &#124; <code>Promise</code> | The service promise or a function returning it |
+| service | <code>function</code> \| <code>Promise</code> | The service promise or a function returning it |
 
 **Example**  
 ```js
