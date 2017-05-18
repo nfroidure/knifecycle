@@ -13,6 +13,7 @@ const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
 const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
 const E_BAD_INJECTION = 'E_BAD_INJECTION';
 const DECLARATION_SEPARATOR = ':';
+const OPTIONAL_FLAG = '?';
 
 // Constants that should use Symbol whenever possible
 const INSTANCE = '__instance';
@@ -466,7 +467,7 @@ export default class Knifecycle {
    * Initialize a service dependencies
    * @param  {Object}     siloContext       Current execution silo siloContext
    * @param  {String}     serviceName       Service name.
-   * @param  {String}     servicesDeclarations     Dependencies names.
+   * @param  {String}     servicesDeclarations     Dependencies declarations.
    * @param  {Boolean}    injectOnly        Flag indicating if existing services only should be used
    * @return {Promise}                      Service dependencies hash promise.
    */
@@ -476,14 +477,29 @@ export default class Knifecycle {
     .then(
       () => Promise.all(
         servicesDeclarations
-        .map(_pickMappedNameFromDeclaration)
-        .map(this._getServiceDescriptor.bind(this, siloContext, injectOnly))
+        .map((serviceDeclaration) => {
+          const {
+            mappedName,
+            optional,
+          } = _parseDependencyDeclaration(serviceDeclaration);
+
+          return this._getServiceDescriptor(siloContext, injectOnly, mappedName)
+          .catch((err) => {
+            if(optional) {
+              return Promise.resolve();
+            }
+            throw err;
+          });
+        })
       )
       .then((servicesDescriptors) => {
         debug('Initialized dependencies descriptors:', serviceName, servicesDeclarations);
         siloContext.servicesSequence.push(servicesDeclarations.map(_pickMappedNameFromDeclaration));
         return Promise.all(servicesDescriptors.map(
           (serviceDescriptor, index) => {
+            if(!serviceDescriptor) {
+              return {}.undef;
+            }
             if((!serviceDescriptor.servicePromise) || !serviceDescriptor.servicePromise.then) {
               return Promise.reject(new YError(E_BAD_SERVICE_PROMISE, servicesDeclarations[index]));
             }
@@ -500,14 +516,28 @@ export default class Knifecycle {
   }
 }
 
-function _pickServiceNameFromDeclaration(serviceDeclaration) {
-  const [serviceName] = serviceDeclaration.split(DECLARATION_SEPARATOR);
+function _pickServiceNameFromDeclaration(dependencyDeclaration) {
+  const { serviceName } = _parseDependencyDeclaration(dependencyDeclaration);
   return serviceName;
 }
 
-function _pickMappedNameFromDeclaration(serviceDeclaration) {
-  const [serviceName, mappedName] = serviceDeclaration.split(DECLARATION_SEPARATOR);
+function _pickMappedNameFromDeclaration(dependencyDeclaration) {
+  const { serviceName, mappedName } = _parseDependencyDeclaration(dependencyDeclaration);
   return mappedName || serviceName;
+}
+
+function _parseDependencyDeclaration(dependencyDeclaration) {
+  const optional = dependencyDeclaration.startsWith(OPTIONAL_FLAG);
+  const [serviceName, mappedName] = (
+    optional ?
+    dependencyDeclaration.slice(1) :
+    dependencyDeclaration
+  ).split(DECLARATION_SEPARATOR);
+  return {
+    serviceName,
+    mappedName: mappedName || serviceName,
+    optional,
+  };
 }
 
 function _applyShapes(shapes, serviceName) {

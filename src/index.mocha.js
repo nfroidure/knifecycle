@@ -161,6 +161,41 @@ describe('Knifecycle', () => {
       .catch(done);
     });
 
+    it('should work with given optional dependencies', (done) => {
+      $.constant('ENV', ENV);
+      $.constant('DEBUG', {});
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV', '?DEBUG'], hashProvider));
+
+      $.run(['time', 'hash'])
+      .then((dependencies) => {
+        assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
+        assert.deepEqual(dependencies, {
+          hash: { ENV, DEBUG: {} },
+          time,
+        });
+        done();
+      })
+      .catch(done);
+    });
+
+    it('should work with lacking optional dependencies', (done) => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV', '?DEBUG'], hashProvider));
+
+      $.run(['time', 'hash'])
+      .then((dependencies) => {
+        assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
+        assert.deepEqual(dependencies, {
+          hash: { ENV, DEBUG: {}.undef },
+          time,
+        });
+        done();
+      })
+      .catch(done);
+    });
+
     it('should work with deeper dependencies', (done) => {
       $.constant('ENV', ENV);
       $.constant('time', time);

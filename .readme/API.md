@@ -285,6 +285,6 @@ Initialize a service dependencies
 | --- | --- | --- | --- |
 | siloContext | <code>Object</code> |  | Current execution silo siloContext |
 | serviceName | <code>String</code> |  | Service name. |
-| servicesDeclarations | <code>String</code> |  | Dependencies names. |
+| servicesDeclarations | <code>String</code> |  | Dependencies declarations. |
 | injectOnly | <code>Boolean</code> | <code>false</code> | Flag indicating if existing services only should be used |
 
