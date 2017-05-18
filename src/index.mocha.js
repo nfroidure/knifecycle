@@ -611,6 +611,46 @@ describe('Knifecycle', () => {
       .catch(done);
     });
 
+    it('should create dependencies when not declared as singletons', (done) => {
+      $.constant('ENV', ENV);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+
+      Promise.all([
+        $.run(['hash']),
+        $.run(['hash']),
+      ])
+      .then(([{ hash }, { hash: sameHash }]) => {
+        assert.notEqual(hash, sameHash);
+        return $.run(['hash'])
+        .then(({ hash: yaSameHash }) => {
+          assert.notEqual(hash, yaSameHash);
+        });
+      })
+      .then(() => done())
+      .catch(done);
+    });
+
+    it('should reuse dependencies when declared as singletons', (done) => {
+      $.constant('ENV', ENV);
+      $.provider('hash', $.depends(['ENV'], hashProvider), {
+        singleton: true,
+      });
+
+      Promise.all([
+        $.run(['hash']),
+        $.run(['hash']),
+      ])
+      .then(([{ hash }, { hash: sameHash }]) => {
+        assert.equal(hash, sameHash);
+        return $.run(['hash'])
+        .then(({ hash: yaSameHash }) => {
+          assert.equal(hash, yaSameHash);
+        });
+      })
+      .then(() => done())
+      .catch(done);
+    });
+
   });
 
   describe('toMermaidGraph', () => {

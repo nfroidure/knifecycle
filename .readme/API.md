@@ -11,7 +11,7 @@
 <dt><a href="#service">service(serviceName, service)</a> ⇒ <code>function</code></dt>
 <dd><p>Register a service</p>
 </dd>
-<dt><a href="#provider">provider(serviceName, serviceProvider)</a> ⇒ <code>Promise</code></dt>
+<dt><a href="#provider">provider(serviceName, serviceProvider, options)</a> ⇒ <code>Promise</code></dt>
 <dd><p>Register a service provider</p>
 </dd>
 <dt><a href="#depends">depends(dependenciesDeclarations, serviceProvider)</a> ⇒ <code>function</code></dt>
@@ -110,7 +110,7 @@ $.service('config', function config() {
 ```
 <a name="provider"></a>
 
-## provider(serviceName, serviceProvider) ⇒ <code>Promise</code>
+## provider(serviceName, serviceProvider, options) ⇒ <code>Promise</code>
 Register a service provider
 
 **Kind**: global function  
@@ -120,6 +120,7 @@ Register a service provider
 | --- | --- | --- |
 | serviceName | <code>String</code> | Service name |
 | serviceProvider | <code>function</code> | Service provider or a service provider promise |
+| options | <code>Object</code> | Options for the provider |
 
 **Example**  
 ```js

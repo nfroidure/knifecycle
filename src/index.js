@@ -18,6 +18,7 @@ const OPTIONAL_FLAG = '?';
 // Constants that should use Symbol whenever possible
 const INSTANCE = '__instance';
 const DEPENDENCIES = '__dependencies';
+const OPTIONS = '__options';
 
 export default class Knifecycle {
   /**
@@ -31,6 +32,7 @@ export default class Knifecycle {
    */
   constructor() {
     this._servicesProviders = new Map();
+    this._singletonsServicesDescriptors = new Map();
   }
 
   /**
@@ -118,6 +120,7 @@ export default class Knifecycle {
    * Register a service provider
    * @param  {String}     serviceName        Service name
    * @param  {Function}   serviceProvider    Service provider or a service provider promise
+   * @param  {Object}     options            Options for the provider
    * @return {Promise}                       The actual service descriptor promise
    * @example
    *
@@ -147,10 +150,11 @@ export default class Knifecycle {
    *   });
    * });
    */
-  provider(serviceName, serviceProvider) {
+  provider(serviceName, serviceProvider, options = {}) {
     const uniqueServiceProvider = serviceProvider.bind();
 
     uniqueServiceProvider[DEPENDENCIES] = serviceProvider[DEPENDENCIES] || [];
+    uniqueServiceProvider[OPTIONS] = options;
 
     uniqueServiceProvider[DEPENDENCIES].forEach((dependencyDeclaration) => {
       const serviceName = _pickServiceNameFromDeclaration(dependencyDeclaration);
@@ -388,7 +392,9 @@ export default class Knifecycle {
    * @return {Promise}                      Service dependencies hash promise.
    */
   _getServiceDescriptor(siloContext, injectOnly, serviceName) {
-    const serviceDescriptor = siloContext.servicesDescriptors.get(serviceName);
+    const serviceDescriptor =
+      this._singletonsServicesDescriptors.get(serviceName) ||
+      siloContext.servicesDescriptors.get(serviceName);
 
     if(serviceDescriptor) {
       return Promise.resolve(serviceDescriptor);
@@ -454,12 +460,15 @@ export default class Knifecycle {
       if(E_UNMATCHED_DEPENDENCY === err.code) {
         throw YError.wrap.apply(YError, [
           err, E_UNMATCHED_DEPENDENCY, serviceName,
-        ].concat(err.params)
-        );
+        ].concat(err.params));
       }
       throw err;
     });
-    siloContext.servicesDescriptors.set(serviceName, serviceDescriptorPromise);
+    if(serviceProvider[OPTIONS].singleton) {
+      this._singletonsServicesDescriptors.set(serviceName, serviceDescriptorPromise);
+    } else {
+      siloContext.servicesDescriptors.set(serviceName, serviceDescriptorPromise);
+    }
     return serviceDescriptorPromise;
   }
 
