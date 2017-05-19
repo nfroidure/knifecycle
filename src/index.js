@@ -20,6 +20,31 @@ const INSTANCE = '__instance';
 const DEPENDENCIES = '__dependencies';
 const OPTIONS = '__options';
 
+/* Architecture Note #1: Knifecycle
+
+The `knifecycle` project is intended to be a [dependency
+ injection](https://en.wikipedia.org/wiki/Dependency_injection)
+ and [inversion of control](https://en.wikipedia.org/wiki/Inversion_of_control)
+ tool. It will always be tied to this goal since I prefer
+ composing software instead of using frameworks.
+
+It is designed to have a low footprint on services code.
+ There is nothing worse than having to write specific code for
+ a given tool. With `knifecycle`, services can be either constants,
+ functions or object created synchronously or asynchronously. They
+ can be reused elsewhere with no changes at all.
+*/
+
+/* Architecture Note #1.1: OOP
+The `knifecycle` use case is one of the rare use case where
+ [OOP](https://en.wikipedia.org/wiki/Object-oriented_programming)
+ principles are a good fit.
+
+A service provider is full of state since its concern is
+ precisely to
+ [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
+ your application global states.
+*/
 export default class Knifecycle {
   /**
    * Create a new Knifecycle instance
@@ -49,6 +74,31 @@ export default class Knifecycle {
     debug('Spawning an instance.');
     return Knifecycle[INSTANCE];
   }
+
+  /* Architecture Note #1.3: Declaring services
+
+  The first step to use `knifecycle` is to declare
+   services. The are three kinds of services:
+  - constants: a constant is a simple value that will
+   never change. It can be literal values, objects
+   or even functions.
+  - services: services are asynchronous functions
+   resolving to objects, functions or complexer
+   objects. Those one just need an initialization
+   phase that must be done asynchronously.
+  - providers: they are very similar to services
+   except they have an additional layer of
+   complexity. Indeed, they have to be hooked
+   to the process life cycle to allow graceful
+   shutdown of the applications build on top of
+   `knifecycle`.
+
+   In addition to this, services and providers can
+    be declared as singletons. This means that they
+    will be instanciated once for all for each
+    executions silos using them (we will cover this
+    topic later on).
+  */
 
   /**
    * Register a constant service
@@ -288,6 +338,18 @@ export default class Knifecycle {
     )
     .join('\n');
   }
+
+  /* Architecture Note #1.4: Execution silos
+  Once all the services are declared, we need a way to bring
+   them to life. Execution silos are where the magic happen.
+   For each call of the `run` method with given dependencies,
+   a new silo is created and the required environment to
+   run the actual code is leveraged.
+
+  Depending of your application design, you could run it
+   in only one execution silo or into several ones
+   according to the isolation level your wish to reach.
+  */
 
   /**
    * Creates a new execution silo
