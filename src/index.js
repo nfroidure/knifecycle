@@ -69,7 +69,7 @@ export default class Knifecycle {
     return this.provider(constantName, Promise.resolve.bind(Promise, {
       servicePromise: Promise.resolve(constantValue),
       shutdownProvider: Promise.resolve.bind(Promise),
-    }));
+    }), { singleton: true });
   }
 
   /**
