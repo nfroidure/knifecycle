@@ -216,34 +216,60 @@ export default class Knifecycle {
     uniqueServiceProvider[DEPENDENCIES] = serviceProvider[DEPENDENCIES] || [];
     uniqueServiceProvider[OPTIONS] = options;
 
+    if(
+      uniqueServiceProvider[DEPENDENCIES]
+      .map(_pickServiceNameFromDeclaration)
+      .includes(serviceName)
+    ) {
+      throw new YError(E_CIRCULAR_DEPENDENCY, serviceName);
+    }
+
     uniqueServiceProvider[DEPENDENCIES].forEach((dependencyDeclaration) => {
-      const serviceName = _pickServiceNameFromDeclaration(
+      this._lookupCircularDependencies(
+        serviceName,
         dependencyDeclaration
       );
-      const dependencyProvider = this._servicesProviders.get(serviceName);
-
-      if(
-        dependencyProvider &&
-        dependencyProvider[DEPENDENCIES]
-        .some((childDependencyDeclaration) => {
-          const childServiceName = _pickServiceNameFromDeclaration(
-            childDependencyDeclaration
-          );
-
-          return childServiceName === serviceName;
-        })
-      ) {
-        throw new YError(
-          E_CIRCULAR_DEPENDENCY,
-          dependencyDeclaration,
-          serviceName
-        );
-      }
     });
 
     this._servicesProviders.set(serviceName, uniqueServiceProvider);
     debug('Registered a new service provider:', serviceName);
     return uniqueServiceProvider;
+  }
+
+  _lookupCircularDependencies(
+    rootServiceName,
+    dependencyDeclaration,
+    declarationsStacks = []
+  ) {
+    const serviceName = _pickMappedNameFromDeclaration(
+      dependencyDeclaration
+    );
+    const dependencyProvider = this._servicesProviders.get(serviceName);
+
+    if(!dependencyProvider) {
+      return;
+    }
+    declarationsStacks = declarationsStacks.concat(dependencyDeclaration);
+    dependencyProvider[DEPENDENCIES]
+    .forEach((childDependencyDeclaration) => {
+      const childServiceName = _pickMappedNameFromDeclaration(
+        childDependencyDeclaration
+      );
+
+      if(rootServiceName === childServiceName) {
+        throw new YError(
+          ...[E_CIRCULAR_DEPENDENCY, rootServiceName]
+          .concat(declarationsStacks)
+          .concat(childDependencyDeclaration)
+        );
+      }
+
+      this._lookupCircularDependencies(
+        rootServiceName,
+        childDependencyDeclaration,
+        declarationsStacks
+      );
+    });
   }
 
   /**

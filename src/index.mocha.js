@@ -68,28 +68,63 @@ describe('Knifecycle', () => {
       $.service('hash', hashProvider);
     });
 
+    it('should fail with direct circular dependencies', () => {
+      assert.throws(() => {
+        $.provider('hash', $.depends(['hash'], hashProvider));
+      }, (err) => {
+        assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
+        assert.deepEqual(err.params, ['hash']);
+        return true;
+      });
+    });
+
+    it('should fail with direct circular dependencies on mapped services', () => {
+      assert.throws(() => {
+        $.provider('hash', $.depends(['hash:lol'], hashProvider));
+      }, (err) => {
+        assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
+        assert.deepEqual(err.params, ['hash']);
+        return true;
+      });
+    });
+
     it('should fail with circular dependencies', () => {
-      try {
+      assert.throws(() => {
         $.provider('hash', $.depends(['hash3'], hashProvider));
         $.provider('hash1', $.depends(['hash'], hashProvider));
         $.provider('hash2', $.depends(['hash1'], hashProvider));
         $.provider('hash3', $.depends(['hash'], hashProvider));
-      } catch (err) {
+      }, (err) => {
         assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
-        assert.deepEqual(err.params, ['hash', 'hash3']);
-      }
+        assert.deepEqual(err.params, ['hash3', 'hash', 'hash3']);
+        return true;
+      });
+    });
+
+    it('should fail with deeper circular dependencies', () => {
+      assert.throws(() => {
+        $.provider('hash', $.depends(['hash1'], hashProvider));
+        $.provider('hash1', $.depends(['hash2'], hashProvider));
+        $.provider('hash2', $.depends(['hash3'], hashProvider));
+        $.provider('hash3', $.depends(['hash'], hashProvider));
+      }, (err) => {
+        assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
+        assert.deepEqual(err.params, ['hash3', 'hash', 'hash1', 'hash2', 'hash3']);
+        return true;
+      });
     });
 
     it('should fail with circular dependencies on mapped services', () => {
-      try {
+      assert.throws(() => {
         $.provider('aHash', $.depends(['hash3:aHash3'], hashProvider));
         $.provider('aHash1', $.depends(['hash:aHash'], hashProvider));
         $.provider('aHash2', $.depends(['hash1:aHash1'], hashProvider));
         $.provider('aHash3', $.depends(['hash:aHash'], hashProvider));
-      } catch (err) {
+      }, (err) => {
         assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
-        assert.deepEqual(err.params, ['hash', 'hash3']);
-      }
+        assert.deepEqual(err.params, ['aHash3', 'hash:aHash', 'hash3:aHash3']);
+        return true;
+      });
     });
 
   });
