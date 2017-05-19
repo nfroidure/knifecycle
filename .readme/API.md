@@ -8,7 +8,7 @@
 <dt><a href="#constant">constant(constantName, constantValue)</a> ⇒ <code>function</code></dt>
 <dd><p>Register a constant service</p>
 </dd>
-<dt><a href="#service">service(serviceName, service)</a> ⇒ <code>function</code></dt>
+<dt><a href="#service">service(serviceName, service, options)</a> ⇒ <code>function</code></dt>
 <dd><p>Register a service</p>
 </dd>
 <dt><a href="#provider">provider(serviceName, serviceProvider, options)</a> ⇒ <code>Promise</code></dt>
@@ -72,7 +72,7 @@ $.constant('time', Date.now.bind(Date)); // Expose a time() function
 ```
 <a name="service"></a>
 
-## service(serviceName, service) ⇒ <code>function</code>
+## service(serviceName, service, options) ⇒ <code>function</code>
 Register a service
 
 **Kind**: global function  
@@ -82,6 +82,7 @@ Register a service
 | --- | --- | --- |
 | serviceName | <code>String</code> | Service name |
 | service | <code>function</code> \| <code>Promise</code> | The service promise or a function returning it |
+| options | <code>Object</code> | Options for the provider |
 
 **Example**  
 ```js

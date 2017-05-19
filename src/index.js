@@ -76,6 +76,7 @@ export default class Knifecycle {
    * Register a service
    * @param  {String}             serviceName        Service name
    * @param  {Function|Promise}   service            The service promise or a function returning it
+   * @param  {Object}             options            Options for the provider
    * @return {Function}                              The created service provider
    * @example
    *
@@ -102,7 +103,7 @@ export default class Knifecycle {
    *   });
    * });
    */
-  service(serviceName, service) {
+  service(serviceName, service, options) {
     function serviceProvider(hash) {
       return {
         servicePromise: 'function' === typeof service ?
@@ -111,7 +112,7 @@ export default class Knifecycle {
       };
     }
     serviceProvider[DEPENDENCIES] = service[DEPENDENCIES] || [];
-    this.provider(serviceName, serviceProvider);
+    this.provider(serviceName, serviceProvider, options);
     debug('Registered a new service:', serviceName);
     return serviceProvider;
   }

@@ -288,7 +288,7 @@ to let you reuse it through your projects easily.
 <dt><a href="#service">service(serviceName, service)</a> ⇒ <code>function</code></dt>
 <dd><p>Register a service</p>
 </dd>
-<dt><a href="#provider">provider(serviceName, serviceProvider)</a> ⇒ <code>Promise</code></dt>
+<dt><a href="#provider">provider(serviceName, serviceProvider, options)</a> ⇒ <code>Promise</code></dt>
 <dd><p>Register a service provider</p>
 </dd>
 <dt><a href="#depends">depends(dependenciesDeclarations, serviceProvider)</a> ⇒ <code>function</code></dt>
@@ -358,7 +358,7 @@ Register a service
 | Param | Type | Description |
 | --- | --- | --- |
 | serviceName | <code>String</code> | Service name |
-| service | <code>function</code> &#124; <code>Promise</code> | The service promise or a function returning it |
+| service | <code>function</code> \| <code>Promise</code> | The service promise or a function returning it |
 
 **Example**  
 ```js
@@ -387,7 +387,7 @@ $.service('config', function config() {
 ```
 <a name="provider"></a>
 
-## provider(serviceName, serviceProvider) ⇒ <code>Promise</code>
+## provider(serviceName, serviceProvider, options) ⇒ <code>Promise</code>
 Register a service provider
 
 **Kind**: global function  
@@ -397,6 +397,7 @@ Register a service provider
 | --- | --- | --- |
 | serviceName | <code>String</code> | Service name |
 | serviceProvider | <code>function</code> | Service provider or a service provider promise |
+| options | <code>Object</code> | Options for the provider |
 
 **Example**  
 ```js
@@ -562,7 +563,7 @@ Initialize a service dependencies
 | --- | --- | --- | --- |
 | siloContext | <code>Object</code> |  | Current execution silo siloContext |
 | serviceName | <code>String</code> |  | Service name. |
-| servicesDeclarations | <code>String</code> |  | Dependencies names. |
+| servicesDeclarations | <code>String</code> |  | Dependencies declarations. |
 | injectOnly | <code>Boolean</code> | <code>false</code> | Flag indicating if existing services only should be used |
 
 
