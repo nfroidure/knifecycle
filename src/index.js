@@ -12,6 +12,7 @@ const E_CIRCULAR_DEPENDENCY = 'E_CIRCULAR_DEPENDENCY';
 const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
 const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
 const E_BAD_INJECTION = 'E_BAD_INJECTION';
+const E_CONSTANT_INJECTION = 'E_CONSTANT_INJECTION';
 const DECLARATION_SEPARATOR = ':';
 const OPTIONAL_FLAG = '?';
 
@@ -116,6 +117,14 @@ export default class Knifecycle {
    */
   constant(constantName, constantValue) {
     debug('Registered a new constant:', constantName);
+
+    if(
+      constantValue instanceof Function &&
+      constantValue[DEPENDENCIES]
+    ) {
+      throw new YError(E_CONSTANT_INJECTION, constantValue[DEPENDENCIES]);
+    }
+
     return this.provider(constantName, Promise.resolve.bind(Promise, {
       servicePromise: Promise.resolve(constantValue),
       shutdownProvider: Promise.resolve.bind(Promise),
