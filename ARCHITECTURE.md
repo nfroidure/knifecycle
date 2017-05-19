@@ -59,7 +59,7 @@ At the same time, I prefer choosing when instantiating a
 ### Declaring services
 
 The first step to use `knifecycle` is to declare
-   services. The are three kinds of services:
+   services. There are three kinds of services:
   - constants: a constant is a simple value that will
    never change. It can be literal values, objects
    or even functions.
@@ -96,5 +96,5 @@ Once all the services are declared, we need a way to bring
    in only one execution silo or into several ones
    according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L342-L352)
+[See in context](./src/index.js#L359-L369)
 

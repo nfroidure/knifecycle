@@ -78,7 +78,7 @@ export default class Knifecycle {
   /* Architecture Note #1.3: Declaring services
 
   The first step to use `knifecycle` is to declare
-   services. The are three kinds of services:
+   services. There are three kinds of services:
   - constants: a constant is a simple value that will
    never change. It can be literal values, objects
    or even functions.
@@ -208,18 +208,27 @@ export default class Knifecycle {
     uniqueServiceProvider[OPTIONS] = options;
 
     uniqueServiceProvider[DEPENDENCIES].forEach((dependencyDeclaration) => {
-      const serviceName = _pickServiceNameFromDeclaration(dependencyDeclaration);
+      const serviceName = _pickServiceNameFromDeclaration(
+        dependencyDeclaration
+      );
       const dependencyProvider = this._servicesProviders.get(serviceName);
 
       if(
         dependencyProvider &&
         dependencyProvider[DEPENDENCIES]
         .some((childDependencyDeclaration) => {
-          const childServiceName = _pickServiceNameFromDeclaration(childDependencyDeclaration);
+          const childServiceName = _pickServiceNameFromDeclaration(
+            childDependencyDeclaration
+          );
+
           return childServiceName === serviceName;
         })
       ) {
-        throw new YError(E_CIRCULAR_DEPENDENCY, dependencyDeclaration, serviceName);
+        throw new YError(
+          E_CIRCULAR_DEPENDENCY,
+          dependencyDeclaration,
+          serviceName
+        );
       }
     });
 
@@ -267,7 +276,10 @@ export default class Knifecycle {
       []
     ).concat(dependenciesDeclarations);
 
-    debug('Wrapped a service provider with dependencies:', dependenciesDeclarations);
+    debug(
+      'Wrapped a service provider with dependencies:',
+      dependenciesDeclarations
+    );
 
     return uniqueServiceProvider;
   }
@@ -323,17 +335,22 @@ export default class Knifecycle {
     return ['graph TD'].concat(
       links.map(
         ({ serviceName, dependedServiceName }) =>
-        '  ' + (_applyShapes(shapes, serviceName) || serviceName) + '-->' +
-        (_applyShapes(shapes, dependedServiceName) || dependedServiceName)
+        `  ${
+          _applyShapes(shapes, serviceName) ||
+          serviceName
+        }-->${
+          _applyShapes(shapes, dependedServiceName) ||
+          dependedServiceName
+        }`
       )
     )
     .concat(Object.keys(classes).map(
-      className => '  classDef ' + className + ' ' + classes[className]
+      className => `  classDef ${className} ${classes[className]}`
     ))
     .concat(
       Object.keys(classesApplications).map(
         serviceName =>
-        '  class ' + serviceName + ' ' + classesApplications[serviceName] + ';'
+        `  class ${serviceName} ${classesApplications[serviceName]};`
       )
     )
     .join('\n');
@@ -369,7 +386,7 @@ export default class Knifecycle {
    */
   run(dependenciesDeclarations) {
     const siloContext = {
-      name: 'silo-' + Date.now(),
+      name: `silo-${Date.now()}`,
       servicesDescriptors: new Map(),
       servicesSequence: [],
       servicesShutdownsPromises: new Map(),
@@ -391,7 +408,9 @@ export default class Knifecycle {
     // Create a provider for the shutdown special dependency
     siloContext.servicesDescriptors.set(SHUTDOWN, {
       servicePromise: Promise.resolve(() => {
-        const shutdownPromise = _shutdownNextServices(siloContext.servicesSequence);
+        const shutdownPromise = _shutdownNextServices(
+          siloContext.servicesSequence
+        );
 
         debug('Shutting down services');
 
@@ -404,15 +423,18 @@ export default class Knifecycle {
           }
           return Promise.all(
             reversedServiceSequence.pop().map((serviceName) => {
-              const serviceDescriptor = siloContext.servicesDescriptors.get(serviceName);
-              let serviceShutdownPromise = siloContext.servicesShutdownsPromises.get(serviceName);
+              const serviceDescriptor =
+                siloContext.servicesDescriptors.get(serviceName);
+              let serviceShutdownPromise =
+                siloContext.servicesShutdownsPromises.get(serviceName);
 
               if(serviceShutdownPromise) {
                 debug('Reusing a service shutdown promise:', serviceName);
                 return serviceShutdownPromise;
               }
               if(reversedServiceSequence.some(
-                servicesDeclarations => servicesDeclarations.includes(serviceName)
+                servicesDeclarations =>
+                servicesDeclarations.includes(serviceName)
               )) {
                 debug('Delaying service shutdown:', serviceName);
                 return Promise.resolve();
@@ -421,7 +443,10 @@ export default class Knifecycle {
               serviceShutdownPromise = serviceDescriptor.shutdownProvider ?
                 serviceDescriptor.shutdownProvider() :
                 Promise.resolve();
-              siloContext.servicesShutdownsPromises.set(serviceName, serviceShutdownPromise);
+              siloContext.servicesShutdownsPromises.set(
+                serviceName,
+                serviceShutdownPromise
+              );
               return serviceShutdownPromise;
             })
           )
@@ -434,14 +459,24 @@ export default class Knifecycle {
     // Create a provider for the special inject service
     siloContext.servicesDescriptors.set(INJECT, {
       servicePromise: Promise.resolve(dependenciesDeclarations =>
-        this._initializeDependencies(siloContext, siloContext.name, dependenciesDeclarations, true)
+        this._initializeDependencies(
+          siloContext,
+          siloContext.name,
+          dependenciesDeclarations,
+          true
+        )
       ),
     });
 
-    return this._initializeDependencies(siloContext, siloContext.name, dependenciesDeclarations)
+    return this._initializeDependencies(
+      siloContext,
+      siloContext.name,
+      dependenciesDeclarations
+    )
     .then((servicesHash) => {
       debug('Handling fatal errors:', siloContext.errorsPromises);
-      Promise.all(siloContext.errorsPromises).catch(siloContext.throwFatalError);
+      Promise.all(siloContext.errorsPromises)
+      .catch(siloContext.throwFatalError);
       return servicesHash;
     });
   }
@@ -488,8 +523,13 @@ export default class Knifecycle {
 
     if(!serviceProvider) {
       debug('No service provider:', serviceName);
-      serviceDescriptorPromise = Promise.reject(new YError(E_UNMATCHED_DEPENDENCY, serviceName));
-      siloContext.servicesDescriptors.set(serviceName, serviceDescriptorPromise);
+      serviceDescriptorPromise = Promise.reject(
+        new YError(E_UNMATCHED_DEPENDENCY, serviceName)
+      );
+      siloContext.servicesDescriptors.set(
+        serviceName,
+        serviceDescriptorPromise
+      );
       return serviceDescriptorPromise;
     }
 
@@ -521,16 +561,22 @@ export default class Knifecycle {
     .catch((err) => {
       debug('Error initializing a service descriptor:', serviceName, err.stack);
       if(E_UNMATCHED_DEPENDENCY === err.code) {
-        throw YError.wrap.apply(YError, [
+        throw YError.wrap(...[
           err, E_UNMATCHED_DEPENDENCY, serviceName,
         ].concat(err.params));
       }
       throw err;
     });
     if(serviceProvider[OPTIONS].singleton) {
-      this._singletonsServicesDescriptors.set(serviceName, serviceDescriptorPromise);
+      this._singletonsServicesDescriptors.set(
+        serviceName,
+        serviceDescriptorPromise
+      );
     } else {
-      siloContext.servicesDescriptors.set(serviceName, serviceDescriptorPromise);
+      siloContext.servicesDescriptors.set(
+        serviceName,
+        serviceDescriptorPromise
+      );
     }
     return serviceDescriptorPromise;
   }
@@ -543,7 +589,9 @@ export default class Knifecycle {
    * @param  {Boolean}    injectOnly        Flag indicating if existing services only should be used
    * @return {Promise}                      Service dependencies hash promise.
    */
-  _initializeDependencies(siloContext, serviceName, servicesDeclarations, injectOnly = false) {
+  _initializeDependencies(
+    siloContext, serviceName, servicesDeclarations, injectOnly = false
+  ) {
     debug('Initializing dependencies:', serviceName, servicesDeclarations);
     return Promise.resolve()
     .then(
@@ -565,22 +613,39 @@ export default class Knifecycle {
         })
       )
       .then((servicesDescriptors) => {
-        debug('Initialized dependencies descriptors:', serviceName, servicesDeclarations);
-        siloContext.servicesSequence.push(servicesDeclarations.map(_pickMappedNameFromDeclaration));
+        debug(
+          'Initialized dependencies descriptors:',
+          serviceName,
+          servicesDeclarations
+        );
+        siloContext.servicesSequence.push(
+          servicesDeclarations.map(_pickMappedNameFromDeclaration)
+        );
         return Promise.all(servicesDescriptors.map(
           (serviceDescriptor, index) => {
             if(!serviceDescriptor) {
               return {}.undef;
             }
-            if((!serviceDescriptor.servicePromise) || !serviceDescriptor.servicePromise.then) {
-              return Promise.reject(new YError(E_BAD_SERVICE_PROMISE, servicesDeclarations[index]));
+            if(
+              (!serviceDescriptor.servicePromise) ||
+              !serviceDescriptor.servicePromise.then
+            ) {
+              return Promise.reject(
+                new YError(
+                  E_BAD_SERVICE_PROMISE,
+                  servicesDeclarations[index]
+                )
+              );
             }
             return serviceDescriptor.servicePromise.then(service => service);
           }
         ));
       })
       .then(services => services.reduce((hash, service, index) => {
-        const serviceName = _pickServiceNameFromDeclaration(servicesDeclarations[index]);
+        const serviceName = _pickServiceNameFromDeclaration(
+          servicesDeclarations[index]
+        );
+
         hash[serviceName] = service;
         return hash;
       }, {}))
@@ -590,11 +655,15 @@ export default class Knifecycle {
 
 function _pickServiceNameFromDeclaration(dependencyDeclaration) {
   const { serviceName } = _parseDependencyDeclaration(dependencyDeclaration);
+
   return serviceName;
 }
 
 function _pickMappedNameFromDeclaration(dependencyDeclaration) {
-  const { serviceName, mappedName } = _parseDependencyDeclaration(dependencyDeclaration);
+  const {
+    serviceName, mappedName,
+  } = _parseDependencyDeclaration(dependencyDeclaration);
+
   return mappedName || serviceName;
 }
 
@@ -605,6 +674,7 @@ function _parseDependencyDeclaration(dependencyDeclaration) {
     dependencyDeclaration.slice(1) :
     dependencyDeclaration
   ).split(DECLARATION_SEPARATOR);
+
   return {
     serviceName,
     mappedName: mappedName || serviceName,
