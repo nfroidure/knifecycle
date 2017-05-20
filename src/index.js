@@ -467,6 +467,12 @@ export default class Knifecycle {
                 debug('Reusing a service shutdown promise:', serviceName);
                 return serviceShutdownPromise;
               }
+
+              // If there is no service descriptor, it was
+              // a singleton instance
+              if(!serviceDescriptor) {
+                return Promise.resolve();
+              }
               if(reversedServiceSequence.some(
                 servicesDeclarations =>
                 servicesDeclarations.includes(serviceName)

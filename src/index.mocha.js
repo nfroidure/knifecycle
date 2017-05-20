@@ -1,3 +1,5 @@
+/* eslint max-nested-callbacks:0 */
+
 import assert from 'assert';
 import sinon from 'sinon';
 
@@ -647,6 +649,34 @@ describe('Knifecycle', () => {
         ], [
           'hash',
         ]]);
+      })
+      .then(done)
+      .catch(done);
+    });
+
+    it('should not shutdown singleton dependencies if used elsewhere', (done) => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider), {
+        singleton: true,
+      });
+
+      $.run(['time', 'hash'])
+      .then((dependencies) => {
+        const { hash } = dependencies;
+
+        return $.run(['time', 'hash', '$shutdown'])
+        .then((dependencies) => {
+          assert.equal(dependencies.hash, hash);
+          return dependencies.$shutdown()
+          .then(
+            () =>
+            $.run(['time', 'hash'])
+            .then((dependencies) => {
+              assert.equal(dependencies.hash, hash);
+            })
+          );
+        });
       })
       .then(done)
       .catch(done);
