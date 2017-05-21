@@ -57,8 +57,11 @@ export default class Knifecycle {
    * const $ = new Knifecycle();
    */
   constructor() {
+    this._silosCount = 0;
     this._servicesProviders = new Map();
+    this._singletonsServicesHandles = new Map();
     this._singletonsServicesDescriptors = new Map();
+    this._singletonsServicesShutdownsPromises = new Map();
   }
 
   /**
@@ -420,8 +423,9 @@ export default class Knifecycle {
    * })
    */
   run(dependenciesDeclarations) {
+    const _this = this;
     const siloContext = {
-      name: `silo-${Date.now()}`,
+      name: `silo-${Date.now()}-${this._silosCount++}`,
       servicesDescriptors: new Map(),
       servicesSequence: [],
       servicesShutdownsPromises: new Map(),
@@ -458,9 +462,12 @@ export default class Knifecycle {
           }
           return Promise.all(
             reversedServiceSequence.pop().map((serviceName) => {
-              const serviceDescriptor =
+              const singletonServiceDescriptor =
+                _this._singletonsServicesDescriptors.get(serviceName);
+              const serviceDescriptor = singletonServiceDescriptor ||
                 siloContext.servicesDescriptors.get(serviceName);
               let serviceShutdownPromise =
+                _this._singletonsServicesShutdownsPromises.get(serviceName) ||
                 siloContext.servicesShutdownsPromises.get(serviceName);
 
               if(serviceShutdownPromise) {
@@ -468,11 +475,6 @@ export default class Knifecycle {
                 return serviceShutdownPromise;
               }
 
-              // If there is no service descriptor, it was
-              // a singleton instance
-              if(!serviceDescriptor) {
-                return Promise.resolve();
-              }
               if(reversedServiceSequence.some(
                 servicesDeclarations =>
                 servicesDeclarations.includes(serviceName)
@@ -480,10 +482,27 @@ export default class Knifecycle {
                 debug('Delaying service shutdown:', serviceName);
                 return Promise.resolve();
               }
+              if(singletonServiceDescriptor) {
+                const handleSet =
+                  _this._singletonsServicesHandles.get(serviceName);
+
+                handleSet.delete(siloContext.name);
+                if(handleSet.size) {
+                  debug('Singleton is used elsewhere:', serviceName, handleSet);
+                  return Promise.resolve();
+                }
+                _this._singletonsServicesDescriptors.delete(serviceName);
+              }
               debug('Shutting down a service:', serviceName);
               serviceShutdownPromise = serviceDescriptor.shutdownProvider ?
                 serviceDescriptor.shutdownProvider() :
                 Promise.resolve();
+              if(singletonServiceDescriptor) {
+                _this._singletonsServicesShutdownsPromises.set(
+                  serviceName,
+                  serviceShutdownPromise
+                );
+              }
               siloContext.servicesShutdownsPromises.set(
                 serviceName,
                 serviceShutdownPromise
@@ -531,9 +550,16 @@ export default class Knifecycle {
    * @return {Promise}                      Service dependencies hash promise.
    */
   _getServiceDescriptor(siloContext, injectOnly, serviceName) {
-    const serviceDescriptor =
-      this._singletonsServicesDescriptors.get(serviceName) ||
-      siloContext.servicesDescriptors.get(serviceName);
+    let serviceDescriptor =
+      this._singletonsServicesDescriptors.get(serviceName);
+
+    if(serviceDescriptor) {
+      this._singletonsServicesHandles.get(serviceName)
+        .add(siloContext.name);
+    } else {
+      serviceDescriptor =
+        siloContext.servicesDescriptors.get(serviceName);
+    }
 
     if(serviceDescriptor) {
       return Promise.resolve(serviceDescriptor);
@@ -574,11 +600,26 @@ export default class Knifecycle {
       return serviceDescriptorPromise;
     }
 
-    serviceDescriptorPromise = this._initializeDependencies(
+    // A singleton service may use a reserved resource
+    // like a TCP socket. This is why we have to be aware
+    // of singleton services full shutdown before creating
+    // a new one
+    serviceDescriptorPromise = (
+      this._singletonsServicesShutdownsPromises.get(serviceName) ||
+      Promise.resolve()
+    )
+    // Anyway delete any shutdown promise before instanciating
+    // a new service
+    .then(() => {
+      this._singletonsServicesShutdownsPromises.delete(serviceName);
+      siloContext.servicesShutdownsPromises.delete(serviceName);
+    })
+    .then(this._initializeDependencies.bind(
+      this,
       siloContext,
       serviceName,
       serviceProvider[DEPENDENCIES]
-    );
+    ));
 
     serviceDescriptorPromise = serviceDescriptorPromise
     .then((deps) => {
@@ -609,6 +650,9 @@ export default class Knifecycle {
       throw err;
     });
     if(serviceProvider[OPTIONS].singleton) {
+      const handlesSet = new Set();
+      handlesSet.add(siloContext.name);
+      this._singletonsServicesHandles.set(serviceName, handlesSet);
       this._singletonsServicesDescriptors.set(
         serviceName,
         serviceDescriptorPromise

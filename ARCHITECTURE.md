@@ -80,7 +80,7 @@ The first step to use `knifecycle` is to declare
     executions silos using them (we will cover this
     topic later on).
 
-[See in context](./src/index.js#L79-L102)
+[See in context](./src/index.js#L82-L105)
 
 
 
@@ -96,5 +96,5 @@ Once all the services are declared, we need a way to bring
    in only one execution silo or into several ones
    according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L394-L404)
+[See in context](./src/index.js#L397-L407)
 

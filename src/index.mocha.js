@@ -67,7 +67,7 @@ describe('Knifecycle', () => {
   describe('provider', () => {
 
     it('should register provider', () => {
-      $.service('hash', hashProvider);
+      $.provider('hash', hashProvider);
     });
 
     it('should fail with direct circular dependencies', () => {
@@ -149,8 +149,8 @@ describe('Knifecycle', () => {
       $.run([])
       .then((dependencies) => {
         assert.deepEqual(dependencies, {});
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -165,8 +165,8 @@ describe('Knifecycle', () => {
           ENV,
           time,
         });
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -182,8 +182,8 @@ describe('Knifecycle', () => {
         assert.deepEqual(dependencies, {
           sample: 'function',
         });
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -199,8 +199,8 @@ describe('Knifecycle', () => {
           hash: { ENV },
           time,
         });
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -217,8 +217,8 @@ describe('Knifecycle', () => {
           hash: { ENV, DEBUG: {} },
           time,
         });
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -234,8 +234,8 @@ describe('Knifecycle', () => {
           hash: { ENV, DEBUG: {}.undef },
           time,
         });
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -252,8 +252,8 @@ describe('Knifecycle', () => {
       $.run(['hash5', 'time'])
       .then((dependencies) => {
         assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -270,8 +270,8 @@ describe('Knifecycle', () => {
       .then((dependencies) => {
         assert.deepEqual(Object.keys(dependencies), ['hash', 'hash2', 'hash3', 'time']);
         assert.deepEqual(timeServiceStub.args, [[{}]]);
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -288,8 +288,8 @@ describe('Knifecycle', () => {
       .then((dependencies) => {
         assert.deepEqual(Object.keys(dependencies), ['hash2', 'hash3', 'time']);
         assert.deepEqual(timeServiceStub.args, [[{}]]);
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -302,8 +302,8 @@ describe('Knifecycle', () => {
       .catch((err) => {
         assert.deepEqual(err.code, 'E_BAD_SERVICE_PROMISE');
         assert.deepEqual(err.params, ['lol']);
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -316,8 +316,8 @@ describe('Knifecycle', () => {
       .catch((err) => {
         assert.deepEqual(err.code, 'E_BAD_SERVICE_PROVIDER');
         assert.deepEqual(err.params, ['lol']);
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -330,8 +330,8 @@ describe('Knifecycle', () => {
       .catch((err) => {
         assert.deepEqual(err.code, 'E_BAD_SERVICE_PROMISE');
         assert.deepEqual(err.params, ['lol']);
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -343,8 +343,8 @@ describe('Knifecycle', () => {
       .catch((err) => {
         assert.deepEqual(err.code, 'E_UNMATCHED_DEPENDENCY');
         assert.deepEqual(err.params, ['lol']);
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -361,8 +361,8 @@ describe('Knifecycle', () => {
       .catch((err) => {
         assert.deepEqual(err.code, 'E_UNMATCHED_DEPENDENCY');
         assert.deepEqual(err.params, ['hash', 'hash2', 'lol']);
-        done();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -408,8 +408,8 @@ describe('Knifecycle', () => {
         })
         .catch((err) => {
           assert.deepEqual(err.message, 'E_DB_ERROR');
-          done();
         })
+        .then(() => done())
         .catch(done);
         db.reject(new Error('E_DB_ERROR'));
       })
@@ -432,10 +432,9 @@ describe('Knifecycle', () => {
         .then((injectDependencies) => {
           assert.deepEqual(Object.keys(injectDependencies), []);
           assert.deepEqual(injectDependencies, {});
-
-          done();
         });
       })
+      .then(() => done())
       .catch(done);
 
     });
@@ -455,10 +454,9 @@ describe('Knifecycle', () => {
             hash: { ENV },
             time,
           });
-
-          done();
         });
       })
+      .then(() => done())
       .catch(done);
 
     });
@@ -474,9 +472,9 @@ describe('Knifecycle', () => {
         return dependencies.$inject(['time', 'hash'])
         .catch((err) => {
           assert.equal(err.code, 'E_BAD_INJECTION');
-          done();
         });
       })
+      .then(() => done())
       .catch(done);
 
     });
@@ -490,10 +488,9 @@ describe('Knifecycle', () => {
       .then((dependencies) => {
         assert.equal(typeof dependencies.$shutdown, 'function');
 
-        dependencies.$shutdown()
-        .then(done)
-        .catch(done);
+        return dependencies.$shutdown();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -505,10 +502,9 @@ describe('Knifecycle', () => {
       .then((dependencies) => {
         assert.deepEqual(Object.keys(dependencies), ['time', 'ENV', '$shutdown']);
 
-        dependencies.$shutdown()
-        .then(done)
-        .catch(done);
+        return dependencies.$shutdown();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -521,10 +517,9 @@ describe('Knifecycle', () => {
       .then((dependencies) => {
         assert.deepEqual(Object.keys(dependencies), ['time', 'hash', '$shutdown']);
 
-        dependencies.$shutdown()
-        .then(done)
-        .catch(done);
+        return dependencies.$shutdown();
       })
+      .then(() => done())
       .catch(done);
     });
 
@@ -614,7 +609,7 @@ describe('Knifecycle', () => {
 
         return dependencies.$shutdown();
       })
-      .then(done)
+      .then(() => done())
       .catch(done);
     });
 
@@ -650,7 +645,7 @@ describe('Knifecycle', () => {
           'hash',
         ]]);
       })
-      .then(done)
+      .then(() => done())
       .catch(done);
     });
 
@@ -678,7 +673,31 @@ describe('Knifecycle', () => {
           );
         });
       })
-      .then(done)
+      .then(() => done())
+      .catch(done);
+    });
+
+    it('should shutdown singleton dependencies if not used elsewhere', (done) => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider), {
+        singleton: true,
+      });
+
+      $.run(['time', 'hash', '$shutdown'])
+      .then((dependencies) => {
+        const { hash } = dependencies;
+
+        return dependencies.$shutdown()
+        .then(
+          () =>
+          $.run(['time', 'hash'])
+          .then((dependencies) => {
+            assert.notEqual(dependencies.hash, hash);
+          })
+        );
+      })
+      .then(() => done())
       .catch(done);
     });
 
