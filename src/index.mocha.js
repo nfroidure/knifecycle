@@ -476,12 +476,156 @@ describe('Knifecycle', () => {
       })
       .then(() => done())
       .catch(done);
+    });
 
+    it('should create dependencies when not declared as singletons', (done) => {
+      $.constant('ENV', ENV);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+
+      Promise.all([
+        $.run(['hash']),
+        $.run(['hash']),
+      ])
+      .then(([{ hash }, { hash: sameHash }]) => {
+        assert.notEqual(hash, sameHash);
+        return $.run(['hash'])
+        .then(({ hash: yaSameHash }) => {
+          assert.notEqual(hash, yaSameHash);
+        });
+      })
+      .then(() => done())
+      .catch(done);
+    });
+
+    it('should reuse dependencies when declared as singletons', (done) => {
+      $.constant('ENV', ENV);
+      $.provider('hash', $.depends(['ENV'], hashProvider), {
+        singleton: true,
+      });
+
+      Promise.all([
+        $.run(['hash']),
+        $.run(['hash']),
+      ])
+      .then(([{ hash }, { hash: sameHash }]) => {
+        assert.equal(hash, sameHash);
+        return $.run(['hash'])
+        .then(({ hash: yaSameHash }) => {
+          assert.equal(hash, yaSameHash);
+        });
+      })
+      .then(() => done())
+      .catch(done);
     });
 
   });
 
-  describe('shutdown', () => {
+  describe('$shutdownAll', () => {
+
+    it('should work even with one silo and no dependencies', (done) => {
+      $.run(['$shutdownAll'])
+      .then((dependencies) => {
+        assert.equal(typeof dependencies.$shutdownAll, 'function');
+
+        return dependencies.$shutdownAll();
+      })
+      .then(() => done())
+      .catch(done);
+    });
+
+    it('should work with several silos and dependencies', (done) => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider), { singleton: true });
+      $.provider('hash1', $.depends(['ENV'], hashProvider));
+      $.provider('hash2', $.depends(['ENV'], hashProvider));
+
+      Promise.all([
+        $.run(['$shutdownAll']),
+        $.run(['ENV', 'hash', 'hash1', 'time']),
+        $.run(['ENV', 'hash', 'hash2']),
+      ])
+      .then(([dependencies]) => {
+        assert.equal(typeof dependencies.$shutdownAll, 'function');
+
+        return dependencies.$shutdownAll();
+      })
+      .then(() => done())
+      .catch(done);
+    });
+
+    it('should work when trigered from several silos simultaneously', (done) => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+      $.provider('hash1', $.depends(['ENV'], hashProvider));
+      $.provider('hash2', $.depends(['ENV'], hashProvider));
+
+      Promise.all([
+        $.run(['$shutdownAll']),
+        $.run(['$shutdownAll', 'ENV', 'hash', 'hash1', 'time']),
+        $.run(['$shutdownAll', 'ENV', 'hash', 'hash2']),
+      ])
+      .then(
+        dependenciesBuckets =>
+        Promise.all(dependenciesBuckets.map(
+          dependencies => dependencies.$shutdownAll()
+        ))
+      )
+      .then(() => done())
+      .catch(done);
+    });
+
+    it('should work when a silo shutdown is in progress', (done) => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+      $.provider('hash1', $.depends(['ENV'], hashProvider));
+      $.provider('hash2', $.depends(['ENV'], hashProvider));
+
+      Promise.all([
+        $.run(['$shutdownAll']),
+        $.run(['$shutdown', 'ENV', 'hash', 'hash1', 'time']),
+        $.run(['ENV', 'hash', 'hash2']),
+      ])
+      .then(([dependencies1, dependencies2]) =>
+        Promise.all([
+          dependencies2.$shutdown(),
+          dependencies1.$shutdownAll(),
+        ])
+      )
+      .then(() => done())
+      .catch(done);
+    });
+
+    it('should disallow new runs', (done) => {
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', $.depends(['ENV'], hashProvider));
+      $.provider('hash1', $.depends(['ENV'], hashProvider));
+
+      $.run(['$shutdownAll'])
+      .then((dependencies) => {
+        assert.equal(typeof dependencies.$shutdownAll, 'function');
+
+        return dependencies.$shutdownAll();
+      })
+      .then(() => {
+        assert.throws(
+          () => $.run(['ENV', 'hash', 'hash1']),
+          (err) => {
+            assert.equal(err.code, 'E_INSTANCE_SHUTDOWN');
+            return true;
+          }
+        );
+      })
+      .then(() => done())
+      .catch(done);
+    });
+
+  });
+
+  describe('$shutdown', () => {
 
     it('should work with no dependencies', (done) => {
       $.run(['$shutdown'])
@@ -696,46 +840,6 @@ describe('Knifecycle', () => {
             assert.notEqual(dependencies.hash, hash);
           })
         );
-      })
-      .then(() => done())
-      .catch(done);
-    });
-
-    it('should create dependencies when not declared as singletons', (done) => {
-      $.constant('ENV', ENV);
-      $.provider('hash', $.depends(['ENV'], hashProvider));
-
-      Promise.all([
-        $.run(['hash']),
-        $.run(['hash']),
-      ])
-      .then(([{ hash }, { hash: sameHash }]) => {
-        assert.notEqual(hash, sameHash);
-        return $.run(['hash'])
-        .then(({ hash: yaSameHash }) => {
-          assert.notEqual(hash, yaSameHash);
-        });
-      })
-      .then(() => done())
-      .catch(done);
-    });
-
-    it('should reuse dependencies when declared as singletons', (done) => {
-      $.constant('ENV', ENV);
-      $.provider('hash', $.depends(['ENV'], hashProvider), {
-        singleton: true,
-      });
-
-      Promise.all([
-        $.run(['hash']),
-        $.run(['hash']),
-      ])
-      .then(([{ hash }, { hash: sameHash }]) => {
-        assert.equal(hash, sameHash);
-        return $.run(['hash'])
-        .then(({ hash: yaSameHash }) => {
-          assert.equal(hash, yaSameHash);
-        });
       })
       .then(() => done())
       .catch(done);

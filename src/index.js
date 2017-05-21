@@ -5,7 +5,9 @@ import initDebug from 'debug';
 const debug = initDebug('knifecycle');
 
 const SHUTDOWN = '$shutdown';
+const SHUTDOWN_ALL = '$shutdownAll';
 const INJECT = '$inject';
+const SILO_CONTEXT = '$siloContext';
 const FATAL_ERROR = '$fatalError';
 const E_UNMATCHED_DEPENDENCY = 'E_UNMATCHED_DEPENDENCY';
 const E_CIRCULAR_DEPENDENCY = 'E_CIRCULAR_DEPENDENCY';
@@ -57,11 +59,41 @@ export default class Knifecycle {
    * const $ = new Knifecycle();
    */
   constructor() {
-    this._silosCount = 0;
+    this._silosCounter = 0;
+    this._silosContexts = new Set();
     this._servicesProviders = new Map();
     this._singletonsServicesHandles = new Map();
     this._singletonsServicesDescriptors = new Map();
     this._singletonsServicesShutdownsPromises = new Map();
+    this.provider(INJECT, this.depends([SILO_CONTEXT], ({ $siloContext }) => ({
+      servicePromise: Promise.resolve(dependenciesDeclarations =>
+        this._initializeDependencies(
+          $siloContext,
+          $siloContext.name,
+          dependenciesDeclarations,
+          true
+        )
+      ),
+    })));
+    this.provider(SHUTDOWN_ALL, () => ({
+      servicePromise: Promise.resolve(() => {
+        this.shutdownPromise = this.shutdownPromise ||
+        Promise.all(
+          [...this._silosContexts].map(
+            siloContext =>
+            siloContext.servicesDescriptors.get(SHUTDOWN)
+            .servicePromise
+            .then($shutdown => $shutdown())
+          )
+        );
+
+        debug('Shutting down Knifecycle instance.');
+
+        return this.shutdownPromise;
+      }),
+    }), {
+      singleton: true,
+    });
   }
 
   /**
@@ -349,6 +381,7 @@ export default class Knifecycle {
   toMermaidGraph({ shapes = [], styles = [], classes = {} } = {}) {
     const servicesProviders = this._servicesProviders;
     const links = Array.from(servicesProviders.keys())
+    .filter(provider => !provider.startsWith('$'))
     .reduce((links, serviceName) => {
       const serviceProvider = servicesProviders.get(serviceName);
 
@@ -424,13 +457,20 @@ export default class Knifecycle {
    */
   run(dependenciesDeclarations) {
     const _this = this;
+    const internalDependencies = [...new Set(
+      dependenciesDeclarations.concat(SHUTDOWN)
+    )];
     const siloContext = {
-      name: `silo-${Date.now()}-${this._silosCount++}`,
+      name: `silo-${this._silosCounter++}`,
       servicesDescriptors: new Map(),
       servicesSequence: [],
       servicesShutdownsPromises: new Map(),
       errorsPromises: [],
     };
+
+    if(this.shutdownPromise) {
+      throw new YError('E_INSTANCE_SHUTDOWN');
+    }
 
     // Create a provider for the special fatal error service
     siloContext.servicesDescriptors.set(FATAL_ERROR, {
@@ -444,16 +484,24 @@ export default class Knifecycle {
       }),
     });
 
+    // Make the siloContext available for internal injections
+    siloContext.servicesDescriptors.set(SILO_CONTEXT, {
+      servicePromise: Promise.resolve(siloContext),
+    });
     // Create a provider for the shutdown special dependency
     siloContext.servicesDescriptors.set(SHUTDOWN, {
       servicePromise: Promise.resolve(() => {
-        const shutdownPromise = _shutdownNextServices(
-          siloContext.servicesSequence
-        );
+        siloContext.shutdownPromise = siloContext.shutdownPromise ||
+          _shutdownNextServices(
+            siloContext.servicesSequence
+          );
 
         debug('Shutting down services');
 
-        return shutdownPromise;
+        return siloContext.shutdownPromise
+        .then(() => {
+          this._silosContexts.delete(siloContext);
+        });
 
         // Shutdown services in their instanciation order
         function _shutdownNextServices(reversedServiceSequence) {
@@ -516,28 +564,26 @@ export default class Knifecycle {
       shutdownProvider: Promise.resolve.bind(Promise),
     });
 
-    // Create a provider for the special inject service
-    siloContext.servicesDescriptors.set(INJECT, {
-      servicePromise: Promise.resolve(dependenciesDeclarations =>
-        this._initializeDependencies(
-          siloContext,
-          siloContext.name,
-          dependenciesDeclarations,
-          true
-        )
-      ),
-    });
+    this._silosContexts.add(siloContext);
 
     return this._initializeDependencies(
       siloContext,
       siloContext.name,
-      dependenciesDeclarations
+      internalDependencies
     )
     .then((servicesHash) => {
       debug('Handling fatal errors:', siloContext.errorsPromises);
       Promise.all(siloContext.errorsPromises)
       .catch(siloContext.throwFatalError);
-      return servicesHash;
+      return dependenciesDeclarations.reduce(
+        (finalHash, dependencyDeclaration) => {
+          const serviceName =
+            _pickServiceNameFromDeclaration(dependencyDeclaration);
+
+          finalHash[serviceName] = servicesHash[serviceName];
+          return finalHash;
+        }, {}
+      );
     });
   }
 
