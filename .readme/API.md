@@ -82,7 +82,7 @@ Register a service
 | --- | --- | --- |
 | serviceName | <code>String</code> | Service name |
 | service | <code>function</code> \| <code>Promise</code> | The service promise or a function returning it |
-| options | <code>Object</code> | Options for the provider |
+| options | <code>Object</code> | Options passed to the provider method |
 
 **Example**  
 ```js
@@ -122,6 +122,7 @@ Register a service provider
 | serviceName | <code>String</code> | Service name |
 | serviceProvider | <code>function</code> | Service provider or a service provider promise |
 | options | <code>Object</code> | Options for the provider |
+| options.singleton | <code>Object</code> | Define the provider as a singleton                                         (one instance for several runs) |
 
 **Example**  
 ```js

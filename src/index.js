@@ -170,7 +170,7 @@ export default class Knifecycle {
    * Register a service
    * @param  {String}             serviceName        Service name
    * @param  {Function|Promise}   service            The service promise or a function returning it
-   * @param  {Object}             options            Options for the provider
+   * @param  {Object}             options            Options passed to the provider method
    * @return {Function}                              The created service provider
    * @example
    *
@@ -216,6 +216,8 @@ export default class Knifecycle {
    * @param  {String}     serviceName        Service name
    * @param  {Function}   serviceProvider    Service provider or a service provider promise
    * @param  {Object}     options            Options for the provider
+   * @param  {Object}     options.singleton  Define the provider as a singleton
+   *                                         (one instance for several runs)
    * @return {Promise}                       The actual service descriptor promise
    * @example
    *
@@ -798,6 +800,16 @@ function _pickMappedNameFromDeclaration(dependencyDeclaration) {
   return mappedName || serviceName;
 }
 
+/* Architecture Note #1.3.1: Dependencies declaration syntax
+
+The dependencies syntax is of the following form:
+ `?serviceName:mappedName`
+The `?` flag indicates an optionnal dependencies.
+ `:mappedName` is optional and says to the container to
+ inject `serviceName` but to rename it to `mappedName`.
+ It allows to write generic services with fixed
+ dependencies and remap their name at injection time.
+*/
 function _parseDependencyDeclaration(dependencyDeclaration) {
   const optional = dependencyDeclaration.startsWith(OPTIONAL_FLAG);
   const [serviceName, mappedName] = (

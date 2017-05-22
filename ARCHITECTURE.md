@@ -84,6 +84,20 @@ The first step to use `knifecycle` is to declare
 
 
 
+#### Dependencies declaration syntax
+
+The dependencies syntax is of the following form:
+ `?serviceName:mappedName`
+The `?` flag indicates an optionnal dependencies.
+ `:mappedName` is optional and says to the container to
+ inject `serviceName` but to rename it to `mappedName`.
+ It allows to write generic services with fixed
+ dependencies and remap their name at injection time.
+
+[See in context](./src/index.js#L803-L812)
+
+
+
 ### Execution silos
 
 Once all the services are declared, we need a way to bring
@@ -96,5 +110,5 @@ Once all the services are declared, we need a way to bring
    in only one execution silo or into several ones
    according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L430-L440)
+[See in context](./src/index.js#L432-L442)
 

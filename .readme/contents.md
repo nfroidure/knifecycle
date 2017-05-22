@@ -1,39 +1,56 @@
 
 Most (maybe all) applications rely on two kinds of dependencies.
 
-**The code dependencies** are fully covered by require/system modules in a
- testable manner (with `mockery` or `System` directly). There is no need for
- another dependency management system if those libraries are pure functions
- (involve no global states at all).
+**The code dependencies** are fully covered by require/system
+ modules in a testable manner (with `mockery` or `System`
+ directly). There is no need for another dependency management
+ system if those libraries are pure functions (involve no
+ global states at all).
 
-Unfortunately, applications often rely on **global states** where the JavaScript
- module system shows its limits. This is where `knifecycle` enters the game.
+Unfortunately, applications often rely on **global states**
+ where the JavaScript module system shows its limits. This
+ is where `knifecycle` enters the game.
 
-It is largely inspired by the Angular service system except it should not
- provide code but access to global states (time, filesystem, db). It also
- have an important additional feature to shutdown processes which is really
- useful for back-end servers and doesn't exists in Angular.
+It is largely inspired by the Angular service system except
+ it should not provide code but access to global states
+ (time, filesystem, db). It also have an important additional
+ feature to shutdown processes which is really useful for
+ back-end servers and doesn't exists in Angular.
+
+You may want to look at the
+ [architecture notes](./ARCHITECTURE.md) to better handle the
+ reasonning behind `knifecycle` and its implementation.
+
+At this point you may think that a DI system is useless. My
+ advice is that it depends. But at least, you should not
+ make a definitive choice and allow both approaches. See
+ [this Stack Overflow anser](http://stackoverflow.com/questions/9250851/do-i-need-dependency-injection-in-nodejs-or-how-to-deal-with/44084729#44084729)
+ for more context about this statement.
 
 ## Features
-- services management: start services taking their dependencies in count and
- shut them down the same way for graceful exits (namely dependency injection
- with inverted control);
-- easy end to end testing: just replace your services per your own mocks and
- stubs while ensuring your application integrity between testing and production;
+- services management: start services taking their dependencies
+ in count and shut them down the same way for graceful exits
+ (namely dependency injection with inverted control);
+- singleton: maintain singleton services across several running
+ execution silos.
+- easy end to end testing: just replace your services per your
+ own mocks and stubs while ensuring your application integrity
+ between testing and production;
 - isolation: isolate processing in a clean manner, per concerns;
-- functional programming ready: encapsulate global states allowing the rest of
- your application to be purely functional;
-- no circular dependencies for services: while circular dependencies are not a
- problem within purely functional libraries (require allows it), it may be
- harmful for your services, `knifecycle` impeach that while providing an `$inject`
- service à la Angular to allow accessing existing services references if you
- really need to;
+- functional programming ready: encapsulate global states
+ allowing the rest of your application to be purely functional;
+- no circular dependencies for services: while circular
+ dependencies are not a problem within purely functional
+ libraries (require allows it), it may be harmful for your
+ services, `knifecycle` impeach that while providing an
+ `$inject` service à la Angular to allow accessing existing
+ services references if you really need to;
 - generate Mermaid graphs of the dependency tree.
 
 ## Usage
 
-Using Knifecycle is all about declaring the services our application needs.
- Some of them are simple constants:
+Using Knifecycle is all about declaring the services our
+ application needs. Some of them are simple constants:
 ```js
 // services/core.js
 // Core services that are often needed. The constant decorator allows you to
@@ -61,9 +78,8 @@ constant('waitSignal', function waitSignal(signal) {
 constant('exit', process.exit.bind(exit));
 ```
 
-While others are services that may depend on higher level ones. By example a
- logger.
-
+While others are services that are asynchronously built
+ or may depends on other services. By example a logger.
 ```js
 // services/logger.js
 // A log service that depends on the process environment
@@ -73,11 +89,15 @@ import Logger from 'logger';
 // Register a service with the service method.
 // A service function returns a service promise
 service('logger',
-  // Declare the service dependencies with the depends decorator
-  depends(['ENV'],
-    function logService({ ENV }) {
+  // Declare the service dependencies with the depends
+  // decorator. Note that the LOGGER_CONFIG dependency
+  // is optional
+  depends(['?LOGGER_CONFIG', 'ENV'],
+    function logService({ LOGGER_CONFIG, ENV }) {
       let logger = new Logger({
-        logFile: ENV.LOGFILE,
+        logFile: LOGGER_CONFIG && LOGGER_CONFIG.LOGFILE ?
+          LOGGER_CONFIG.LOGFILE :
+          ENV.LOGFILE : ,
       });
 
       logger.log('info', 'Log service initialized!');
@@ -174,7 +194,7 @@ provider('server',
       });
     }).then(function(server) {
       let fatalErrorPromise = new Promise((resolve, reject) {
-        db.once('error', reject);
+        app.once('error', reject);
       });
 
       function shutdownServer() {
@@ -224,11 +244,11 @@ function main({ waitSignal, exit, $shutdown }) {
   .then($shutdown)
   .then(() => {
     // graceful shutdown was successful let's exit in peace
-    process.exit(0);
+    exit(0);
   })
   .catch((err) => {
     console.error('Could not exit gracefully:', err);
-    process.exit(1);
+    exit(1);
   });
 
 }
@@ -236,25 +256,20 @@ function main({ waitSignal, exit, $shutdown }) {
 
 ## Debugging
 
-Simply use the DEBUG env var by setting it to 'knifecycle':
+Simply use the DEBUG environment variable by setting it to
+ 'knifecycle':
 ```sh
 DEBUG=knifecycle npm t
 ```
 
 ## Plans
 
-This library is already used by the microservices i am working on at 7Digital
- but I plan to use it with the
- [Trip Story](https://github.com/nfroidure/TripStory) toy project in order to
- illustrate its usage on an open-source project. I think i will also use it for
- front-end projects too.
-
 The scope of this library won't change. However the plan is:
 - improve performances
-- [allow to declare singleton services](https://github.com/nfroidure/knifecycle/issues/3)
-- evolve with Node. You will never have to transpile this library to use it with Node.
+- evolve with Node. I may not need to transpile this library at
+ some point.
 - `depends`, `constant`, `service`, `provider` may become decorators;
-- track bugs ;)
+- track bugs ;).
 
 I'll also share most of my own services/providers and their stubs/mocks in order
 to let you reuse it through your projects easily.
