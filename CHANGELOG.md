@@ -1,3 +1,23 @@
+<a name="1.4.0"></a>
+# [1.4.0](https://github.com/nfroidure/knifecycle/compare/v1.3.1...v1.4.0) (2017-05-22)
+
+
+### Bug Fixes
+
+* **Providers:** Allow services to have options too ([75bffcf](https://github.com/nfroidure/knifecycle/commit/75bffcf))
+* **Singletons:** Ensure singletons aren't shut down ([1de26d6](https://github.com/nfroidure/knifecycle/commit/1de26d6))
+
+
+### Features
+
+* **Bad usage:** Fail on dependencies declaration for constant ([ab57c18](https://github.com/nfroidure/knifecycle/commit/ab57c18))
+* **Dependencies declarations:** Allow to make some dependencies optional ([0944709](https://github.com/nfroidure/knifecycle/commit/0944709)), closes [#23](https://github.com/nfroidure/knifecycle/issues/23)
+* **Providers:** Allow to declare providers as singletons ([dad9006](https://github.com/nfroidure/knifecycle/commit/dad9006)), closes [#3](https://github.com/nfroidure/knifecycle/issues/3)
+* **Shutdown:** Allow to shutdown all silos ([7af87de](https://github.com/nfroidure/knifecycle/commit/7af87de))
+* **Singletons:** Shutdown singletons when not used per any silo ([f953851](https://github.com/nfroidure/knifecycle/commit/f953851))
+
+
+
 <a name="1.3.1"></a>
 ## [1.3.1](https://github.com/nfroidure/knifecycle/compare/v1.3.0...v1.3.1) (2017-03-14)
 
