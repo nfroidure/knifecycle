@@ -81,7 +81,7 @@ Register a service
 | Param | Type | Description |
 | --- | --- | --- |
 | serviceName | <code>String</code> | Service name |
-| service | <code>function</code> \| <code>Promise</code> | The service promise or a function returning it |
+| service | <code>function</code> | A function returning the service promise |
 | options | <code>Object</code> | Options passed to the provider method |
 
 **Example**  
@@ -103,9 +103,7 @@ $.service('config', function config() {
       } catch (err) {
         return reject(err);
       }
-    resolve({
-      service: config,
-    });
+    resolve(config);
   });
 });
 ```

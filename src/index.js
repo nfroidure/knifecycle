@@ -169,7 +169,7 @@ export default class Knifecycle {
   /**
    * Register a service
    * @param  {String}             serviceName        Service name
-   * @param  {Function|Promise}   service            The service promise or a function returning it
+   * @param  {Function}   service            A function returning the service promise
    * @param  {Object}             options            Options passed to the provider method
    * @return {Function}                              The created service provider
    * @example
@@ -191,19 +191,15 @@ export default class Knifecycle {
    *       } catch (err) {
    *         return reject(err);
    *       }
-   *     resolve({
-   *       service: config,
-   *     });
+   *     resolve(config);
    *   });
    * });
    */
   service(serviceName, service, options) {
-    function serviceProvider(hash) {
-      return {
-        servicePromise: 'function' === typeof service ?
-        service(hash) :
-        service,
-      };
+    function serviceProvider(dependenciesHash) {
+      return Promise.resolve({
+        servicePromise: service(dependenciesHash),
+      });
     }
     serviceProvider[DEPENDENCIES] = service[DEPENDENCIES] || [];
     this.provider(serviceName, serviceProvider, options);

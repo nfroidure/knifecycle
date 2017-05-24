@@ -94,7 +94,7 @@ The `?` flag indicates an optionnal dependencies.
  It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/index.js#L803-L812)
+[See in context](./src/index.js#L799-L808)
 
 
 
@@ -110,5 +110,5 @@ Once all the services are declared, we need a way to bring
    in only one execution silo or into several ones
    according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L432-L442)
+[See in context](./src/index.js#L428-L438)
 
