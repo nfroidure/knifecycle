@@ -43,7 +43,7 @@ At this point you may think that a DI system is useless. My
  dependencies are not a problem within purely functional
  libraries (require allows it), it may be harmful for your
  services, `knifecycle` impeach that while providing an
- `$inject` service à la Angular to allow accessing existing
+ `$injector` service à la Angular to allow accessing existing
  services references if you really need to;
 - generate Mermaid graphs of the dependency tree.
 
@@ -83,7 +83,8 @@ While others are services that are asynchronously built
 ```js
 // services/logger.js
 // A log service that depends on the process environment
-import { depends, service } from 'knifecycle/instance';
+import { depends } from 'knifecycle';
+import { service } from 'knifecycle/instance';
 import Logger from 'logger';
 
 // Register a service with the service method.
@@ -111,7 +112,8 @@ service('logger',
 Let's add a db service too:
 ```js
 // services/db.js
-import { depends, provider, constant } from 'knifecycle/instance';
+import { depends } from 'knifecycle';
+import { provider, constant } from 'knifecycle/instance';
 import MongoClient from 'mongodb';
 
 constant('DB_CONFIG', { uri: 'mongo:xxxxx' });
@@ -163,7 +165,8 @@ provider('db2',
 Adding an Express server
 ```js
 // services/server.js
-import { depends, constant, provider, service } from 'knifecycle/instance';
+import { depends } from 'knifecycle';
+import { constant, provider, service } from 'knifecycle/instance';
 import express from 'express';
 
 // Create an express app
@@ -233,9 +236,9 @@ import * from './services/server';
 
 // At this point, nothing is running. To instanciate services, we have to create
 // an execution silo using them
-// Note that we required the $shutdown service implicitly created by knifecycle
-run(['server', 'waitSignal', 'exit', '$shutdown'])
-function main({ waitSignal, exit, $shutdown }) {
+// Note that we required the $dispose service implicitly created by knifecycle
+run(['server', 'waitSignal', 'exit', '$dispose'])
+function main({ waitSignal, exit, $dispose }) {
   // We want to exit gracefully when a SIG_TERM/INT signal is received
   Promise.any([
     waitSignal('SIGINT'),
@@ -243,7 +246,7 @@ function main({ waitSignal, exit, $shutdown }) {
   ])
   // The shutdown service will disable silos progressively and then the services
   // they rely on to finally resolve the returned promise once done
-  .then($shutdown)
+  .then($dispose)
   .then(() => {
     // graceful shutdown was successful let's exit in peace
     exit(0);

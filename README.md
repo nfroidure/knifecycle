@@ -59,7 +59,7 @@ At this point you may think that a DI system is useless. My
  dependencies are not a problem within purely functional
  libraries (require allows it), it may be harmful for your
  services, `knifecycle` impeach that while providing an
- `$inject` service à la Angular to allow accessing existing
+ `$injector` service à la Angular to allow accessing existing
  services references if you really need to;
 - generate Mermaid graphs of the dependency tree.
 
@@ -99,7 +99,8 @@ While others are services that are asynchronously built
 ```js
 // services/logger.js
 // A log service that depends on the process environment
-import { depends, service } from 'knifecycle/instance';
+import { depends } from 'knifecycle';
+import { service } from 'knifecycle/instance';
 import Logger from 'logger';
 
 // Register a service with the service method.
@@ -127,7 +128,8 @@ service('logger',
 Let's add a db service too:
 ```js
 // services/db.js
-import { depends, provider, constant } from 'knifecycle/instance';
+import { depends } from 'knifecycle';
+import { provider, constant } from 'knifecycle/instance';
 import MongoClient from 'mongodb';
 
 constant('DB_CONFIG', { uri: 'mongo:xxxxx' });
@@ -140,10 +142,12 @@ provider('db',
   )
 );
 
-// A service provider returns a service descriptor promise exposing:
+// A service provider returns a promise of a service descriptor
+// exposing:
 // - a mandatory service property containing the actual service
 // - an optional shutdown function allowing to gracefully close the service
-// - an optional error promise to handle the service failure
+// - an optional error promise to handle the service unrecoverable
+//   failure
 function dbProvider({ DB_CONFIG, logger }) {
   return MongoClient.connect(DB_CONFIG.uri)
   .then(function(db) {
@@ -154,7 +158,7 @@ function dbProvider({ DB_CONFIG, logger }) {
     logger.log('info', 'db service initialized!');
 
     return {
-      servicePromise: db,
+      service: db,
       shutdownProvider: db.close.bind(db, true),
       errorPromise: fatalErrorPromise,
     };
@@ -177,7 +181,8 @@ provider('db2',
 Adding an Express server
 ```js
 // services/server.js
-import { depends, constant, provider, service } from 'knifecycle/instance';
+import { depends } from 'knifecycle';
+import { constant, provider, service } from 'knifecycle/instance';
 import express from 'express';
 
 // Create an express app
@@ -186,7 +191,7 @@ constant('app', express());
 // Setting a route to serve the current timestamp.
 service('routes/time',
   depends('app', 'now', 'logger',
-  function timeRoutesProvider({ app, now, logger }) {
+  function timeRoutesService({ app, now, logger }) {
     return Promise.resolve()
     .then(() => {
       app.get('/time', (req, res, next) => {
@@ -226,7 +231,7 @@ provider('server',
       }
 
       return {
-        servicePromise: Promise.resolve(server),
+        service: server,
         shutdownProvider: shutdownServer,
         errorPromise: fatalErrorPromise,
       };
@@ -247,9 +252,9 @@ import * from './services/server';
 
 // At this point, nothing is running. To instanciate services, we have to create
 // an execution silo using them
-// Note that we required the $shutdown service implicitly created by knifecycle
-run(['server', 'waitSignal', 'exit', '$shutdown'])
-function main({ waitSignal, exit, $shutdown }) {
+// Note that we required the $dispose service implicitly created by knifecycle
+run(['server', 'waitSignal', 'exit', '$dispose'])
+function main({ waitSignal, exit, $dispose }) {
   // We want to exit gracefully when a SIG_TERM/INT signal is received
   Promise.any([
     waitSignal('SIGINT'),
@@ -257,7 +262,7 @@ function main({ waitSignal, exit, $shutdown }) {
   ])
   // The shutdown service will disable silos progressively and then the services
   // they rely on to finally resolve the returned promise once done
-  .then($shutdown)
+  .then($dispose)
   .then(() => {
     // graceful shutdown was successful let's exit in peace
     exit(0);
@@ -297,6 +302,9 @@ to let you reuse it through your projects easily.
 <dt><a href="#getInstance">getInstance()</a> ⇒ <code>Knifecycle</code></dt>
 <dd><p>Returns a Knifecycle instance (always the same)</p>
 </dd>
+<dt><a href="#depends">depends(dependenciesDeclarations, serviceProvider)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator to claim that a service depends on others ones.</p>
+</dd>
 <dt><a href="#constant">constant(constantName, constantValue)</a> ⇒ <code>function</code></dt>
 <dd><p>Register a constant service</p>
 </dd>
@@ -305,9 +313,6 @@ to let you reuse it through your projects easily.
 </dd>
 <dt><a href="#provider">provider(serviceName, serviceProvider, options)</a> ⇒ <code>Promise</code></dt>
 <dd><p>Register a service provider</p>
-</dd>
-<dt><a href="#depends">depends(dependenciesDeclarations, serviceProvider)</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator to claim that a service depends on others ones.</p>
 </dd>
 <dt><a href="#toMermaidGraph">toMermaidGraph(options)</a> ⇒ <code>String</code></dt>
 <dd><p>Outputs a Mermaid compatible dependency graph of the declared services.
@@ -339,6 +344,44 @@ Returns a Knifecycle instance (always the same)
 import Knifecycle from 'knifecycle'
 
 const $ = Knifecycle.getInstance();
+```
+<a name="depends"></a>
+
+## depends(dependenciesDeclarations, serviceProvider) ⇒ <code>function</code>
+Decorator to claim that a service depends on others ones.
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns the decorator function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| dependenciesDeclarations | <code>Array.&lt;String&gt;</code> | Dependencies the decorated service provider depends on. |
+| serviceProvider | <code>function</code> | Service provider initializer |
+
+**Example**  
+```js
+import Knifecycle from 'knifecycle'
+import fs from 'fs';
+
+const { depends } = Knifecycle;
+const $ = new Knifecycle();
+
+$.service('config', depends(['ENV'], function configService({ ENV }) {
+  return new Promise((resolve, reject) {
+    fs.readFile(ENV.CONFIG_FILE, function(err, data) {
+      let config;
+      if(err) {
+        return reject(err);
+      }
+      try {
+        config = JSON.parse(data.toString);
+      } catch (err) {
+        return reject(err);
+      }
+      resolve(config);
+    });
+  });
+}));
 ```
 <a name="constant"></a>
 
@@ -373,7 +416,7 @@ Register a service
 | Param | Type | Description |
 | --- | --- | --- |
 | serviceName | <code>String</code> | Service name |
-| service | <code>function</code> \| <code>Promise</code> | The service promise or a function returning it |
+| service | <code>function</code> | A function returning the service promise |
 | options | <code>Object</code> | Options passed to the provider method |
 
 **Example**  
@@ -395,9 +438,7 @@ $.service('config', function config() {
       } catch (err) {
         return reject(err);
       }
-    resolve({
-      service: config,
-    });
+    resolve(config);
   });
 });
 ```
@@ -412,7 +453,7 @@ Register a service provider
 | Param | Type | Description |
 | --- | --- | --- |
 | serviceName | <code>String</code> | Service name |
-| serviceProvider | <code>function</code> | Service provider or a service provider promise |
+| serviceProvider | <code>function</code> | A function returning a service provider promise |
 | options | <code>Object</code> | Options for the provider |
 | options.singleton | <code>Object</code> | Define the provider as a singleton                                         (one instance for several runs) |
 
@@ -424,49 +465,8 @@ import fs from 'fs';
 const $ = new Knifecycle();
 
 $.provider('config', function configProvider() {
-  return Promise.resolve({
-    servicePromise: new Promise((resolve, reject) {
-      fs.readFile('config.js', function(err, data) {
-        let config;
-        if(err) {
-          return reject(err);
-        }
-        try {
-          config = JSON.parse(data.toString);
-        } catch (err) {
-          return reject(err);
-        }
-        resolve({
-          service: config,
-        });
-      });
-    });
-  });
-});
-```
-<a name="depends"></a>
-
-## depends(dependenciesDeclarations, serviceProvider) ⇒ <code>function</code>
-Decorator to claim that a service depends on others ones.
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns the decorator function  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| dependenciesDeclarations | <code>Array.&lt;String&gt;</code> | Dependencies the decorated service provider depends on. |
-| serviceProvider | <code>function</code> | Service provider or a service provider promise |
-
-**Example**  
-```js
-import Knifecycle from 'knifecycle'
-import fs from 'fs';
-
-const $ = new Knifecycle();
-
-$.service('config', $.depends(['ENV'], function configProvider({ ENV }) {
   return new Promise((resolve, reject) {
-    fs.readFile(ENV.CONFIG_FILE, function(err, data) {
+    fs.readFile('config.js', function(err, data) {
       let config;
       if(err) {
         return reject(err);
@@ -481,7 +481,7 @@ $.service('config', $.depends(['ENV'], function configProvider({ ENV }) {
       });
     });
   });
-}));
+});
 ```
 <a name="toMermaidGraph"></a>
 
@@ -503,11 +503,12 @@ See [Mermaid docs](https://github.com/knsv/mermaid)
 ```js
 import Knifecycle from 'knifecycle'
 
+const { depends } = Knifecycle;
 const $ = new Knifecycle();
 
 $.constant('ENV', process.env);
 $.constant('OS', require('os'));
-$.service('app', $.depends(['ENV', 'OS'], () => Promise.resolve()));
+$.service('app', depends(['ENV', 'OS'], () => Promise.resolve()));
 $.toMermaidGraph();
 
 // returns

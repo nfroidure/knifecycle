@@ -4,24 +4,26 @@ import initDebug from 'debug';
 
 const debug = initDebug('knifecycle');
 
-const SHUTDOWN = '$shutdown';
-const SHUTDOWN_ALL = '$shutdownAll';
-const INJECT = '$inject';
+const DISPOSE = '$dispose';
+const DESTROY = '$destroy';
+const INJECTOR = '$injector';
 const SILO_CONTEXT = '$siloContext';
 const FATAL_ERROR = '$fatalError';
+
 const E_UNMATCHED_DEPENDENCY = 'E_UNMATCHED_DEPENDENCY';
 const E_CIRCULAR_DEPENDENCY = 'E_CIRCULAR_DEPENDENCY';
 const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
 const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
 const E_BAD_INJECTION = 'E_BAD_INJECTION';
 const E_CONSTANT_INJECTION = 'E_CONSTANT_INJECTION';
+
 const DECLARATION_SEPARATOR = ':';
 const OPTIONAL_FLAG = '?';
 
 // Constants that should use Symbol whenever possible
 const INSTANCE = '__instance';
-const DEPENDENCIES = '__dependencies';
-const OPTIONS = '__options';
+const DEPENDENCIES = '$inject';
+const OPTIONS = '$options';
 
 /* Architecture Note #1: Knifecycle
 
@@ -65,7 +67,7 @@ export default class Knifecycle {
     this._singletonsServicesHandles = new Map();
     this._singletonsServicesDescriptors = new Map();
     this._singletonsServicesShutdownsPromises = new Map();
-    this.provider(INJECT, this.depends([SILO_CONTEXT], ({ $siloContext }) => Promise.resolve({
+    this.provider(INJECTOR, Knifecycle.depends([SILO_CONTEXT], ({ $siloContext }) => Promise.resolve({
       service: dependenciesDeclarations =>
         this._initializeDependencies(
           $siloContext,
@@ -74,16 +76,16 @@ export default class Knifecycle {
           true
         ),
     })));
-    this.provider(SHUTDOWN_ALL, () => Promise.resolve(({
+    this.provider(DESTROY, () => Promise.resolve(({
       service: () => {
         this.shutdownPromise = this.shutdownPromise ||
         Promise.all(
           [...this._silosContexts].map(
             (siloContext) => {
-              const $shutdown = siloContext.servicesDescriptors.get(SHUTDOWN)
+              const $dispose = siloContext.servicesDescriptors.get(DISPOSE)
               .service;
 
-              return $shutdown();
+              return $dispose();
             }
           )
         );
@@ -110,6 +112,52 @@ export default class Knifecycle {
     Knifecycle[INSTANCE] = Knifecycle[INSTANCE] || new Knifecycle();
     debug('Spawning an instance.');
     return Knifecycle[INSTANCE];
+  }
+
+  /**
+   * Decorator to claim that a service depends on others ones.
+   * @param  {String[]}  dependenciesDeclarations   Dependencies the decorated service provider depends on.
+   * @param  {Function}  serviceProvider            Service provider initializer
+   * @return {Function}                             Returns the decorator function
+   * @example
+   *
+   * import Knifecycle from 'knifecycle'
+   * import fs from 'fs';
+   *
+   * const { depends } = Knifecycle;
+   * const $ = new Knifecycle();
+   *
+   * $.service('config', depends(['ENV'], function configService({ ENV }) {
+   *   return new Promise((resolve, reject) {
+   *     fs.readFile(ENV.CONFIG_FILE, function(err, data) {
+   *       let config;
+   *       if(err) {
+   *         return reject(err);
+   *       }
+   *       try {
+   *         config = JSON.parse(data.toString);
+   *       } catch (err) {
+   *         return reject(err);
+   *       }
+   *       resolve(config);
+   *     });
+   *   });
+   * }));
+   */
+  static depends(dependenciesDeclarations, serviceProvider) { // eslint-disable-line
+    const uniqueServiceProvider = serviceProvider.bind();
+
+    uniqueServiceProvider[DEPENDENCIES] = (
+      serviceProvider[DEPENDENCIES] ||
+      []
+    ).concat(dependenciesDeclarations);
+
+    debug(
+      'Wrapped a service provider with dependencies:',
+      dependenciesDeclarations
+    );
+
+    return uniqueServiceProvider;
   }
 
   /* Architecture Note #1.3: Declaring services
@@ -310,51 +358,6 @@ export default class Knifecycle {
   }
 
   /**
-   * Decorator to claim that a service depends on others ones.
-   * @param  {String[]}  dependenciesDeclarations   Dependencies the decorated service provider depends on.
-   * @param  {Function}  serviceProvider     Service provider or a service provider promise
-   * @return {Function}                      Returns the decorator function
-   * @example
-   *
-   * import Knifecycle from 'knifecycle'
-   * import fs from 'fs';
-   *
-   * const $ = new Knifecycle();
-   *
-   * $.service('config', $.depends(['ENV'], function configService({ ENV }) {
-   *   return new Promise((resolve, reject) {
-   *     fs.readFile(ENV.CONFIG_FILE, function(err, data) {
-   *       let config;
-   *       if(err) {
-   *         return reject(err);
-   *       }
-   *       try {
-   *         config = JSON.parse(data.toString);
-   *       } catch (err) {
-   *         return reject(err);
-   *       }
-   *       resolve(config);
-   *     });
-   *   });
-   * }));
-   */
-  depends(dependenciesDeclarations, serviceProvider) { // eslint-disable-line
-    const uniqueServiceProvider = serviceProvider.bind();
-
-    uniqueServiceProvider[DEPENDENCIES] = (
-      serviceProvider[DEPENDENCIES] ||
-      []
-    ).concat(dependenciesDeclarations);
-
-    debug(
-      'Wrapped a service provider with dependencies:',
-      dependenciesDeclarations
-    );
-
-    return uniqueServiceProvider;
-  }
-
-  /**
    * Outputs a Mermaid compatible dependency graph of the declared services.
    * See [Mermaid docs](https://github.com/knsv/mermaid)
    * @param {Object} options    Options for generating the graph (destructured)
@@ -366,11 +369,12 @@ export default class Knifecycle {
    *
    * import Knifecycle from 'knifecycle'
    *
+   * const { depends } = Knifecycle;
    * const $ = new Knifecycle();
    *
    * $.constant('ENV', process.env);
    * $.constant('OS', require('os'));
-   * $.service('app', $.depends(['ENV', 'OS'], () => Promise.resolve()));
+   * $.service('app', depends(['ENV', 'OS'], () => Promise.resolve()));
    * $.toMermaidGraph();
    *
    * // returns
@@ -458,7 +462,7 @@ export default class Knifecycle {
   run(dependenciesDeclarations) {
     const _this = this;
     const internalDependencies = [...new Set(
-      dependenciesDeclarations.concat(SHUTDOWN)
+      dependenciesDeclarations.concat(DISPOSE)
     )];
     const siloContext = {
       name: `silo-${this._silosCounter++}`,
@@ -469,7 +473,7 @@ export default class Knifecycle {
     };
 
     if(this.shutdownPromise) {
-      throw new YError('E_INSTANCE_SHUTDOWN');
+      throw new YError('E_INSTANCE_DESTROYED');
     }
 
     // Create a provider for the special fatal error service
@@ -489,7 +493,7 @@ export default class Knifecycle {
       service: siloContext,
     });
     // Create a provider for the shutdown special dependency
-    siloContext.servicesDescriptors.set(SHUTDOWN, {
+    siloContext.servicesDescriptors.set(DISPOSE, {
       service: () => {
         siloContext.shutdownPromise = siloContext.shutdownPromise ||
           _shutdownNextServices(

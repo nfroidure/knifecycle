@@ -5,6 +5,9 @@
 <dt><a href="#getInstance">getInstance()</a> ⇒ <code>Knifecycle</code></dt>
 <dd><p>Returns a Knifecycle instance (always the same)</p>
 </dd>
+<dt><a href="#depends">depends(dependenciesDeclarations, serviceProvider)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator to claim that a service depends on others ones.</p>
+</dd>
 <dt><a href="#constant">constant(constantName, constantValue)</a> ⇒ <code>function</code></dt>
 <dd><p>Register a constant service</p>
 </dd>
@@ -13,9 +16,6 @@
 </dd>
 <dt><a href="#provider">provider(serviceName, serviceProvider, options)</a> ⇒ <code>Promise</code></dt>
 <dd><p>Register a service provider</p>
-</dd>
-<dt><a href="#depends">depends(dependenciesDeclarations, serviceProvider)</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator to claim that a service depends on others ones.</p>
 </dd>
 <dt><a href="#toMermaidGraph">toMermaidGraph(options)</a> ⇒ <code>String</code></dt>
 <dd><p>Outputs a Mermaid compatible dependency graph of the declared services.
@@ -47,6 +47,44 @@ Returns a Knifecycle instance (always the same)
 import Knifecycle from 'knifecycle'
 
 const $ = Knifecycle.getInstance();
+```
+<a name="depends"></a>
+
+## depends(dependenciesDeclarations, serviceProvider) ⇒ <code>function</code>
+Decorator to claim that a service depends on others ones.
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns the decorator function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| dependenciesDeclarations | <code>Array.&lt;String&gt;</code> | Dependencies the decorated service provider depends on. |
+| serviceProvider | <code>function</code> | Service provider initializer |
+
+**Example**  
+```js
+import Knifecycle from 'knifecycle'
+import fs from 'fs';
+
+const { depends } = Knifecycle;
+const $ = new Knifecycle();
+
+$.service('config', depends(['ENV'], function configService({ ENV }) {
+  return new Promise((resolve, reject) {
+    fs.readFile(ENV.CONFIG_FILE, function(err, data) {
+      let config;
+      if(err) {
+        return reject(err);
+      }
+      try {
+        config = JSON.parse(data.toString);
+      } catch (err) {
+        return reject(err);
+      }
+      resolve(config);
+    });
+  });
+}));
 ```
 <a name="constant"></a>
 
@@ -148,43 +186,6 @@ $.provider('config', function configProvider() {
   });
 });
 ```
-<a name="depends"></a>
-
-## depends(dependenciesDeclarations, serviceProvider) ⇒ <code>function</code>
-Decorator to claim that a service depends on others ones.
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns the decorator function  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| dependenciesDeclarations | <code>Array.&lt;String&gt;</code> | Dependencies the decorated service provider depends on. |
-| serviceProvider | <code>function</code> | Service provider or a service provider promise |
-
-**Example**  
-```js
-import Knifecycle from 'knifecycle'
-import fs from 'fs';
-
-const $ = new Knifecycle();
-
-$.service('config', $.depends(['ENV'], function configService({ ENV }) {
-  return new Promise((resolve, reject) {
-    fs.readFile(ENV.CONFIG_FILE, function(err, data) {
-      let config;
-      if(err) {
-        return reject(err);
-      }
-      try {
-        config = JSON.parse(data.toString);
-      } catch (err) {
-        return reject(err);
-      }
-      resolve(config);
-    });
-  });
-}));
-```
 <a name="toMermaidGraph"></a>
 
 ## toMermaidGraph(options) ⇒ <code>String</code>
@@ -205,11 +206,12 @@ See [Mermaid docs](https://github.com/knsv/mermaid)
 ```js
 import Knifecycle from 'knifecycle'
 
+const { depends } = Knifecycle;
 const $ = new Knifecycle();
 
 $.constant('ENV', process.env);
 $.constant('OS', require('os'));
-$.service('app', $.depends(['ENV', 'OS'], () => Promise.resolve()));
+$.service('app', depends(['ENV', 'OS'], () => Promise.resolve()));
 $.toMermaidGraph();
 
 // returns

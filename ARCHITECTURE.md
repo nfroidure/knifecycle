@@ -21,7 +21,7 @@ It is designed to have a low footprint on services code.
  functions or object created synchronously or asynchronously. They
  can be reused elsewhere with no changes at all.
 
-[See in context](./src/index.js#L26-L39)
+[See in context](./src/index.js#L28-L41)
 
 
 
@@ -36,7 +36,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.js#L41-L50)
+[See in context](./src/index.js#L43-L52)
 
 
 
@@ -80,7 +80,7 @@ The first step to use `knifecycle` is to declare
     executions silos using them (we will cover this
     topic later on).
 
-[See in context](./src/index.js#L115-L138)
+[See in context](./src/index.js#L163-L186)
 
 
 
@@ -94,7 +94,7 @@ The `?` flag indicates an optionnal dependencies.
  It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/index.js#L790-L799)
+[See in context](./src/index.js#L794-L803)
 
 
 
@@ -110,5 +110,5 @@ Once all the services are declared, we need a way to bring
    in only one execution silo or into several ones
    according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L430-L440)
+[See in context](./src/index.js#L434-L444)
 
