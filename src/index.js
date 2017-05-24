@@ -65,35 +65,36 @@ export default class Knifecycle {
     this._singletonsServicesHandles = new Map();
     this._singletonsServicesDescriptors = new Map();
     this._singletonsServicesShutdownsPromises = new Map();
-    this.provider(INJECT, this.depends([SILO_CONTEXT], ({ $siloContext }) => ({
-      servicePromise: Promise.resolve(dependenciesDeclarations =>
+    this.provider(INJECT, this.depends([SILO_CONTEXT], ({ $siloContext }) => Promise.resolve({
+      service: dependenciesDeclarations =>
         this._initializeDependencies(
           $siloContext,
           $siloContext.name,
           dependenciesDeclarations,
           true
-        )
-      ),
+        ),
     })));
-    this.provider(SHUTDOWN_ALL, () => ({
-      servicePromise: Promise.resolve(() => {
+    this.provider(SHUTDOWN_ALL, () => Promise.resolve(({
+      service: () => {
         this.shutdownPromise = this.shutdownPromise ||
         Promise.all(
           [...this._silosContexts].map(
-            siloContext =>
-            siloContext.servicesDescriptors.get(SHUTDOWN)
-            .servicePromise
-            .then($shutdown => $shutdown())
+            (siloContext) => {
+              const $shutdown = siloContext.servicesDescriptors.get(SHUTDOWN)
+              .service;
+
+              return $shutdown();
+            }
           )
         );
 
         debug('Shutting down Knifecycle instance.');
 
         return this.shutdownPromise;
-      }),
+      },
     }), {
       singleton: true,
-    });
+    }));
   }
 
   /**
@@ -161,7 +162,7 @@ export default class Knifecycle {
     }
 
     return this.provider(constantName, Promise.resolve.bind(Promise, {
-      servicePromise: Promise.resolve(constantValue),
+      service: constantValue,
       shutdownProvider: Promise.resolve.bind(Promise),
     }), { singleton: true });
   }
@@ -197,9 +198,14 @@ export default class Knifecycle {
    */
   service(serviceName, service, options) {
     function serviceProvider(dependenciesHash) {
-      return Promise.resolve({
-        servicePromise: service(dependenciesHash),
-      });
+      const servicePromise = service(dependenciesHash);
+
+      if((!servicePromise) || !servicePromise.then) {
+        throw new YError(E_BAD_SERVICE_PROMISE, serviceName);
+      }
+      return servicePromise.then(_service_ => Promise.resolve({
+        service: _service_,
+      }));
     }
     serviceProvider[DEPENDENCIES] = service[DEPENDENCIES] || [];
     this.provider(serviceName, serviceProvider, options);
@@ -210,7 +216,7 @@ export default class Knifecycle {
   /**
    * Register a service provider
    * @param  {String}     serviceName        Service name
-   * @param  {Function}   serviceProvider    Service provider or a service provider promise
+   * @param  {Function}   serviceProvider    A function returning a service provider promise
    * @param  {Object}     options            Options for the provider
    * @param  {Object}     options.singleton  Define the provider as a singleton
    *                                         (one instance for several runs)
@@ -223,21 +229,19 @@ export default class Knifecycle {
    * const $ = new Knifecycle();
    *
    * $.provider('config', function configProvider() {
-   *   return Promise.resolve({
-   *     servicePromise: new Promise((resolve, reject) {
-   *       fs.readFile('config.js', function(err, data) {
-   *         let config;
-   *         if(err) {
-   *           return reject(err);
-   *         }
-   *         try {
-   *           config = JSON.parse(data.toString);
-   *         } catch (err) {
-   *           return reject(err);
-   *         }
-   *         resolve({
-   *           service: config,
-   *         });
+   *   return new Promise((resolve, reject) {
+   *     fs.readFile('config.js', function(err, data) {
+   *       let config;
+   *       if(err) {
+   *         return reject(err);
+   *       }
+   *       try {
+   *         config = JSON.parse(data.toString);
+   *       } catch (err) {
+   *         return reject(err);
+   *       }
+   *       resolve({
+   *         service: config,
    *       });
    *     });
    *   });
@@ -317,7 +321,7 @@ export default class Knifecycle {
    *
    * const $ = new Knifecycle();
    *
-   * $.service('config', $.depends(['ENV'], function configProvider({ ENV }) {
+   * $.service('config', $.depends(['ENV'], function configService({ ENV }) {
    *   return new Promise((resolve, reject) {
    *     fs.readFile(ENV.CONFIG_FILE, function(err, data) {
    *       let config;
@@ -329,9 +333,7 @@ export default class Knifecycle {
    *       } catch (err) {
    *         return reject(err);
    *       }
-   *       resolve({
-   *         service: config,
-   *       });
+   *       resolve(config);
    *     });
    *   });
    * }));
@@ -472,23 +474,23 @@ export default class Knifecycle {
 
     // Create a provider for the special fatal error service
     siloContext.servicesDescriptors.set(FATAL_ERROR, {
-      servicePromise: Promise.resolve({
+      service: {
         promise: new Promise((resolve, reject) => {
           siloContext.throwFatalError = (err) => {
             debug('Handled a fatal error', err);
             reject(err);
           };
         }),
-      }),
+      },
     });
 
     // Make the siloContext available for internal injections
     siloContext.servicesDescriptors.set(SILO_CONTEXT, {
-      servicePromise: Promise.resolve(siloContext),
+      service: siloContext,
     });
     // Create a provider for the shutdown special dependency
     siloContext.servicesDescriptors.set(SHUTDOWN, {
-      servicePromise: Promise.resolve(() => {
+      service: () => {
         siloContext.shutdownPromise = siloContext.shutdownPromise ||
           _shutdownNextServices(
             siloContext.servicesSequence
@@ -558,7 +560,7 @@ export default class Knifecycle {
           )
           .then(_shutdownNextServices.bind(null, reversedServiceSequence));
         }
-      }),
+      },
       shutdownProvider: Promise.resolve.bind(Promise),
     });
 
@@ -755,18 +757,7 @@ export default class Knifecycle {
             if(!serviceDescriptor) {
               return {}.undef;
             }
-            if(
-              (!serviceDescriptor.servicePromise) ||
-              !serviceDescriptor.servicePromise.then
-            ) {
-              return Promise.reject(
-                new YError(
-                  E_BAD_SERVICE_PROMISE,
-                  servicesDeclarations[index]
-                )
-              );
-            }
-            return serviceDescriptor.servicePromise.then(service => service);
+            return serviceDescriptor.service;
           }
         ));
       })

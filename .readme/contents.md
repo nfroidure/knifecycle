@@ -124,10 +124,12 @@ provider('db',
   )
 );
 
-// A service provider returns a service descriptor promise exposing:
+// A service provider returns a promise of a service descriptor
+// exposing:
 // - a mandatory service property containing the actual service
 // - an optional shutdown function allowing to gracefully close the service
-// - an optional error promise to handle the service failure
+// - an optional error promise to handle the service unrecoverable
+//   failure
 function dbProvider({ DB_CONFIG, logger }) {
   return MongoClient.connect(DB_CONFIG.uri)
   .then(function(db) {
@@ -138,7 +140,7 @@ function dbProvider({ DB_CONFIG, logger }) {
     logger.log('info', 'db service initialized!');
 
     return {
-      servicePromise: db,
+      service: db,
       shutdownProvider: db.close.bind(db, true),
       errorPromise: fatalErrorPromise,
     };
@@ -170,7 +172,7 @@ constant('app', express());
 // Setting a route to serve the current timestamp.
 service('routes/time',
   depends('app', 'now', 'logger',
-  function timeRoutesProvider({ app, now, logger }) {
+  function timeRoutesService({ app, now, logger }) {
     return Promise.resolve()
     .then(() => {
       app.get('/time', (req, res, next) => {
@@ -210,7 +212,7 @@ provider('server',
       }
 
       return {
-        servicePromise: Promise.resolve(server),
+        service: server,
         shutdownProvider: shutdownServer,
         errorPromise: fatalErrorPromise,
       };

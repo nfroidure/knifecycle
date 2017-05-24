@@ -118,7 +118,7 @@ Register a service provider
 | Param | Type | Description |
 | --- | --- | --- |
 | serviceName | <code>String</code> | Service name |
-| serviceProvider | <code>function</code> | Service provider or a service provider promise |
+| serviceProvider | <code>function</code> | A function returning a service provider promise |
 | options | <code>Object</code> | Options for the provider |
 | options.singleton | <code>Object</code> | Define the provider as a singleton                                         (one instance for several runs) |
 
@@ -130,21 +130,19 @@ import fs from 'fs';
 const $ = new Knifecycle();
 
 $.provider('config', function configProvider() {
-  return Promise.resolve({
-    servicePromise: new Promise((resolve, reject) {
-      fs.readFile('config.js', function(err, data) {
-        let config;
-        if(err) {
-          return reject(err);
-        }
-        try {
-          config = JSON.parse(data.toString);
-        } catch (err) {
-          return reject(err);
-        }
-        resolve({
-          service: config,
-        });
+  return new Promise((resolve, reject) {
+    fs.readFile('config.js', function(err, data) {
+      let config;
+      if(err) {
+        return reject(err);
+      }
+      try {
+        config = JSON.parse(data.toString);
+      } catch (err) {
+        return reject(err);
+      }
+      resolve({
+        service: config,
       });
     });
   });
@@ -170,7 +168,7 @@ import fs from 'fs';
 
 const $ = new Knifecycle();
 
-$.service('config', $.depends(['ENV'], function configProvider({ ENV }) {
+$.service('config', $.depends(['ENV'], function configService({ ENV }) {
   return new Promise((resolve, reject) {
     fs.readFile(ENV.CONFIG_FILE, function(err, data) {
       let config;
@@ -182,9 +180,7 @@ $.service('config', $.depends(['ENV'], function configProvider({ ENV }) {
       } catch (err) {
         return reject(err);
       }
-      resolve({
-        service: config,
-      });
+      resolve(config);
     });
   });
 }));

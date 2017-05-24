@@ -18,7 +18,7 @@ describe('Knifecycle', () => {
 
   function hashProvider(hash) {
     return Promise.resolve({
-      servicePromise: Promise.resolve(hash),
+      service: hash,
     });
   }
 
@@ -297,7 +297,7 @@ describe('Knifecycle', () => {
       $.service('lol', () => {});
       $.run(['lol'])
       .then(() => {
-        done(new Error('E_UNEXPECTED_SUCCESS'));
+        throw new Error('E_UNEXPECTED_SUCCESS');
       })
       .catch((err) => {
         assert.deepEqual(err.code, 'E_BAD_SERVICE_PROMISE');
@@ -311,7 +311,7 @@ describe('Knifecycle', () => {
       $.provider('lol', () => {});
       $.run(['lol'])
       .then(() => {
-        done(new Error('E_UNEXPECTED_SUCCESS'));
+        throw new Error('E_UNEXPECTED_SUCCESS');
       })
       .catch((err) => {
         assert.deepEqual(err.code, 'E_BAD_SERVICE_PROVIDER');
@@ -322,13 +322,13 @@ describe('Knifecycle', () => {
     });
 
     it('should fail with bad service in a provider', (done) => {
-      $.provider('lol', () => Promise.resolve({}));
+      $.provider('lol', () => Promise.resolve());
       $.run(['lol'])
       .then(() => {
-        done(new Error('E_UNEXPECTED_SUCCESS'));
+        throw new Error('E_UNEXPECTED_SUCCESS');
       })
       .catch((err) => {
-        assert.deepEqual(err.code, 'E_BAD_SERVICE_PROMISE');
+        assert.deepEqual(err.code, 'E_BAD_SERVICE_PROVIDER');
         assert.deepEqual(err.params, ['lol']);
       })
       .then(() => done())
@@ -338,7 +338,7 @@ describe('Knifecycle', () => {
     it('should fail with undeclared dependencies', (done) => {
       $.run(['lol'])
       .then(() => {
-        done(new Error('E_UNEXPECTED_SUCCESS'));
+        throw new Error('E_UNEXPECTED_SUCCESS');
       })
       .catch((err) => {
         assert.deepEqual(err.code, 'E_UNMATCHED_DEPENDENCY');
@@ -356,7 +356,7 @@ describe('Knifecycle', () => {
 
       $.run(['time', 'hash'])
       .then(() => {
-        done(new Error('E_UNEXPECTED_SUCCESS'));
+        throw new Error('E_UNEXPECTED_SUCCESS');
       })
       .catch((err) => {
         assert.deepEqual(err.code, 'E_UNMATCHED_DEPENDENCY');
@@ -375,18 +375,18 @@ describe('Knifecycle', () => {
 
       function processProvider({ $fatalError }) {
         return Promise.resolve({
-          servicePromise: Promise.resolve({
+          service: {
             fatalErrorPromise: $fatalError.promise,
-          }),
+          },
         });
       }
 
       function dbProvider({ ENV }) {
         return Promise.resolve()
         .then(() => {
-          let servicePromise;
+          let service;
           const errorPromise = new Promise((resolve, reject) => {
-            servicePromise = Promise.resolve({
+            service = Promise.resolve({
               resolve,
               reject,
               ENV,
@@ -394,7 +394,7 @@ describe('Knifecycle', () => {
           });
 
           return {
-            servicePromise,
+            service,
             errorPromise,
           };
         });
@@ -689,10 +689,10 @@ describe('Knifecycle', () => {
       $.provider('hash4', $.depends(['hash3'], hashProvider));
       $.provider('hash5', $.depends(['hash4'], hashProvider));
       $.provider('shutdownChecker', $.depends(['hash4'], () => Promise.resolve({
-        servicePromise: Promise.resolve({
+        service: {
           shutdownStub,
           shutdownResolve,
-        }),
+        },
         shutdownProvider: shutdownStub,
       })));
 
@@ -730,10 +730,10 @@ describe('Knifecycle', () => {
       $.constant('ENV', ENV);
       $.provider('hash', $.depends(['ENV'], hashProvider));
       $.provider('shutdownChecker', $.depends(['hash'], () => Promise.resolve({
-        servicePromise: Promise.resolve({
+        servicePromise: {
           shutdownStub,
           shutdownResolve,
-        }),
+        },
         shutdownProvider: shutdownStub,
       })));
       $.provider('hash1', $.depends(['shutdownChecker'], hashProvider));
@@ -761,15 +761,15 @@ describe('Knifecycle', () => {
       const servicesShutdownCalls = sinon.spy(() => Promise.resolve());
 
       $.provider('hash', () => Promise.resolve({
-        servicePromise: Promise.resolve({}),
+        servicePromise: {},
         shutdownProvider: servicesShutdownCalls.bind(null, 'hash'),
       }));
       $.provider('hash1', $.depends(['hash'], () => Promise.resolve({
-        servicePromise: Promise.resolve({}),
+        servicePromise: {},
         shutdownProvider: servicesShutdownCalls.bind(null, 'hash1'),
       })));
       $.provider('hash2', $.depends(['hash1', 'hash'], () => Promise.resolve({
-        servicePromise: Promise.resolve({}),
+        servicePromise: {},
         shutdownProvider: servicesShutdownCalls.bind(null, 'hash2'),
       })));
 

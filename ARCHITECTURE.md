@@ -80,7 +80,7 @@ The first step to use `knifecycle` is to declare
     executions silos using them (we will cover this
     topic later on).
 
-[See in context](./src/index.js#L114-L137)
+[See in context](./src/index.js#L115-L138)
 
 
 
@@ -94,7 +94,7 @@ The `?` flag indicates an optionnal dependencies.
  It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/index.js#L799-L808)
+[See in context](./src/index.js#L790-L799)
 
 
 
@@ -110,5 +110,5 @@ Once all the services are declared, we need a way to bring
    in only one execution silo or into several ones
    according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L428-L438)
+[See in context](./src/index.js#L430-L440)
 
