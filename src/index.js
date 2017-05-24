@@ -118,7 +118,7 @@ export default class Knifecycle {
    * Decorator to claim that a service depends on others ones.
    * @param  {String[]}  dependenciesDeclarations   Dependencies the decorated service provider depends on.
    * @param  {Function}  serviceProvider            Service provider initializer
-   * @return {Function}                             Returns the decorator function
+   * @return {Function}                             Returns a new service provider
    * @example
    *
    * import Knifecycle from 'knifecycle'
@@ -155,6 +155,43 @@ export default class Knifecycle {
     debug(
       'Wrapped a service provider with dependencies:',
       dependenciesDeclarations
+    );
+
+    return uniqueServiceProvider;
+  }
+
+  /**
+   * Decorator to amend a service options.
+   * @param  {Object}    options                    Options to set to the service.
+   * @param  {Function}  serviceProvider            Service provider initializer
+   * @return {Function}                             Returns a new service provider
+   * @example
+   *
+   * import Knifecycle from 'knifecycle'
+   * import myService from './service';
+   * import fs from 'fs';
+   *
+   * const { depends, options } = Knifecycle;
+   * const $ = new Knifecycle();
+   *
+   * $.service('config',
+   *   depends(['ENV'],
+   *     options({ singleton: true}, myService)
+   *   )
+   * );
+   */
+  static options(options, serviceProvider) { // eslint-disable-line
+    const uniqueServiceProvider = serviceProvider.bind();
+
+    uniqueServiceProvider[OPTIONS] = Object.assign(
+      {},
+      serviceProvider[OPTIONS] || {},
+      options
+    );
+
+    debug(
+      'Wrapped a service provider with options:',
+      options
     );
 
     return uniqueServiceProvider;
@@ -299,7 +336,7 @@ export default class Knifecycle {
     const uniqueServiceProvider = serviceProvider.bind();
 
     uniqueServiceProvider[DEPENDENCIES] = serviceProvider[DEPENDENCIES] || [];
-    uniqueServiceProvider[OPTIONS] = options;
+    uniqueServiceProvider[OPTIONS] = serviceProvider[OPTIONS] || options;
 
     if(
       uniqueServiceProvider[DEPENDENCIES]

@@ -5,7 +5,7 @@ import sinon from 'sinon';
 
 import Knifecycle from './index';
 
-const { depends } = Knifecycle;
+const { depends, options } = Knifecycle;
 
 describe('Knifecycle', () => {
   let $;
@@ -141,6 +141,14 @@ describe('Knifecycle', () => {
 
     it('should allow to map services dependencies', () => {
       $.service('hash', depends(['ANOTHER_ENV:ENV'], hashProvider));
+    });
+
+  });
+
+  describe('depends', () => {
+
+    it('should allow to decorate service registration with dependencies', () => {
+      $.service('hash', depends(['ENV'], options({ singleton: true }, hashProvider)));
     });
 
   });
@@ -504,13 +512,19 @@ describe('Knifecycle', () => {
       $.provider('hash', depends(['ENV'], hashProvider), {
         singleton: true,
       });
+      $.provider('hash2', depends(['ENV'], options({
+        singleton: true,
+      }, hashProvider)));
 
       Promise.all([
         $.run(['hash']),
         $.run(['hash']),
+        $.run(['hash2']),
+        $.run(['hash2']),
       ])
-      .then(([{ hash }, { hash: sameHash }]) => {
+      .then(([{ hash, hash2 }, { hash: sameHash, hash2: sameHash2 }]) => {
         assert.equal(hash, sameHash);
+        assert.equal(hash2, sameHash2);
         return $.run(['hash'])
         .then(({ hash: yaSameHash }) => {
           assert.equal(hash, yaSameHash);

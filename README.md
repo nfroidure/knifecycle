@@ -128,7 +128,7 @@ service('logger',
 Let's add a db service too:
 ```js
 // services/db.js
-import { depends } from 'knifecycle';
+import { depends, options } from 'knifecycle';
 import { provider, constant } from 'knifecycle/instance';
 import MongoClient from 'mongodb';
 
@@ -138,7 +138,9 @@ constant('DB_CONFIG', { uri: 'mongo:xxxxx' });
 provider('db',
   // Declare the service dependencies with the depends decorator
   depends(['DB_CONFIG', 'logger'],
-    dbProvider
+    options({ singleton: true },
+      dbProvider
+    )
   )
 );
 
@@ -305,6 +307,9 @@ to let you reuse it through your projects easily.
 <dt><a href="#depends">depends(dependenciesDeclarations, serviceProvider)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to claim that a service depends on others ones.</p>
 </dd>
+<dt><a href="#options">options(options, serviceProvider)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator to amend a service options.</p>
+</dd>
 <dt><a href="#constant">constant(constantName, constantValue)</a> ⇒ <code>function</code></dt>
 <dd><p>Register a constant service</p>
 </dd>
@@ -351,7 +356,7 @@ const $ = Knifecycle.getInstance();
 Decorator to claim that a service depends on others ones.
 
 **Kind**: global function  
-**Returns**: <code>function</code> - Returns the decorator function  
+**Returns**: <code>function</code> - Returns a new service provider  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -382,6 +387,34 @@ $.service('config', depends(['ENV'], function configService({ ENV }) {
     });
   });
 }));
+```
+<a name="options"></a>
+
+## options(options, serviceProvider) ⇒ <code>function</code>
+Decorator to amend a service options.
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new service provider  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| options | <code>Object</code> | Options to set to the service. |
+| serviceProvider | <code>function</code> | Service provider initializer |
+
+**Example**  
+```js
+import Knifecycle from 'knifecycle'
+import myService from './service';
+import fs from 'fs';
+
+const { depends, options } = Knifecycle;
+const $ = new Knifecycle();
+
+$.service('config',
+  depends(['ENV'],
+    options({ singleton: true}, myService)
+  )
+);
 ```
 <a name="constant"></a>
 

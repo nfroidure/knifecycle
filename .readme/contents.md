@@ -112,7 +112,7 @@ service('logger',
 Let's add a db service too:
 ```js
 // services/db.js
-import { depends } from 'knifecycle';
+import { depends, options } from 'knifecycle';
 import { provider, constant } from 'knifecycle/instance';
 import MongoClient from 'mongodb';
 
@@ -122,7 +122,9 @@ constant('DB_CONFIG', { uri: 'mongo:xxxxx' });
 provider('db',
   // Declare the service dependencies with the depends decorator
   depends(['DB_CONFIG', 'logger'],
-    dbProvider
+    options({ singleton: true },
+      dbProvider
+    )
   )
 );
 
