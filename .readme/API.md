@@ -435,7 +435,7 @@ Explode a dependency declaration an returns its parts.
 
 **Example**  
 ```js
-parseDependencyDeclaration('pgsql:db');
+parseDependencyDeclaration('pgsql>db');
 // Returns
 {
   serviceName: 'pgsql',

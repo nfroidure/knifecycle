@@ -205,8 +205,10 @@ getInstance()
 // Let's say we need to have another `db`
 // service pointing to another db server.
 .register(
-  // First we remap the injected dependencies
-  inject(['DB2_CONFIG:CONFIG', '?log'],
+  // First we remap the injected dependencies. It will
+  // take the `DB2_CONFIG` service and inject it as
+  // `CONFIG`
+  inject(['DB2_CONFIG>CONFIG', '?log'],
     // Then we override its name
     name('db2', initDB)
   )

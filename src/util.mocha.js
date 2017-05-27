@@ -45,7 +45,7 @@ describe('reuseSpecialProps', () => {
 describe('parseDependencyDeclaration', () => {
   it('should work', () => {
     assert.deepEqual(
-      parseDependencyDeclaration('pgsql:db'), {
+      parseDependencyDeclaration('pgsql>db'), {
         serviceName: 'pgsql',
         mappedName: 'db',
         optional: false,

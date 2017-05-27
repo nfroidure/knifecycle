@@ -90,10 +90,10 @@ The first step to use `knifecycle` is to declare
 #### Dependencies declaration syntax
 
 The dependencies syntax is of the following form:
- `?serviceName:mappedName`
+ `?serviceName>mappedName`
 The `?` flag indicates an optionnal dependencies.
  `:mappedName` is optional and says to the container to
- inject `serviceName` but to rename it to `mappedName`.
+ inject `serviceName` but to inject it as `mappedName`.
  It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 

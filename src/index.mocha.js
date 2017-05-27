@@ -92,7 +92,7 @@ describe('Knifecycle', () => {
 
     it('should fail with direct circular dependencies on mapped services', () => {
       assert.throws(() => {
-        $.provider('hash', inject(['hash:lol'], hashProvider));
+        $.provider('hash', inject(['hash>lol'], hashProvider));
       }, (err) => {
         assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
         assert.deepEqual(err.params, ['hash']);
@@ -128,13 +128,13 @@ describe('Knifecycle', () => {
 
     it('should fail with circular dependencies on mapped services', () => {
       assert.throws(() => {
-        $.provider('aHash', inject(['hash3:aHash3'], hashProvider));
-        $.provider('aHash1', inject(['hash:aHash'], hashProvider));
-        $.provider('aHash2', inject(['hash1:aHash1'], hashProvider));
-        $.provider('aHash3', inject(['hash:aHash'], hashProvider));
+        $.provider('aHash', inject(['hash3>aHash3'], hashProvider));
+        $.provider('aHash1', inject(['hash>aHash'], hashProvider));
+        $.provider('aHash2', inject(['hash1>aHash1'], hashProvider));
+        $.provider('aHash3', inject(['hash>aHash'], hashProvider));
       }, (err) => {
         assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
-        assert.deepEqual(err.params, ['aHash3', 'hash:aHash', 'hash3:aHash3']);
+        assert.deepEqual(err.params, ['aHash3', 'hash>aHash', 'hash3>aHash3']);
         return true;
       });
     });
@@ -153,7 +153,7 @@ describe('Knifecycle', () => {
     });
 
     it('should allow to decorate an initializer with mapped dependencies', () => {
-      const dependencies = ['ANOTHER_ENV:ENV'];
+      const dependencies = ['ANOTHER_ENV>ENV'];
       const newInitializer = inject(dependencies, hashProvider);
 
       assert.notEqual(newInitializer, hashProvider);
@@ -166,7 +166,7 @@ describe('Knifecycle', () => {
   describe('options', () => {
 
     it('should allow to decorate an initializer with options', () => {
-      const dependencies = ['ANOTHER_ENV:ENV'];
+      const dependencies = ['ANOTHER_ENV>ENV'];
       const baseOptions = { singleton: true };
       const newInitializer = inject(
         dependencies,
@@ -185,7 +185,7 @@ describe('Knifecycle', () => {
   describe('name', () => {
 
     it('should allow to decorate an initializer with a name', () => {
-      const dependencies = ['ANOTHER_ENV:ENV'];
+      const dependencies = ['ANOTHER_ENV>ENV'];
       const baseOptions = { singleton: true };
       const baseName = 'hash';
       const newInitializer = inject(
@@ -209,7 +209,7 @@ describe('Knifecycle', () => {
   describe('type', () => {
 
     it('should allow to decorate an initializer with a type', () => {
-      const dependencies = ['ANOTHER_ENV:ENV'];
+      const dependencies = ['ANOTHER_ENV>ENV'];
       const baseOptions = { singleton: true };
       const baseName = 'hash';
       const baseType = 'service';
@@ -238,7 +238,7 @@ describe('Knifecycle', () => {
   describe('initializer', () => {
 
     it('should allow to decorate an initializer with every properties', () => {
-      const dependencies = ['ANOTHER_ENV:ENV'];
+      const dependencies = ['ANOTHER_ENV>ENV'];
       const baseOptions = { singleton: true };
       const baseName = 'hash';
       const baseType = 'service';
@@ -397,11 +397,11 @@ describe('Knifecycle', () => {
 
       $.constant('ENV', ENV);
       $.service('aTime', timeServiceStub);
-      $.provider('aHash', inject(['ENV', 'time:aTime'], hashProvider));
-      $.provider('aHash2', inject(['ENV', 'hash:aHash'], hashProvider));
-      $.provider('aHash3', inject(['ENV', 'hash:aHash'], hashProvider));
+      $.provider('aHash', inject(['ENV', 'time>aTime'], hashProvider));
+      $.provider('aHash2', inject(['ENV', 'hash>aHash'], hashProvider));
+      $.provider('aHash3', inject(['ENV', 'hash>aHash'], hashProvider));
 
-      $.run(['hash2:aHash2', 'hash3:aHash3', 'time:aTime'])
+      $.run(['hash2>aHash2', 'hash3>aHash3', 'time>aTime'])
       .then((dependencies) => {
         assert.deepEqual(Object.keys(dependencies), ['hash2', 'hash3', 'time']);
         assert.deepEqual(timeServiceStub.args, [[{}]]);

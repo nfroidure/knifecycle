@@ -221,8 +221,10 @@ getInstance()
 // Let's say we need to have another `db`
 // service pointing to another db server.
 .register(
-  // First we remap the injected dependencies
-  inject(['DB2_CONFIG:CONFIG', '?log'],
+  // First we remap the injected dependencies. It will
+  // take the `DB2_CONFIG` service and inject it as
+  // `CONFIG`
+  inject(['DB2_CONFIG>CONFIG', '?log'],
     // Then we override its name
     name('db2', initDB)
   )
@@ -354,6 +356,9 @@ I'll also share most of my own initializers and their
 </dd>
 <dt><a href="#initializer">initializer(properties, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to set an initializer properties.</p>
+</dd>
+<dt><a href="#parseDependencyDeclaration">parseDependencyDeclaration(dependencyDeclaration)</a> ⇒ <code>Object</code></dt>
+<dd><p>Explode a dependency declaration an returns its parts.</p>
 </dd>
 </dl>
 
@@ -744,6 +749,28 @@ getInstance()
   inject: ['ENV'],
   options: { singleton: true }
 }, myServiceInitializer));
+```
+<a name="parseDependencyDeclaration"></a>
+
+## parseDependencyDeclaration(dependencyDeclaration) ⇒ <code>Object</code>
+Explode a dependency declaration an returns its parts.
+
+**Kind**: global function  
+**Returns**: <code>Object</code> - The various parts of it  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| dependencyDeclaration | <code>String</code> | A dependency declaration string |
+
+**Example**  
+```js
+parseDependencyDeclaration('pgsql>db');
+// Returns
+{
+  serviceName: 'pgsql',
+  mappedName: 'db',
+  optional: false,
+}
 ```
 
 # License
