@@ -12,6 +12,8 @@ export const SPECIAL_PROPS = {
 };
 export const ALLOWED_SPECIAL_PROPS = Object.keys(SPECIAL_PROPS)
 .map(key => SPECIAL_PROPS[key]);
+export const DECLARATION_SEPARATOR = ':';
+export const OPTIONAL_FLAG = '?';
 
 /**
  * Apply special props to the given function from another one
@@ -251,4 +253,46 @@ export function initializer(properties, initializer) {
   );
 
   return uniqueInitializer;
+}
+
+
+/* Architecture Note #1.3.1: Dependencies declaration syntax
+
+The dependencies syntax is of the following form:
+ `?serviceName:mappedName`
+The `?` flag indicates an optionnal dependencies.
+ `:mappedName` is optional and says to the container to
+ inject `serviceName` but to rename it to `mappedName`.
+ It allows to write generic services with fixed
+ dependencies and remap their name at injection time.
+*/
+
+/**
+ * Explode a dependency declaration an returns its parts.
+ * @param  {String}  dependencyDeclaration
+ * A dependency declaration string
+ * @return {Object}
+ * The various parts of it
+ * @example
+ * parseDependencyDeclaration('pgsql:db');
+ * // Returns
+ * {
+ *   serviceName: 'pgsql',
+ *   mappedName: 'db',
+ *   optional: false,
+ * }
+ */
+export function parseDependencyDeclaration(dependencyDeclaration) {
+  const optional = dependencyDeclaration.startsWith(OPTIONAL_FLAG);
+  const [serviceName, mappedName] = (
+    optional ?
+    dependencyDeclaration.slice(1) :
+    dependencyDeclaration
+  ).split(DECLARATION_SEPARATOR);
+
+  return {
+    serviceName,
+    mappedName: mappedName || serviceName,
+    optional,
+  };
 }

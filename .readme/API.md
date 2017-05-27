@@ -28,6 +28,9 @@
 <dt><a href="#initializer">initializer(properties, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to set an initializer properties.</p>
 </dd>
+<dt><a href="#parseDependencyDeclaration">parseDependencyDeclaration(dependencyDeclaration)</a> ⇒ <code>Object</code></dt>
+<dd><p>Explode a dependency declaration an returns its parts.</p>
+</dd>
 </dl>
 
 <a name="Knifecycle"></a>
@@ -417,4 +420,26 @@ getInstance()
   inject: ['ENV'],
   options: { singleton: true }
 }, myServiceInitializer));
+```
+<a name="parseDependencyDeclaration"></a>
+
+## parseDependencyDeclaration(dependencyDeclaration) ⇒ <code>Object</code>
+Explode a dependency declaration an returns its parts.
+
+**Kind**: global function  
+**Returns**: <code>Object</code> - The various parts of it  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| dependencyDeclaration | <code>String</code> | A dependency declaration string |
+
+**Example**  
+```js
+parseDependencyDeclaration('pgsql:db');
+// Returns
+{
+  serviceName: 'pgsql',
+  mappedName: 'db',
+  optional: false,
+}
 ```

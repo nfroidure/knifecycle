@@ -7,6 +7,7 @@ import {
   inject,
   type,
   options,
+  parseDependencyDeclaration,
 } from './util';
 import YError from 'yerror';
 import initDebug from 'debug';
@@ -26,9 +27,6 @@ const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
 const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
 const E_BAD_INJECTION = 'E_BAD_INJECTION';
 const E_CONSTANT_INJECTION = 'E_CONSTANT_INJECTION';
-
-const DECLARATION_SEPARATOR = ':';
-const OPTIONAL_FLAG = '?';
 
 // Constants that should use Symbol whenever possible
 const INSTANCE = '__instance';
@@ -772,7 +770,7 @@ class Knifecycle {
           const {
             mappedName,
             optional,
-          } = _parseDependencyDeclaration(serviceDeclaration);
+          } = parseDependencyDeclaration(serviceDeclaration);
 
           return this._getServiceDescriptor(siloContext, injectOnly, mappedName)
           .catch((err) => {
@@ -825,7 +823,7 @@ export {
 };
 
 function _pickServiceNameFromDeclaration(dependencyDeclaration) {
-  const { serviceName } = _parseDependencyDeclaration(dependencyDeclaration);
+  const { serviceName } = parseDependencyDeclaration(dependencyDeclaration);
 
   return serviceName;
 }
@@ -833,34 +831,9 @@ function _pickServiceNameFromDeclaration(dependencyDeclaration) {
 function _pickMappedNameFromDeclaration(dependencyDeclaration) {
   const {
     serviceName, mappedName,
-  } = _parseDependencyDeclaration(dependencyDeclaration);
+  } = parseDependencyDeclaration(dependencyDeclaration);
 
   return mappedName || serviceName;
-}
-
-/* Architecture Note #1.3.1: Dependencies declaration syntax
-
-The dependencies syntax is of the following form:
- `?serviceName:mappedName`
-The `?` flag indicates an optionnal dependencies.
- `:mappedName` is optional and says to the container to
- inject `serviceName` but to rename it to `mappedName`.
- It allows to write generic services with fixed
- dependencies and remap their name at injection time.
-*/
-function _parseDependencyDeclaration(dependencyDeclaration) {
-  const optional = dependencyDeclaration.startsWith(OPTIONAL_FLAG);
-  const [serviceName, mappedName] = (
-    optional ?
-    dependencyDeclaration.slice(1) :
-    dependencyDeclaration
-  ).split(DECLARATION_SEPARATOR);
-
-  return {
-    serviceName,
-    mappedName: mappedName || serviceName,
-    optional,
-  };
 }
 
 function _applyShapes(shapes, serviceName) {

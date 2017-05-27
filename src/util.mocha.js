@@ -1,5 +1,8 @@
 import assert from 'assert';
-import { reuseSpecialProps } from './util';
+import {
+  reuseSpecialProps,
+  parseDependencyDeclaration,
+} from './util';
 
 describe('reuseSpecialProps', () => {
   it('should work', () => {
@@ -36,5 +39,16 @@ describe('reuseSpecialProps', () => {
     assert.deepEqual(newFn2.$inject, from.$inject);
     assert.notEqual(newFn2.$options, from.$options);
     assert.deepEqual(newFn2.$options, from.$options);
+  });
+});
+
+describe('parseDependencyDeclaration', () => {
+  it('should work', () => {
+    assert.deepEqual(
+      parseDependencyDeclaration('pgsql:db'), {
+        serviceName: 'pgsql',
+        mappedName: 'db',
+        optional: false,
+      });
   });
 });
