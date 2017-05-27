@@ -1,4 +1,13 @@
 /* eslint max-len: ["warn", { "ignoreComments": true }] */
+import {
+  SPECIAL_PROPS,
+  reuseSpecialProps,
+  initializer,
+  name,
+  inject,
+  type,
+  options,
+} from './util';
 import YError from 'yerror';
 import initDebug from 'debug';
 
@@ -12,6 +21,7 @@ const FATAL_ERROR = '$fatalError';
 
 const E_UNMATCHED_DEPENDENCY = 'E_UNMATCHED_DEPENDENCY';
 const E_CIRCULAR_DEPENDENCY = 'E_CIRCULAR_DEPENDENCY';
+const E_ANONYMOUS_ANALYZER = 'E_ANONYMOUS_ANALYZER';
 const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
 const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
 const E_BAD_INJECTION = 'E_BAD_INJECTION';
@@ -22,8 +32,6 @@ const OPTIONAL_FLAG = '?';
 
 // Constants that should use Symbol whenever possible
 const INSTANCE = '__instance';
-const DEPENDENCIES = '$inject';
-const OPTIONS = '$options';
 
 /* Architecture Note #1: Knifecycle
 
@@ -36,8 +44,9 @@ The `knifecycle` project is intended to be a [dependency
 It is designed to have a low footprint on services code.
  There is nothing worse than having to write specific code for
  a given tool. With `knifecycle`, services can be either constants,
- functions or object created synchronously or asynchronously. They
- can be reused elsewhere with no changes at all.
+ functions or objects created synchronously or asynchronously. They
+ can be reused elsewhere (even when not using DI) with no changes
+ at all.
 */
 
 /* Architecture Note #1.1: OOP
@@ -50,7 +59,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 */
-export default class Knifecycle {
+class Knifecycle {
   /**
    * Create a new Knifecycle instance
    * @return {Knifecycle}     The Knifecycle instance
@@ -67,15 +76,19 @@ export default class Knifecycle {
     this._singletonsServicesHandles = new Map();
     this._singletonsServicesDescriptors = new Map();
     this._singletonsServicesShutdownsPromises = new Map();
-    this.provider(INJECTOR, Knifecycle.depends([SILO_CONTEXT], ({ $siloContext }) => Promise.resolve({
-      service: dependenciesDeclarations =>
-        this._initializeDependencies(
-          $siloContext,
-          $siloContext.name,
-          dependenciesDeclarations,
-          true
-        ),
-    })));
+    this.provider(
+      INJECTOR,
+      inject([SILO_CONTEXT],
+      ({ $siloContext }) => Promise.resolve({
+        service: dependenciesDeclarations =>
+          this._initializeDependencies(
+            $siloContext,
+            $siloContext.name,
+            dependenciesDeclarations,
+            true
+          ),
+      }))
+    );
     this.provider(DESTROY, () => Promise.resolve(({
       service: () => {
         this.shutdownPromise = this.shutdownPromise ||
@@ -101,12 +114,13 @@ export default class Knifecycle {
 
   /**
    * Returns a Knifecycle instance (always the same)
-   * @return {Knifecycle}         The created/saved instance
+   * @return {Knifecycle}
+   * The created/saved instance
    * @example
    *
-   * import Knifecycle from 'knifecycle'
+   * import { getInstance } from 'knifecycle'
    *
-   * const $ = Knifecycle.getInstance();
+   * const $ = getInstance();
    */
   static getInstance() {
     Knifecycle[INSTANCE] = Knifecycle[INSTANCE] || new Knifecycle();
@@ -114,150 +128,92 @@ export default class Knifecycle {
     return Knifecycle[INSTANCE];
   }
 
-  /**
-   * Decorator to claim that a service depends on others ones.
-   * @param  {String[]}  dependenciesDeclarations   Dependencies the decorated service provider depends on.
-   * @param  {Function}  serviceProvider            Service provider initializer
-   * @return {Function}                             Returns a new service provider
-   * @example
-   *
-   * import Knifecycle from 'knifecycle'
-   * import fs from 'fs';
-   *
-   * const { depends } = Knifecycle;
-   * const $ = new Knifecycle();
-   *
-   * $.service('config', depends(['ENV'], function configService({ ENV }) {
-   *   return new Promise((resolve, reject) {
-   *     fs.readFile(ENV.CONFIG_FILE, function(err, data) {
-   *       let config;
-   *       if(err) {
-   *         return reject(err);
-   *       }
-   *       try {
-   *         config = JSON.parse(data.toString);
-   *       } catch (err) {
-   *         return reject(err);
-   *       }
-   *       resolve(config);
-   *     });
-   *   });
-   * }));
-   */
-  static depends(dependenciesDeclarations, serviceProvider) { // eslint-disable-line
-    const uniqueServiceProvider = serviceProvider.bind();
-
-    uniqueServiceProvider[DEPENDENCIES] = (
-      serviceProvider[DEPENDENCIES] ||
-      []
-    ).concat(dependenciesDeclarations);
-
-    debug(
-      'Wrapped a service provider with dependencies:',
-      dependenciesDeclarations
-    );
-
-    return uniqueServiceProvider;
-  }
-
-  /**
-   * Decorator to amend a service options.
-   * @param  {Object}    options                    Options to set to the service.
-   * @param  {Function}  serviceProvider            Service provider initializer
-   * @return {Function}                             Returns a new service provider
-   * @example
-   *
-   * import Knifecycle from 'knifecycle'
-   * import myService from './service';
-   * import fs from 'fs';
-   *
-   * const { depends, options } = Knifecycle;
-   * const $ = new Knifecycle();
-   *
-   * $.service('config',
-   *   depends(['ENV'],
-   *     options({ singleton: true}, myService)
-   *   )
-   * );
-   */
-  static options(options, serviceProvider) { // eslint-disable-line
-    const uniqueServiceProvider = serviceProvider.bind();
-
-    uniqueServiceProvider[OPTIONS] = Object.assign(
-      {},
-      serviceProvider[OPTIONS] || {},
-      options
-    );
-
-    debug(
-      'Wrapped a service provider with options:',
-      options
-    );
-
-    return uniqueServiceProvider;
-  }
-
   /* Architecture Note #1.3: Declaring services
 
   The first step to use `knifecycle` is to declare
-   services. There are three kinds of services:
+   services. There are two way of declaring services:
   - constants: a constant is a simple value that will
    never change. It can be literal values, objects
    or even functions.
-  - services: services are asynchronous functions
-   resolving to objects, functions or complexer
-   objects. Those one just need an initialization
-   phase that must be done asynchronously.
-  - providers: they are very similar to services
-   except they have an additional layer of
-   complexity. Indeed, they have to be hooked
-   to the process life cycle to allow graceful
-   shutdown of the applications build on top of
-   `knifecycle`.
+  - initializers: they are asynchronous functions
+   that handle the initialization phase.
 
-   In addition to this, services and providers can
-    be declared as singletons. This means that they
-    will be instanciated once for all for each
+  Initializers can be of two types:
+  - services: a `service` initializer directly
+   resolve to the actual service it builds. It can
+   be objects, functions or literal values.
+  - providers: they instead resolve to an object that
+   contains the service built into the `service` property
+   but also an optional `dispose` property exposing a
+   method to properly stop the service and a
+   `fatalErrorPromise` that will be rejected if an
+   unrecoverable error happens.
+
+   Initializers can be declared as singletons. This means
+    that they will be instanciated once for all for each
     executions silos using them (we will cover this
     topic later on).
   */
 
   /**
    * Register a constant service
-   * @param  {String} constantName    The name of the service
-   * @param  {any}    constantValue   The constant value
-   * @return {Function}               The created service provider
+   * @param  {String} constantName
+   * The name of the service
+   * @param  {any}    constantValue
+   * The constant value
+   * @return {Knifecycle}
+   * The Knifecycle instance (for chaining)
    * @example
    *
    * import Knifecycle from 'knifecycle'
    *
    * const $ = new Knifecycle();
    *
-   * $.constant('ENV', process.env); // Expose the process env
-   * $.constant('time', Date.now.bind(Date)); // Expose a time() function
+   * // Expose the process env
+   * $.constant('ENV', process.env);
+   * // Expose a time() function
+   * $.constant('time', Date.now.bind(Date));
    */
   constant(constantName, constantValue) {
-    debug('Registered a new constant:', constantName);
-
-    if(
+    const contantLooksLikeAnInitializer =
       constantValue instanceof Function &&
-      constantValue[DEPENDENCIES]
-    ) {
-      throw new YError(E_CONSTANT_INJECTION, constantValue[DEPENDENCIES]);
+      constantValue[SPECIAL_PROPS.INJECT];
+
+    if(contantLooksLikeAnInitializer) {
+      throw new YError(
+        E_CONSTANT_INJECTION,
+        constantValue[SPECIAL_PROPS.INJECT]
+      );
     }
 
-    return this.provider(constantName, Promise.resolve.bind(Promise, {
-      service: constantValue,
-      shutdownProvider: Promise.resolve.bind(Promise),
-    }), { singleton: true });
+    this.register(
+      initializer(
+        {
+          name: constantName,
+          options: { singleton: true },
+        },
+        Promise.resolve.bind(Promise, {
+          service: constantValue,
+          dispose: Promise.resolve.bind(Promise),
+        })
+      )
+    );
+
+    debug('Registered a new constant:', constantName);
+
+    return this;
   }
 
   /**
-   * Register a service
-   * @param  {String}             serviceName        Service name
-   * @param  {Function}   service            A function returning the service promise
-   * @param  {Object}             options            Options passed to the provider method
-   * @return {Function}                              The created service provider
+   * Register a service initializer
+   * @param  {String}     serviceName
+   * Service name
+   * @param  {Function}   initializer
+   * An initializer returning the service promise
+   * @param  {Object}     options
+   * Options attached to the initializer
+   * @return {Knifecycle}
+   * The Knifecycle instance (for chaining)
    * @example
    *
    * import Knifecycle from 'knifecycle'
@@ -265,47 +221,48 @@ export default class Knifecycle {
    *
    * const $ = new Knifecycle();
    *
-   * $.service('config', function config() {
+   * $.service('config', configServiceInitializer, {
+   *   singleton: true,
+   * });
+   *
+   * function configServiceInitializer({ CONFIG_PATH }) {
    *   return new Promise((resolve, reject) {
-   *     fs.readFile('config.js', function(err, data) {
-   *       let config;
+   *     fs.readFile(CONFIG_PATH, function(err, data) {
    *       if(err) {
    *         return reject(err);
    *       }
    *       try {
-   *         config = JSON.parse(data.toString);
+   *         resolve(JSON.parse(data));
    *       } catch (err) {
-   *         return reject(err);
+   *         reject(err);
    *       }
-   *     resolve(config);
-   *   });
-   * });
+   *   }, 'utf-8');
+   * }
    */
-  service(serviceName, service, options) {
-    function serviceProvider(dependenciesHash) {
-      const servicePromise = service(dependenciesHash);
-
-      if((!servicePromise) || !servicePromise.then) {
-        throw new YError(E_BAD_SERVICE_PROMISE, serviceName);
+  service(serviceName, initializer, options) {
+    this.register(reuseSpecialProps(
+      initializer,
+      initializer,
+      {
+        [SPECIAL_PROPS.NAME]: serviceName,
+        [SPECIAL_PROPS.OPTIONS]: options,
+        [SPECIAL_PROPS.TYPE]: 'service',
       }
-      return servicePromise.then(_service_ => Promise.resolve({
-        service: _service_,
-      }));
-    }
-    serviceProvider[DEPENDENCIES] = service[DEPENDENCIES] || [];
-    this.provider(serviceName, serviceProvider, options);
-    debug('Registered a new service:', serviceName);
-    return serviceProvider;
+    ), options);
+    debug('Registered a new service initializer:', serviceName);
+    return this;
   }
 
   /**
-   * Register a service provider
-   * @param  {String}     serviceName        Service name
-   * @param  {Function}   serviceProvider    A function returning a service provider promise
-   * @param  {Object}     options            Options for the provider
-   * @param  {Object}     options.singleton  Define the provider as a singleton
-   *                                         (one instance for several runs)
-   * @return {Promise}                       The actual service descriptor promise
+   * Register a provider initializer
+   * @param  {String}     serviceName
+   * Service name resolved by the provider
+   * @param  {Function}   initializer
+   * An initializer returning the service promise
+   * @param  {Object}     options
+   * Options attached to the initializer
+   * @return {Knifecycle}
+   * The Knifecycle instance (for chaining)
    * @example
    *
    * import Knifecycle from 'knifecycle'
@@ -332,30 +289,71 @@ export default class Knifecycle {
    *   });
    * });
    */
-  provider(serviceName, serviceProvider, options = {}) {
-    const uniqueServiceProvider = serviceProvider.bind();
+  provider(serviceName, initializer, options = {}) {
+    this.register(reuseSpecialProps(
+      initializer,
+      initializer,
+      {
+        [SPECIAL_PROPS.NAME]: serviceName,
+        [SPECIAL_PROPS.OPTIONS]: options,
+      }
+    ));
+    debug('Registered a new service provider:', serviceName);
+    return this;
+  }
 
-    uniqueServiceProvider[DEPENDENCIES] = serviceProvider[DEPENDENCIES] || [];
-    uniqueServiceProvider[OPTIONS] = serviceProvider[OPTIONS] || options;
-
-    if(
-      uniqueServiceProvider[DEPENDENCIES]
-      .map(_pickServiceNameFromDeclaration)
-      .includes(serviceName)
-    ) {
-      throw new YError(E_CIRCULAR_DEPENDENCY, serviceName);
+  register(initializer) {
+    initializer[SPECIAL_PROPS.INJECT] =
+      initializer[SPECIAL_PROPS.INJECT] || [];
+    initializer[SPECIAL_PROPS.OPTIONS] =
+      initializer[SPECIAL_PROPS.OPTIONS] || {};
+    initializer[SPECIAL_PROPS.TYPE] =
+      initializer[SPECIAL_PROPS.TYPE] || 'provider';
+    if(!initializer[SPECIAL_PROPS.NAME]) {
+      throw new YError(
+        E_ANONYMOUS_ANALYZER,
+        initializer[SPECIAL_PROPS.NAME]
+      );
     }
 
-    uniqueServiceProvider[DEPENDENCIES].forEach((dependencyDeclaration) => {
+    if('service' === initializer[SPECIAL_PROPS.TYPE]) {
+      initializer = reuseSpecialProps(
+        initializer,
+        serviceAdapter.bind(
+          null,
+          initializer[SPECIAL_PROPS.NAME],
+          initializer
+        )
+      );
+      initializer[SPECIAL_PROPS.TYPE] = 'provider';
+    }
+
+    const initializerDependsOfItself =
+      initializer[SPECIAL_PROPS.INJECT]
+      .map(_pickServiceNameFromDeclaration)
+      .includes(initializer[SPECIAL_PROPS.NAME]);
+
+    if(initializerDependsOfItself) {
+      throw new YError(
+        E_CIRCULAR_DEPENDENCY,
+        initializer[SPECIAL_PROPS.NAME]
+      );
+    }
+
+    initializer[SPECIAL_PROPS.INJECT]
+    .forEach((dependencyDeclaration) => {
       this._lookupCircularDependencies(
-        serviceName,
+        initializer[SPECIAL_PROPS.NAME],
         dependencyDeclaration
       );
     });
 
-    this._servicesProviders.set(serviceName, uniqueServiceProvider);
-    debug('Registered a new service provider:', serviceName);
-    return uniqueServiceProvider;
+    this._servicesProviders.set(
+      initializer[SPECIAL_PROPS.NAME],
+      initializer
+    );
+    debug('Registered a new initializer:', initializer[SPECIAL_PROPS.NAME]);
+    return this;
   }
 
   _lookupCircularDependencies(
@@ -372,7 +370,7 @@ export default class Knifecycle {
       return;
     }
     declarationsStacks = declarationsStacks.concat(dependencyDeclaration);
-    dependencyProvider[DEPENDENCIES]
+    dependencyProvider[SPECIAL_PROPS.INJECT]
     .forEach((childDependencyDeclaration) => {
       const childServiceName = _pickMappedNameFromDeclaration(
         childDependencyDeclaration
@@ -404,14 +402,14 @@ export default class Knifecycle {
    * @return {String}   Returns a string containing the Mermaid dependency graph
    * @example
    *
-   * import Knifecycle from 'knifecycle'
+   * import { Knifecycle, inject } from 'knifecycle';
+   * import appInitializer from './app';
    *
-   * const { depends } = Knifecycle;
    * const $ = new Knifecycle();
    *
    * $.constant('ENV', process.env);
    * $.constant('OS', require('os'));
-   * $.service('app', depends(['ENV', 'OS'], () => Promise.resolve()));
+   * $.service('app', inject(['ENV', 'OS'], appInitializer));
    * $.toMermaidGraph();
    *
    * // returns
@@ -426,10 +424,10 @@ export default class Knifecycle {
     .reduce((links, serviceName) => {
       const serviceProvider = servicesProviders.get(serviceName);
 
-      if(!serviceProvider[DEPENDENCIES].length) {
+      if(!serviceProvider[SPECIAL_PROPS.INJECT].length) {
         return links;
       }
-      return links.concat(serviceProvider[DEPENDENCIES]
+      return links.concat(serviceProvider[SPECIAL_PROPS.INJECT]
       .map((dependencyDeclaration) => {
         const dependedServiceName = _pickServiceNameFromDeclaration(
           dependencyDeclaration
@@ -583,8 +581,8 @@ export default class Knifecycle {
                 _this._singletonsServicesDescriptors.delete(serviceName);
               }
               debug('Shutting down a service:', serviceName);
-              serviceShutdownPromise = serviceDescriptor.shutdownProvider ?
-                serviceDescriptor.shutdownProvider() :
+              serviceShutdownPromise = serviceDescriptor.dispose ?
+                serviceDescriptor.dispose() :
                 Promise.resolve();
               if(singletonServiceDescriptor) {
                 _this._singletonsServicesShutdownsPromises.set(
@@ -602,7 +600,7 @@ export default class Knifecycle {
           .then(_shutdownNextServices.bind(null, reversedServiceSequence));
         }
       },
-      shutdownProvider: Promise.resolve.bind(Promise),
+      dispose: Promise.resolve.bind(Promise),
     });
 
     this._silosContexts.add(siloContext);
@@ -705,7 +703,7 @@ export default class Knifecycle {
       this,
       siloContext,
       serviceName,
-      serviceProvider[DEPENDENCIES]
+      serviceProvider[SPECIAL_PROPS.INJECT]
     ));
 
     serviceDescriptorPromise = serviceDescriptorPromise
@@ -720,9 +718,9 @@ export default class Knifecycle {
         return Promise.reject(new YError(E_BAD_SERVICE_PROVIDER, serviceName));
       }
       debug('Successfully initialized a service descriptor:', serviceName);
-      if(serviceDescriptor.errorPromise) {
+      if(serviceDescriptor.fatalErrorPromise) {
         debug('Registering service descriptor error promise:', serviceName);
-        siloContext.errorsPromises.push(serviceDescriptor.errorPromise);
+        siloContext.errorsPromises.push(serviceDescriptor.fatalErrorPromise);
       }
       siloContext.servicesDescriptors.set(serviceName, serviceDescriptor);
       return serviceDescriptor;
@@ -736,8 +734,9 @@ export default class Knifecycle {
       }
       throw err;
     });
-    if(serviceProvider[OPTIONS].singleton) {
+    if(serviceProvider[SPECIAL_PROPS.OPTIONS].singleton) {
       const handlesSet = new Set();
+
       handlesSet.add(siloContext.name);
       this._singletonsServicesHandles.set(serviceName, handlesSet);
       this._singletonsServicesDescriptors.set(
@@ -813,6 +812,17 @@ export default class Knifecycle {
     );
   }
 }
+
+export default Knifecycle;
+export const getInstance = Knifecycle.getInstance;
+export {
+  Knifecycle,
+  initializer,
+  name,
+  inject,
+  type,
+  options,
+};
 
 function _pickServiceNameFromDeclaration(dependencyDeclaration) {
   const { serviceName } = _parseDependencyDeclaration(dependencyDeclaration);
@@ -901,4 +911,15 @@ function _applyStyles(classes, styles, { serviceName, dependedServiceName }) {
     }
     return classesApplications;
   }, {});
+}
+
+function serviceAdapter(serviceName, initializer, dependenciesHash) {
+  const servicePromise = initializer(dependenciesHash);
+
+  if((!servicePromise) || !servicePromise.then) {
+    throw new YError(E_BAD_SERVICE_PROMISE, serviceName);
+  }
+  return servicePromise.then(_service_ => Promise.resolve({
+    service: _service_,
+  }));
 }

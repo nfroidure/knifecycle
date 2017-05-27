@@ -18,10 +18,11 @@ The `knifecycle` project is intended to be a [dependency
 It is designed to have a low footprint on services code.
  There is nothing worse than having to write specific code for
  a given tool. With `knifecycle`, services can be either constants,
- functions or object created synchronously or asynchronously. They
- can be reused elsewhere with no changes at all.
+ functions or objects created synchronously or asynchronously. They
+ can be reused elsewhere (even when not using DI) with no changes
+ at all.
 
-[See in context](./src/index.js#L28-L41)
+[See in context](./src/index.js#L36-L50)
 
 
 
@@ -36,7 +37,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.js#L43-L52)
+[See in context](./src/index.js#L52-L61)
 
 
 
@@ -59,28 +60,30 @@ At the same time, I prefer choosing when instantiating a
 ### Declaring services
 
 The first step to use `knifecycle` is to declare
-   services. There are three kinds of services:
+   services. There are two way of declaring services:
   - constants: a constant is a simple value that will
    never change. It can be literal values, objects
    or even functions.
-  - services: services are asynchronous functions
-   resolving to objects, functions or complexer
-   objects. Those one just need an initialization
-   phase that must be done asynchronously.
-  - providers: they are very similar to services
-   except they have an additional layer of
-   complexity. Indeed, they have to be hooked
-   to the process life cycle to allow graceful
-   shutdown of the applications build on top of
-   `knifecycle`.
+  - initializers: they are asynchronous functions
+   that handle the initialization phase.
 
-   In addition to this, services and providers can
-    be declared as singletons. This means that they
-    will be instanciated once for all for each
+  Initializers can be of two types:
+  - services: a `service` initializer directly
+   resolve to the actual service it builds. It can
+   be objects, functions or literal values.
+  - providers: they instead resolve to an object that
+   contains the service built into the `service` property
+   but also an optional `dispose` property exposing a
+   method to properly stop the service and a
+   `fatalErrorPromise` that will be rejected if an
+   unrecoverable error happens.
+
+   Initializers can be declared as singletons. This means
+    that they will be instanciated once for all for each
     executions silos using them (we will cover this
     topic later on).
 
-[See in context](./src/index.js#L200-L223)
+[See in context](./src/index.js#L131-L156)
 
 
 
@@ -94,7 +97,7 @@ The `?` flag indicates an optionnal dependencies.
  It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/index.js#L831-L840)
+[See in context](./src/index.js#L841-L850)
 
 
 
@@ -110,5 +113,5 @@ Once all the services are declared, we need a way to bring
    in only one execution silo or into several ones
    according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L471-L481)
+[See in context](./src/index.js#L469-L479)
 

@@ -10,8 +10,7 @@ At the same time, I prefer choosing when instantiating a
  of the developers by instead providing an opt-in interface
  to this singleton.
 */
-import Knifecycle from './index';
+import { getInstance } from './index';
 
-const $ = Knifecycle.getInstance();
-
+export const $ = getInstance();
 export default $;
