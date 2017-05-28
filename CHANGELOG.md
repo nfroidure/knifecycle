@@ -1,3 +1,31 @@
+<a name="2.0.0"></a>
+# [2.0.0](https://github.com/nfroidure/knifecycle/compare/v1.4.0...v2.0.0) (2017-05-28)
+
+
+### Code Refactoring
+
+* **Decorators:** Isolated decorators code ([a776ab8](https://github.com/nfroidure/knifecycle/commit/a776ab8)), closes [#28](https://github.com/nfroidure/knifecycle/issues/28) [#32](https://github.com/nfroidure/knifecycle/issues/32)
+* **Dependencies:** Change depends to be a Knifecycle static property ([a35f5ca](https://github.com/nfroidure/knifecycle/commit/a35f5ca)), closes [#24](https://github.com/nfroidure/knifecycle/issues/24)
+* **Dependencies declarations:** Change the dependencies mapping symbol fron `:` to `>`. ([9744aeb](https://github.com/nfroidure/knifecycle/commit/9744aeb)), closes [#26](https://github.com/nfroidure/knifecycle/issues/26)
+* **Providers:** Simplify the service providers signature ([7f5fef3](https://github.com/nfroidure/knifecycle/commit/7f5fef3)), closes [#30](https://github.com/nfroidure/knifecycle/issues/30)
+* **Services:** Do not support services as a promise anymore ([af31c0d](https://github.com/nfroidure/knifecycle/commit/af31c0d))
+
+
+### Features
+
+* **Options:** Add a decorator to specify service provider options ([867f427](https://github.com/nfroidure/knifecycle/commit/867f427))
+
+
+### BREAKING CHANGES
+
+* Dependencies declarations: Break 1.0 mappings
+* Decorators: Every 1.0 code will break since the `index.js` exports were broken.
+* Dependencies: Will break almost every 1.0 things
+* Providers: Almost every providers written before will not work anymore
+* Services: It is not possible to use a promise while declaring a service.
+
+
+
 <a name="1.4.0"></a>
 # [1.4.0](https://github.com/nfroidure/knifecycle/compare/v1.3.1...v1.4.0) (2017-05-22)
 
