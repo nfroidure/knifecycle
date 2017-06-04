@@ -1,6 +1,8 @@
 import assert from 'assert';
+import sinon from 'sinon';
 import {
   reuseSpecialProps,
+  wrapInitializer,
   parseDependencyDeclaration,
 } from './util';
 
@@ -39,6 +41,36 @@ describe('reuseSpecialProps', () => {
     assert.deepEqual(newFn2.$inject, from.$inject);
     assert.notEqual(newFn2.$options, from.$options);
     assert.deepEqual(newFn2.$options, from.$options);
+  });
+});
+
+describe('wrapInitializer', (done) => {
+  it('should work', () => {
+    function baseInitializer() {
+      return Promise.resolve(() => 'test');
+    }
+
+    baseInitializer.$name = 'baseInitializer';
+    baseInitializer.$type = 'service';
+    baseInitializer.$inject = ['log'];
+    baseInitializer.$options = { singleton: false };
+
+    const log = sinon.stub();
+    const newInitializer = wrapInitializer(
+      ({ log }, service) => {
+        log('Wrapping...');
+        return () => service() + '-wrapped';
+      },
+      baseInitializer
+    );
+
+    newInitializer({ log })
+    .then((service) => {
+      assert.equal(service(), 'test-wrapped');
+      assert.deepEqual(log.args, [['Wrapping...']]);
+    })
+    .then(done)
+    .catch(done);
   });
 });
 

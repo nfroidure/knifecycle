@@ -60,28 +60,28 @@ At the same time, I prefer choosing when instantiating a
 ### Declaring services
 
 The first step to use `knifecycle` is to declare
-   services. There are two way of declaring services:
-  - constants: a constant is a simple value that will
-   never change. It can be literal values, objects
-   or even functions.
-  - initializers: they are asynchronous functions
-   that handle the initialization phase.
+ services. There are two way of declaring services:
+- constants: a constant is a simple value that will
+ never change. It can be literal values, objects
+ or even functions.
+- initializers: they are asynchronous functions
+ that handle the initialization phase.
 
-  Initializers can be of two types:
-  - services: a `service` initializer directly
-   resolve to the actual service it builds. It can
-   be objects, functions or literal values.
-  - providers: they instead resolve to an object that
-   contains the service built into the `service` property
-   but also an optional `dispose` property exposing a
-   method to properly stop the service and a
-   `fatalErrorPromise` that will be rejected if an
-   unrecoverable error happens.
+Initializers can be of two types:
+- services: a `service` initializer directly
+ resolve to the actual service it builds. It can
+ be objects, functions or literal values.
+- providers: they instead resolve to an object that
+ contains the service built into the `service` property
+ but also an optional `dispose` property exposing a
+ method to properly stop the service and a
+ `fatalErrorPromise` that will be rejected if an
+ unrecoverable error happens.
 
-   Initializers can be declared as singletons. This means
-    that they will be instanciated once for all for each
-    executions silos using them (we will cover this
-    topic later on).
+ Initializers can be declared as singletons. This means
+  that they will be instanciated once for all for each
+  executions silos using them (we will cover this
+  topic later on).
 
 [See in context](./src/index.js#L129-L154)
 
@@ -97,21 +97,21 @@ The `?` flag indicates an optionnal dependencies.
  It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.js#L259-L268)
+[See in context](./src/util.js#L278-L287)
 
 
 
 ### Execution silos
 
 Once all the services are declared, we need a way to bring
-   them to life. Execution silos are where the magic happen.
-   For each call of the `run` method with given dependencies,
-   a new silo is created and the required environment to
-   run the actual code is leveraged.
+ them to life. Execution silos are where the magic happen.
+ For each call of the `run` method with given dependencies,
+ a new silo is created and the required environment to
+ run the actual code is leveraged.
 
-  Depending of your application design, you could run it
-   in only one execution silo or into several ones
-   according to the isolation level your wish to reach.
+Depending of your application design, you could run it
+ in only one execution silo or into several ones
+ according to the isolation level your wish to reach.
 
 [See in context](./src/index.js#L467-L477)
 

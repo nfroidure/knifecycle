@@ -44,6 +44,25 @@ export function reuseSpecialProps(from, to, amend = {}) {
 }
 
 /**
+ * Allows to wrap an initializer to add extra
+ * @param  {Function} wrapper
+ * A function taking dependencies and the base
+ * service in arguments
+ * @param  {Function} baseInitializer
+ * The initializer to decorate
+ * @return {Function}
+ * The new initializer
+ */
+export function wrapInitializer(wrapper, baseInitializer) {
+  return reuseSpecialProps(
+    baseInitializer,
+    services =>
+     baseInitializer(services)
+      .then(wrapper.bind(null, services))
+  );
+}
+
+/**
  * Decorator creating a new initializer with some
  *  dependencies declarations appended to it.
  * @param  {String[]}  dependenciesDeclarations

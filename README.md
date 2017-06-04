@@ -341,6 +341,9 @@ I'll also share most of my own initializers and their
 <dt><a href="#reuseSpecialProps">reuseSpecialProps(from, to, [amend])</a> ⇒ <code>function</code></dt>
 <dd><p>Apply special props to the given function from another one</p>
 </dd>
+<dt><a href="#wrapInitializer">wrapInitializer(wrapper, baseInitializer)</a> ⇒ <code>function</code></dt>
+<dd><p>Allows to wrap an initializer to add extra</p>
+</dd>
 <dt><a href="#inject">inject(dependenciesDeclarations, initializer, [merge])</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator creating a new initializer with some
  dependencies declarations appended to it.</p>
@@ -623,6 +626,19 @@ Apply special props to the given function from another one
 | from | <code>function</code> |  | The initialization function in which to pick the props |
 | to | <code>function</code> |  | The initialization function from which to build the new one |
 | [amend] | <code>Object</code> | <code>{}</code> | Some properties to override |
+
+<a name="wrapInitializer"></a>
+
+## wrapInitializer(wrapper, baseInitializer) ⇒ <code>function</code>
+Allows to wrap an initializer to add extra
+
+**Kind**: global function  
+**Returns**: <code>function</code> - The new initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| wrapper | <code>function</code> | A function taking dependencies and the base service in arguments |
+| baseInitializer | <code>function</code> | The initializer to decorate |
 
 <a name="inject"></a>
 
