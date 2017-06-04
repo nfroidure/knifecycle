@@ -1,3 +1,13 @@
+<a name="2.1.0"></a>
+# [2.1.0](https://github.com/nfroidure/knifecycle/compare/v2.0.0...v2.1.0) (2017-06-04)
+
+
+### Features
+
+* **Util:** Add a function to decorate initializers ([477ad14](https://github.com/nfroidure/knifecycle/commit/477ad14))
+
+
+
 <a name="2.0.0"></a>
 # [2.0.0](https://github.com/nfroidure/knifecycle/compare/v1.4.0...v2.0.0) (2017-05-28)
 
