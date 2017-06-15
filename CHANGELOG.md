@@ -1,3 +1,13 @@
+<a name="2.1.1"></a>
+## [2.1.1](https://github.com/nfroidure/knifecycle/compare/v2.1.0...v2.1.1) (2017-06-15)
+
+
+### Bug Fixes
+
+* **Mappings:** Fix the mappings for the initial run ([2cfdb7f](https://github.com/nfroidure/knifecycle/commit/2cfdb7f))
+
+
+
 <a name="2.1.0"></a>
 # [2.1.0](https://github.com/nfroidure/knifecycle/compare/v2.0.0...v2.1.0) (2017-06-04)
 
