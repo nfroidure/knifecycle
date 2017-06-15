@@ -128,13 +128,13 @@ describe('Knifecycle', () => {
 
     it('should fail with circular dependencies on mapped services', () => {
       assert.throws(() => {
-        $.provider('aHash', inject(['hash3>aHash3'], hashProvider));
-        $.provider('aHash1', inject(['hash>aHash'], hashProvider));
-        $.provider('aHash2', inject(['hash1>aHash1'], hashProvider));
-        $.provider('aHash3', inject(['hash>aHash'], hashProvider));
+        $.provider('hash', inject(['hash3>aHash3'], hashProvider));
+        $.provider('hash1', inject(['hash>aHash'], hashProvider));
+        $.provider('hash2', inject(['hash1>aHash1'], hashProvider));
+        $.provider('hash3', inject(['hash>aHash'], hashProvider));
       }, (err) => {
         assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
-        assert.deepEqual(err.params, ['aHash3', 'hash>aHash', 'hash3>aHash3']);
+        assert.deepEqual(err.params, ['hash3', 'hash>aHash', 'hash3>aHash3']);
         return true;
       });
     });
@@ -403,7 +403,7 @@ describe('Knifecycle', () => {
 
       $.run(['hash2>aHash2', 'hash3>aHash3', 'time>aTime'])
       .then((dependencies) => {
-        assert.deepEqual(Object.keys(dependencies), ['hash2', 'hash3', 'time']);
+        assert.deepEqual(Object.keys(dependencies), ['aHash2', 'aHash3', 'aTime']);
         assert.deepEqual(timeServiceStub.args, [[{}]]);
       })
       .then(() => done())

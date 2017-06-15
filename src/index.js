@@ -359,7 +359,7 @@ class Knifecycle {
     dependencyDeclaration,
     declarationsStacks = []
   ) {
-    const serviceName = _pickMappedNameFromDeclaration(
+    const serviceName = _pickServiceNameFromDeclaration(
       dependencyDeclaration
     );
     const dependencyProvider = this._servicesProviders.get(serviceName);
@@ -370,7 +370,7 @@ class Knifecycle {
     declarationsStacks = declarationsStacks.concat(dependencyDeclaration);
     dependencyProvider[SPECIAL_PROPS.INJECT]
     .forEach((childDependencyDeclaration) => {
-      const childServiceName = _pickMappedNameFromDeclaration(
+      const childServiceName = _pickServiceNameFromDeclaration(
         childDependencyDeclaration
       );
 
@@ -614,10 +614,10 @@ class Knifecycle {
       .catch(siloContext.throwFatalError);
       return dependenciesDeclarations.reduce(
         (finalHash, dependencyDeclaration) => {
-          const serviceName =
-            _pickServiceNameFromDeclaration(dependencyDeclaration);
+          const { serviceName, mappedName } =
+            parseDependencyDeclaration(dependencyDeclaration);
 
-          finalHash[serviceName] = servicesHash[serviceName];
+          finalHash[mappedName] = servicesHash[serviceName];
           return finalHash;
         }, {}
       );
@@ -800,11 +800,11 @@ class Knifecycle {
         ));
       })
       .then(services => services.reduce((hash, service, index) => {
-        const serviceName = _pickServiceNameFromDeclaration(
+        const mappedName = _pickMappedNameFromDeclaration(
           servicesDeclarations[index]
         );
 
-        hash[serviceName] = service;
+        hash[mappedName] = service;
         return hash;
       }, {}))
     );
