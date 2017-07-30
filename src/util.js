@@ -274,6 +274,39 @@ export function initializer(properties, initializer) {
   return uniqueInitializer;
 }
 
+/**
+ * Shortcut to create an initializer with a simple handler
+ * @param  {Function} handlerFunction
+ * The handler function
+ * @param  {Array}  [dependencies=[]]
+ * The dependencies to inject in it
+ * @return {Function}
+ * Returns a new initializer
+ * @example
+ * import { initializer, getInstance } from 'knifecycle';
+ *
+ * getInstance()
+ * .register(handler(getUser, ['db', '?log']));
+ *
+ * const QUERY = `SELECT * FROM users WHERE id=$1`
+ * async function getUser({ db }, userId) {
+ *   const [row] = await db.query(QUERY, userId);
+ *
+ *   return row;
+ * }
+ */
+export function handler(handlerFunction, dependencies = []) {
+  if(!handlerFunction.name) {
+    throw new YError('E_NO_HANDLER_NAME');
+  }
+  return initializer({
+    name: handlerFunction.name,
+    type: 'service',
+    inject: dependencies,
+  }, (...args) => Promise.resolve(
+    handlerFunction.bind(null, ...args)
+  ));
+}
 
 /* Architecture Note #1.3.1: Dependencies declaration syntax
 

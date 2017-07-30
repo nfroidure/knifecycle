@@ -31,6 +31,9 @@
 <dt><a href="#initializer">initializer(properties, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to set an initializer properties.</p>
 </dd>
+<dt><a href="#handler">handler(handlerFunction, [dependencies])</a> ⇒ <code>function</code></dt>
+<dd><p>Shortcut to create an initializer with a simple handler</p>
+</dd>
 <dt><a href="#parseDependencyDeclaration">parseDependencyDeclaration(dependencyDeclaration)</a> ⇒ <code>Object</code></dt>
 <dd><p>Explode a dependency declaration an returns its parts.</p>
 </dd>
@@ -436,6 +439,33 @@ getInstance()
   inject: ['ENV'],
   options: { singleton: true }
 }, myServiceInitializer));
+```
+<a name="handler"></a>
+
+## handler(handlerFunction, [dependencies]) ⇒ <code>function</code>
+Shortcut to create an initializer with a simple handler
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| handlerFunction | <code>function</code> |  | The handler function |
+| [dependencies] | <code>Array</code> | <code>[]</code> | The dependencies to inject in it |
+
+**Example**  
+```js
+import { initializer, getInstance } from 'knifecycle';
+
+getInstance()
+.register(handler(getUser, ['db', '?log']));
+
+const QUERY = `SELECT * FROM users WHERE id=$1`
+async function getUser({ db }, userId) {
+  const [row] = await db.query(QUERY, userId);
+
+  return row;
+}
 ```
 <a name="parseDependencyDeclaration"></a>
 

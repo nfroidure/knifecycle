@@ -4,6 +4,7 @@ import {
   reuseSpecialProps,
   wrapInitializer,
   parseDependencyDeclaration,
+  handler,
 } from './util';
 
 describe('reuseSpecialProps', () => {
@@ -71,6 +72,49 @@ describe('wrapInitializer', (done) => {
     })
     .then(done)
     .catch(done);
+  });
+});
+
+describe('handler', () => {
+  it('should work', () => {
+    const injectedServices = ['kikooo', 'lol'];
+    const services = {
+      kikooo: 'kikooo',
+      lol: 'lol',
+    };
+    const theInitializer = handler(
+      sampleHandler,
+      injectedServices
+    );
+
+    assert.deepEqual(
+      theInitializer.$name,
+      sampleHandler.name
+    );
+    assert.deepEqual(
+      theInitializer.$inject,
+      ['kikooo', 'lol']
+    );
+
+    return theInitializer(services)
+    .then(theHandler => theHandler('test'))
+    .then(
+      result =>
+      assert.deepEqual(result, {
+        deps: services,
+        args: ['test'],
+      })
+    );
+
+    function sampleHandler(deps, ...args) {
+      return Promise.resolve({ deps, args });
+    }
+  });
+
+  it('should fail for anonymous functions', () => {
+    assert.throws(() => {
+      handler(() => {});
+    }, /E_NO_HANDLER_NAME/);
   });
 });
 
