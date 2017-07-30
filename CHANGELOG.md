@@ -1,3 +1,13 @@
+<a name="2.2.0"></a>
+# [2.2.0](https://github.com/nfroidure/knifecycle/compare/v2.1.1...v2.2.0) (2017-07-30)
+
+
+### Features
+
+* **Decorators:** Add the ability to create a initializer from simple function ([f9e505e](https://github.com/nfroidure/knifecycle/commit/f9e505e)), closes [#37](https://github.com/nfroidure/knifecycle/issues/37)
+
+
+
 <a name="2.1.1"></a>
 ## [2.1.1](https://github.com/nfroidure/knifecycle/compare/v2.1.0...v2.1.1) (2017-06-15)
 
