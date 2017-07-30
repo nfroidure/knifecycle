@@ -1,7 +1,7 @@
 {
   "presets": ["es2015"],
   "plugins": [
-    "transform-decorators-legacy",
-    "transform-async-to-module-method"
+    "transform-async-to-module-method",
+    "transform-object-rest-spread"
   ]
 }

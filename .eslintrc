@@ -3,6 +3,9 @@
   parserOptions: {
     sourceType: 'module',
     modules: true,
+    ecmaFeatures: {
+      experimentalObjectRestSpread: true,
+    },
   },
   rules: {
     'no-magic-numbers': 0,
