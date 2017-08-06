@@ -1,3 +1,5 @@
+[![Browser Support Matrix](https://saucelabs.com/open_sauce/build_matrix/nfroidure.svg)](https://saucelabs.com/u/nfroidure)
+
 Most (maybe all) applications rely on two kinds of dependencies.
 
 **The code dependencies** are fully covered by require/system
