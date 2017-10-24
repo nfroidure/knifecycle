@@ -1,3 +1,18 @@
+<a name="2.2.1"></a>
+## [2.2.1](https://github.com/nfroidure/knifecycle/compare/v2.2.0...v2.2.1) (2017-10-24)
+
+
+### Bug Fixes
+
+* **Services mapping:** Fix deep service mapping ([9445cc3](https://github.com/nfroidure/knifecycle/commit/9445cc3))
+
+
+### Features
+
+* **Browser:** Add browser support ([d268fbd](https://github.com/nfroidure/knifecycle/commit/d268fbd))
+
+
+
 <a name="2.2.0"></a>
 # [2.2.0](https://github.com/nfroidure/knifecycle/compare/v2.1.1...v2.2.0) (2017-07-30)
 
