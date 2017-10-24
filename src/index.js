@@ -617,7 +617,7 @@ class Knifecycle {
           const { serviceName, mappedName } =
             parseDependencyDeclaration(dependencyDeclaration);
 
-          finalHash[mappedName] = servicesHash[serviceName];
+          finalHash[serviceName] = servicesHash[mappedName];
           return finalHash;
         }, {}
       );
@@ -705,9 +705,17 @@ class Knifecycle {
     ));
 
     serviceDescriptorPromise = serviceDescriptorPromise
-    .then((deps) => {
-      debug('Successfully initialized service dependencies:', serviceName);
-      return deps;
+    .then((servicesHash) => {
+      debug('Successfully gathered service dependencies:', serviceName);
+      return serviceProvider[SPECIAL_PROPS.INJECT].reduce(
+        (finalHash, dependencyDeclaration) => {
+          const { serviceName, mappedName } =
+            parseDependencyDeclaration(dependencyDeclaration);
+
+          finalHash[serviceName] = servicesHash[mappedName];
+          return finalHash;
+        }, {}
+      );
     })
     .then(serviceProvider)
     .then((serviceDescriptor) => {

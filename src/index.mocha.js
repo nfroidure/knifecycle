@@ -392,7 +392,33 @@ describe('Knifecycle', () => {
       .catch(done);
     });
 
-    it('should instanciate services with mappings', (done) => {
+    it('should instanciate a single mapped service', (done) => {
+      const providerStub = sinon.stub()
+        .returns(Promise.resolve({
+          service: 'stub',
+        }));
+      const providerStub2 = sinon.stub()
+        .returns(Promise.resolve({
+          service: 'stub2',
+        }));
+
+      $.provider('mappedStub', inject(['stub2>mappedStub2'], providerStub));
+      $.provider('mappedStub2', providerStub2);
+      $.run(['stub>mappedStub'])
+      .then((dependencies) => {
+        assert.deepEqual(dependencies, {
+          stub: 'stub',
+        });
+        assert.deepEqual(providerStub.args, [[{
+          stub2: 'stub2',
+        }]]);
+
+      })
+      .then(() => done())
+      .catch(done);
+    });
+
+    it('should instanciate several services with mappings', (done) => {
       const timeServiceStub = sinon.spy(timeService);
 
       $.constant('ENV', ENV);
@@ -403,7 +429,7 @@ describe('Knifecycle', () => {
 
       $.run(['hash2>aHash2', 'hash3>aHash3', 'time>aTime'])
       .then((dependencies) => {
-        assert.deepEqual(Object.keys(dependencies), ['aHash2', 'aHash3', 'aTime']);
+        assert.deepEqual(Object.keys(dependencies), ['hash2', 'hash3', 'time']);
         assert.deepEqual(timeServiceStub.args, [[{}]]);
       })
       .then(() => done())
