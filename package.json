@@ -6,18 +6,6 @@
   "engines": {
     "node": ">=6.9.5"
   },
-  "metapak": {
-    "data": {
-      "files": "src/*.js",
-      "testsFiles": "src/*.mocha.js"
-    },
-    "configs": [
-      "babel",
-      "jsdocs",
-      "jsarch",
-      "readme"
-    ]
-  },
   "files": [
     "dist",
     "src"
@@ -32,8 +20,6 @@
     "cz": "env NODE_ENV=${NODE_ENV:-cli} git cz",
     "doc": "mkdir -p .readme; echo \"# API\" > .readme/API.md; jsdoc2md src/*.js >> .readme/API.md",
     "lint": "eslint src/*.js",
-    "metapak": "metapak || exit 0",
-    "postinstall": "npm run metapak --silent",
     "prepublish": "npm run compile",
     "preversion": "npm t && npm run lint && npm run compile",
     "test": "mocha --compilers js:babel-register src/*.mocha.js && karma start karma.conf.js",
@@ -50,12 +36,10 @@
   "devDependencies": {
     "babel-cli": "^6.9.0",
     "babel-eslint": "^7.1.0",
-    "babel-plugin-transform-async-to-module-method": "^6.8.0",
-    "babel-plugin-transform-decorators": "^6.8.0",
-    "babel-plugin-transform-decorators-legacy": "^1.3.4",
+    "babel-plugin-transform-async-to-module-method": "^6.24.1",
     "babel-plugin-transform-es2015-modules-systemjs": "^6.9.0",
-    "babel-plugin-transform-object-rest-spread": "^6.23.0",
-    "babel-preset-es2015": "^6.9.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
     "babel-register": "^6.9.0",
     "browserify": "^14.4.0",
     "commitizen": "^2.9.6",
@@ -73,31 +57,13 @@
     "karma-firefox-launcher": "^1.0.1",
     "karma-mocha": "^1.3.0",
     "karma-sauce-launcher": "^1.1.0",
-    "metapak": "0.0.21",
-    "metapak-nfroidure": "0.7.0",
     "mocha": "3.2.0",
     "mocha-lcov-reporter": "1.3.0",
     "sinon": "^3.0.0"
   },
   "dependencies": {
-    "debug": "2.6.1",
+    "debug": "^3.1.0",
     "yerror": "^2.0.0"
-  },
-  "greenkeeper": {
-    "ignore": [
-      "debug",
-      "eslint",
-      "eslint-config-simplifield",
-      "mocha",
-      "mocha-lcov-reporter",
-      "commitizen",
-      "cz-conventional-changelog",
-      "coveralls",
-      "istanbul",
-      "conventional-changelog-cli",
-      "jsarch",
-      "jsdoc-to-markdown"
-    ]
   },
   "config": {
     "commitizen": {
