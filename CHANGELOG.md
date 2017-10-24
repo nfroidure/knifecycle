@@ -1,3 +1,13 @@
+<a name="2.2.2"></a>
+## [2.2.2](https://github.com/nfroidure/knifecycle/compare/v2.2.1...v2.2.2) (2017-10-24)
+
+
+### Bug Fixes
+
+* **Build:** Quick fix of the build ([0b71c08](https://github.com/nfroidure/knifecycle/commit/0b71c08))
+
+
+
 <a name="2.2.1"></a>
 ## [2.2.1](https://github.com/nfroidure/knifecycle/compare/v2.2.0...v2.2.1) (2017-10-24)
 
