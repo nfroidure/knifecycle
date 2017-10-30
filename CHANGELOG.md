@@ -1,3 +1,18 @@
+<a name="2.3.0"></a>
+# [2.3.0](https://github.com/nfroidure/knifecycle/compare/v2.2.2...v2.3.0) (2017-10-30)
+
+
+### Bug Fixes
+
+* **Build:** Fix frontend tests for Firefox ([890227b](https://github.com/nfroidure/knifecycle/commit/890227b))
+
+
+### Features
+
+* **Extra:** Allow to add extra informations to initializers ([782bade](https://github.com/nfroidure/knifecycle/commit/782bade)), closes [#41](https://github.com/nfroidure/knifecycle/issues/41)
+
+
+
 <a name="2.2.2"></a>
 ## [2.2.2](https://github.com/nfroidure/knifecycle/compare/v2.2.1...v2.2.2) (2017-10-24)
 
