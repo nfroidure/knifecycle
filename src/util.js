@@ -9,6 +9,7 @@ export const SPECIAL_PROPS = {
   OPTIONS: `${SPECIAL_PROPS_PREFIX}options`,
   NAME: `${SPECIAL_PROPS_PREFIX}name`,
   TYPE: `${SPECIAL_PROPS_PREFIX}type`,
+  EXTRA: `${SPECIAL_PROPS_PREFIX}type`,
 };
 export const ALLOWED_SPECIAL_PROPS = Object.keys(SPECIAL_PROPS)
 .map(key => SPECIAL_PROPS[key]);
@@ -103,6 +104,54 @@ export function inject(dependenciesDeclarations, initializer, merge = false) {
   debug(
     'Wrapped an initializer with dependencies:',
     dependenciesDeclarations
+  );
+
+  return uniqueInitializer;
+}
+
+/**
+ * Decorator creating a new initializer with some
+ *  extra informations appended to it. It is just
+ *  a way for user to store some additional
+ *  informations but has no interaction with the
+ *  Knifecycle internals.
+ * @param  {Object}  extraInformations
+ * An object containing those extra informations.
+ * @param  {Function}  initializer
+ * The initializer to tweak
+ * @param  {Boolean}   [merge=false]
+ * Whether the extra object should be merged
+ * with the existing one or not
+ * @return {Function}
+ * Returns a new initializer
+ * @example
+ *
+ * import { extra, getInstance } from 'knifecycle'
+ * import myServiceInitializer from './service';
+ *
+ * getInstance()
+ * .service('myService',
+ *   extra({ httpHandler: true }, myServiceInitializer)
+ * );
+ */
+export function extra(extraInformations, initializer, merge = false) {
+  const uniqueInitializer = reuseSpecialProps(
+    initializer,
+    initializer,
+    {
+      [SPECIAL_PROPS.EXTRA]: merge ?
+        Object.assign(
+          initializer[SPECIAL_PROPS.EXTRA] ||
+          {},
+          extraInformations
+        ) :
+        extraInformations,
+    }
+  );
+
+  debug(
+    'Wrapped an initializer with extra informations:',
+    extraInformations
   );
 
   return uniqueInitializer;

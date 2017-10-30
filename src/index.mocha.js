@@ -4,15 +4,9 @@ import assert from 'assert';
 import sinon from 'sinon';
 
 import {
-  SPECIAL_PROPS,
-} from './util';
-import {
   Knifecycle,
   inject,
-  name,
-  type,
   options,
-  initializer,
 } from './index';
 
 describe('Knifecycle', () => {
@@ -137,125 +131,6 @@ describe('Knifecycle', () => {
         assert.deepEqual(err.params, ['hash3', 'hash>aHash', 'hash3>aHash3']);
         return true;
       });
-    });
-
-  });
-
-  describe('inject', () => {
-
-    it('should allow to decorate an initializer with dependencies', () => {
-      const dependencies = ['ENV'];
-      const newInitializer = inject(dependencies, hashProvider);
-
-      assert.notEqual(newInitializer, hashProvider);
-      assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-      assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    });
-
-    it('should allow to decorate an initializer with mapped dependencies', () => {
-      const dependencies = ['ANOTHER_ENV>ENV'];
-      const newInitializer = inject(dependencies, hashProvider);
-
-      assert.notEqual(newInitializer, hashProvider);
-      assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-      assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    });
-
-  });
-
-  describe('options', () => {
-
-    it('should allow to decorate an initializer with options', () => {
-      const dependencies = ['ANOTHER_ENV>ENV'];
-      const baseOptions = { singleton: true };
-      const newInitializer = inject(
-        dependencies,
-        options(baseOptions, hashProvider)
-      );
-
-      assert.notEqual(newInitializer, hashProvider);
-      assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-      assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-      assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
-      assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
-    });
-
-  });
-
-  describe('name', () => {
-
-    it('should allow to decorate an initializer with a name', () => {
-      const dependencies = ['ANOTHER_ENV>ENV'];
-      const baseOptions = { singleton: true };
-      const baseName = 'hash';
-      const newInitializer = inject(
-        dependencies,
-        options(
-          baseOptions,
-          name(baseName, hashProvider)
-        )
-      );
-
-      assert.notEqual(newInitializer, hashProvider);
-      assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-      assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-      assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
-      assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
-      assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
-    });
-
-  });
-
-  describe('type', () => {
-
-    it('should allow to decorate an initializer with a type', () => {
-      const dependencies = ['ANOTHER_ENV>ENV'];
-      const baseOptions = { singleton: true };
-      const baseName = 'hash';
-      const baseType = 'service';
-      const newInitializer = inject(
-        dependencies,
-        options(
-          baseOptions,
-          name(
-            baseName,
-            type(baseType, hashProvider)
-          )
-        )
-      );
-
-      assert.notEqual(newInitializer, hashProvider);
-      assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-      assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-      assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
-      assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
-      assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
-      assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
-    });
-
-  });
-
-  describe('initializer', () => {
-
-    it('should allow to decorate an initializer with every properties', () => {
-      const dependencies = ['ANOTHER_ENV>ENV'];
-      const baseOptions = { singleton: true };
-      const baseName = 'hash';
-      const baseType = 'service';
-      const newInitializer = initializer({
-        inject: dependencies,
-        options: baseOptions,
-        type: baseType,
-        name: baseName,
-      }, hashProvider);
-
-      assert.notEqual(newInitializer, hashProvider);
-      assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-      assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-      assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
-      assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
-      assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
-      assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
     });
 
   });
