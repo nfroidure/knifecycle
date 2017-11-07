@@ -97,7 +97,7 @@ The `?` flag indicates an optionnal dependencies.
  It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.js#L311-L320)
+[See in context](./src/util.js#L360-L369)
 
 
 
@@ -114,4 +114,24 @@ Depending of your application design, you could run it
  according to the isolation level your wish to reach.
 
 [See in context](./src/index.js#L467-L477)
+
+
+
+## Build
+
+Using Knifecycle only makes sense for
+ monoliths. For some targets like
+ serverless functions, a better
+ approach is to simply build a raw
+ initialization function.
+
+For the build to work, we need:
+- a hash of various constants that may be
+ used.
+- an autoloader that resolves dependencies
+ names to its actual initializer
+- the dependencies list you want to
+ initialize
+
+[See in context](./src/build.js#L9-L24)
 

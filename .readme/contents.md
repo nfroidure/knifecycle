@@ -46,7 +46,9 @@ At this point you may think that a DI system is useless. My
  services, `knifecycle` impeach that while providing an
  `$injector` service à la Angular to allow accessing existing
  services references if you really need to;
-- generate Mermaid graphs of the dependency tree.
+- generate Mermaid graphs of the dependency tree;
+- build raw initialization modules to avoid
+ embedding Knifecycle in your builds.
 
 ## Usage
 

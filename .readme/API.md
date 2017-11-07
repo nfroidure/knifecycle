@@ -9,6 +9,11 @@
 ## Functions
 
 <dl>
+<dt><a href="#buildInitializer">buildInitializer(constants, loader, dependencies)</a> ⇒ <code>Promise.&lt;String&gt;</code></dt>
+<dd><p>Create a JavaScript module that initialize
+a set of dependencies with hardcoded
+import/awaits.</p>
+</dd>
 <dt><a href="#reuseSpecialProps">reuseSpecialProps(from, to, [amend])</a> ⇒ <code>function</code></dt>
 <dd><p>Apply special props to the given function from another one</p>
 </dd>
@@ -18,6 +23,13 @@
 <dt><a href="#inject">inject(dependenciesDeclarations, initializer, [merge])</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator creating a new initializer with some
  dependencies declarations appended to it.</p>
+</dd>
+<dt><a href="#extra">extra(extraInformations, initializer, [merge])</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator creating a new initializer with some
+ extra informations appended to it. It is just
+ a way for user to store some additional
+ informations but has no interaction with the
+ Knifecycle internals.</p>
 </dd>
 <dt><a href="#options">options(options, initializer, [merge])</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to amend an initializer options.</p>
@@ -287,6 +299,28 @@ import { getInstance } from 'knifecycle'
 
 const $ = getInstance();
 ```
+<a name="buildInitializer"></a>
+
+## buildInitializer(constants, loader, dependencies) ⇒ <code>Promise.&lt;String&gt;</code>
+Create a JavaScript module that initialize
+a set of dependencies with hardcoded
+import/awaits.
+
+**Kind**: global function  
+**Returns**: <code>Promise.&lt;String&gt;</code> - The JavaScript module content  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| constants | <code>Object</code> | An hash for simple constants |
+| loader | <code>function</code> | The dependency auto-loader |
+| dependencies | <code>Array.&lt;String&gt;</code> | The main dependencies |
+
+**Example**  
+```js
+import buildInitializer from 'knifecycle/src/build';
+
+buildInitializer(constants, loader, ['entryPoint']);
+```
 <a name="reuseSpecialProps"></a>
 
 ## reuseSpecialProps(from, to, [amend]) ⇒ <code>function</code>
@@ -337,6 +371,34 @@ import myServiceInitializer from './service';
 getInstance()
 .service('myService',
   inject(['ENV'], myServiceInitializer)
+);
+```
+<a name="extra"></a>
+
+## extra(extraInformations, initializer, [merge]) ⇒ <code>function</code>
+Decorator creating a new initializer with some
+ extra informations appended to it. It is just
+ a way for user to store some additional
+ informations but has no interaction with the
+ Knifecycle internals.
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| extraInformations | <code>Object</code> |  | An object containing those extra informations. |
+| initializer | <code>function</code> |  | The initializer to tweak |
+| [merge] | <code>Boolean</code> | <code>false</code> | Whether the extra object should be merged with the existing one or not |
+
+**Example**  
+```js
+import { extra, getInstance } from 'knifecycle'
+import myServiceInitializer from './service';
+
+getInstance()
+.service('myService',
+  extra({ httpHandler: true }, myServiceInitializer)
 );
 ```
 <a name="options"></a>
