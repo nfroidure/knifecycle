@@ -1,3 +1,13 @@
+<a name="2.4.0"></a>
+# [2.4.0](https://github.com/nfroidure/knifecycle/compare/v2.3.0...v2.4.0) (2017-11-07)
+
+
+### Features
+
+* **Build:** Allow to build initialization modules ([1aaca1b](https://github.com/nfroidure/knifecycle/commit/1aaca1b))
+
+
+
 <a name="2.3.0"></a>
 # [2.3.0](https://github.com/nfroidure/knifecycle/compare/v2.2.2...v2.3.0) (2017-10-30)
 
