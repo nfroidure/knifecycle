@@ -9,7 +9,7 @@ export const SPECIAL_PROPS = {
   OPTIONS: `${SPECIAL_PROPS_PREFIX}options`,
   NAME: `${SPECIAL_PROPS_PREFIX}name`,
   TYPE: `${SPECIAL_PROPS_PREFIX}type`,
-  EXTRA: `${SPECIAL_PROPS_PREFIX}type`,
+  EXTRA: `${SPECIAL_PROPS_PREFIX}extra`,
 };
 export const ALLOWED_SPECIAL_PROPS = Object.keys(SPECIAL_PROPS)
 .map(key => SPECIAL_PROPS[key]);
