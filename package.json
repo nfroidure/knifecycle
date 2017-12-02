@@ -1,6 +1,6 @@
 {
   "name": "knifecycle",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "Manage your NodeJS processes's lifecycle.",
   "main": "dist/index.js",
   "engines": {
@@ -71,7 +71,7 @@
     "eslint-plugin-prettier": "^2.3.1",
     "istanbul": "^1.0.0-alpha.2",
     "jsarch": "^1.2.5",
-    "jsdoc-to-markdown": "^3.1.0-0",
+    "jsdoc-to-markdown": "^3.0.2",
     "karma": "^1.7.0",
     "karma-browserify": "^5.1.2",
     "karma-chrome-launcher": "^2.2.0",
