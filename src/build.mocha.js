@@ -1,9 +1,7 @@
 import assert from 'assert';
 import YError from 'yerror';
 import buildInitializer from './build';
-import {
-  initializer,
-} from './util';
+import { initializer } from './util';
 
 describe('buildInitializer', () => {
   function aProvider() {}
@@ -11,43 +9,51 @@ describe('buildInitializer', () => {
     NODE_ENV: 'development',
   };
   const mockedDepsHash = {
-    dep1: initializer({
-      inject: [],
-      options: {},
-      type: 'service',
-      name: 'dep1',
-    }, aProvider),
-    dep2: initializer({
-      inject: ['dep1', 'NODE_ENV'],
-      options: {},
-      type: 'initializer',
-      name: 'dep2',
-    }, aProvider),
-    dep3: initializer({
-      inject: ['dep2', 'dep1', '?depOpt'],
-      options: {},
-      type: 'service',
-      name: 'dep3',
-    }, aProvider),
+    dep1: initializer(
+      {
+        inject: [],
+        options: {},
+        type: 'service',
+        name: 'dep1',
+      },
+      aProvider,
+    ),
+    dep2: initializer(
+      {
+        inject: ['dep1', 'NODE_ENV'],
+        options: {},
+        type: 'initializer',
+        name: 'dep2',
+      },
+      aProvider,
+    ),
+    dep3: initializer(
+      {
+        inject: ['dep2', 'dep1', '?depOpt'],
+        options: {},
+        type: 'service',
+        name: 'dep3',
+      },
+      aProvider,
+    ),
   };
   function mockedLoader(name) {
-    return mockedDepsHash[name] ?
-      Promise.resolve({
-        path: `./services/${name}`,
-        initializer: mockedDepsHash[name],
-      }) :
-      Promise.reject(new YError('E_UNMATCHED_DEPENDENCY', name));
+    return mockedDepsHash[name]
+      ? Promise.resolve({
+          path: `./services/${name}`,
+          initializer: mockedDepsHash[name],
+        })
+      : Promise.reject(new YError('E_UNMATCHED_DEPENDENCY', name));
   }
 
   it('should build an initialization module', () =>
-    buildInitializer(
-      mockedConstants,
-      mockedLoader,
-      ['dep1', 'finalMappedDep>dep3']
-    )
-    .then((content) => {
-      assert.equal(content,
-  `
+    buildInitializer(mockedConstants, mockedLoader, [
+      'dep1',
+      'finalMappedDep>dep3',
+    ]).then(content => {
+      assert.equal(
+        content,
+        `
 // Definition batch #0
 import initDep1 from './services/dep1';
 const NODE_ENV = "development";
@@ -82,8 +88,7 @@ export async function initialize(services = {}) {
     finalMappedDep: services['dep3'],
   };
 }
-`
+`,
       );
-    })
-  );
+    }));
 });

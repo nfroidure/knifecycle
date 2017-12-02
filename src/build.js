@@ -1,10 +1,5 @@
-import {
-  SPECIAL_PROPS,
-  parseDependencyDeclaration,
-} from './util';
-import {
-  buildInitializationSequence,
-} from './sequence';
+import { SPECIAL_PROPS, parseDependencyDeclaration } from './util';
+import { buildInitializationSequence } from './sequence';
 
 /* Architecture Note #2: Build
 
@@ -44,14 +39,12 @@ module.exports = buildInitializer;
  */
 function buildInitializer(constants, loader, dependencies) {
   return Promise.all(
-    dependencies.map(
-      dependency =>
-      buildDependencyTree(constants, loader, dependency)
-    )
-  )
-  .then((dependencyTrees) => {
+    dependencies.map(dependency =>
+      buildDependencyTree(constants, loader, dependency),
+    ),
+  ).then(dependencyTrees => {
     const dependenciesHash = buildDependenciesHash(
-      dependencyTrees.filter(identity)
+      dependencyTrees.filter(identity),
     );
     const batches = buildInitializationSequence({
       __name: 'main',
@@ -59,57 +52,58 @@ function buildInitializer(constants, loader, dependencies) {
     });
     batches.pop();
 
-    return `${ batches.map((batch, index) => `
-// Definition batch #${ index }${
-    batch.map((name) => {
-      if(!dependenciesHash[name].__initializer) {
-        return `
-const ${name} = ${
-  JSON.stringify(constants[name], null, 2)
-};`;
-      }
-
-      return `
-import ${
-    dependenciesHash[name].__initializerName
-} from '${
-  dependenciesHash[name].__path
-}';`;
-    }).join('')
-}`).join('\n')}
-
-export async function initialize(services = {}) {${
-  batches.map((batch, index) => `
-  // Initialization batch #${ index }${
-    batch.map((name) => {
-      if(!dependenciesHash[name].__initializer) {
-        return `
-  services['${name}'] = ${name};`;
-      }
-      return `
-  services['${name}'] = await ${
-    dependenciesHash[name].__initializerName
-  }({${
-      dependenciesHash[name].__inject ?
-      `${dependenciesHash[name].__inject
-      .map(parseDependencyDeclaration)
+    return `${batches
       .map(
-        ({ serviceName, mappedName }) =>
-        `
-    ${serviceName}: services['${mappedName}'],`
+        (batch, index) => `
+// Definition batch #${index}${batch
+          .map(name => {
+            if (!dependenciesHash[name].__initializer) {
+              return `
+const ${name} = ${JSON.stringify(constants[name], null, 2)};`;
+            }
+
+            return `
+import ${dependenciesHash[name].__initializerName} from '${
+              dependenciesHash[name].__path
+            }';`;
+          })
+          .join('')}`,
       )
-      .join('')}\n  ` :
-      ''
-    }});`;
-    }).join('')}
-`
-  ).join('')}
-  return {${
-    dependencies.map(parseDependencyDeclaration)
+      .join('\n')}
+
+export async function initialize(services = {}) {${batches
+      .map(
+        (batch, index) => `
+  // Initialization batch #${index}${batch
+          .map(name => {
+            if (!dependenciesHash[name].__initializer) {
+              return `
+  services['${name}'] = ${name};`;
+            }
+            return `
+  services['${name}'] = await ${dependenciesHash[name].__initializerName}({${
+              dependenciesHash[name].__inject
+                ? `${dependenciesHash[name].__inject
+                    .map(parseDependencyDeclaration)
+                    .map(
+                      ({ serviceName, mappedName }) =>
+                        `
+    ${serviceName}: services['${mappedName}'],`,
+                    )
+                    .join('')}\n  `
+                : ''
+            }});`;
+          })
+          .join('')}
+`,
+      )
+      .join('')}
+  return {${dependencies
+    .map(parseDependencyDeclaration)
     .map(
       ({ serviceName, mappedName }) =>
-      `
-    ${serviceName}: services['${mappedName}'],`
+        `
+    ${serviceName}: services['${mappedName}'],`,
     )
     .join('')}
   };
@@ -118,19 +112,12 @@ export async function initialize(services = {}) {${
   });
 }
 
-function buildDependencyTree(
-  constants,
-  loader,
-  dependencyDeclaration
-) {
-  const {
-    mappedName,
-    optional,
-  } = parseDependencyDeclaration(
-    dependencyDeclaration
+function buildDependencyTree(constants, loader, dependencyDeclaration) {
+  const { mappedName, optional } = parseDependencyDeclaration(
+    dependencyDeclaration,
   );
 
-  if(constants[mappedName]) {
+  if (constants[mappedName]) {
     return Promise.resolve({
       __name: mappedName,
       __constant: constants[mappedName],
@@ -138,75 +125,69 @@ function buildDependencyTree(
   }
 
   return loader(mappedName)
-  .then(({ path, initializer }) => {
-    const node = {
-      __name: mappedName,
-      __initializer: initializer,
-      __inject: initializer &&
-        initializer[SPECIAL_PROPS.INJECT] ?
-        initializer[SPECIAL_PROPS.INJECT] :
-        [],
-      __initializerName: 'init' + upperCaseFirst(mappedName),
-      __path: path,
-      __childNodes: [],
-    };
+    .then(({ path, initializer }) => {
+      const node = {
+        __name: mappedName,
+        __initializer: initializer,
+        __inject:
+          initializer && initializer[SPECIAL_PROPS.INJECT]
+            ? initializer[SPECIAL_PROPS.INJECT]
+            : [],
+        __initializerName: 'init' + upperCaseFirst(mappedName),
+        __path: path,
+        __childNodes: [],
+      };
 
-    return initializer[SPECIAL_PROPS.INJECT] &&
-      initializer[SPECIAL_PROPS.INJECT].length ?
-      Promise.all(
-        initializer[SPECIAL_PROPS.INJECT]
-        .map(
-          childDependencyDeclaration =>
-          buildDependencyTree(
-            constants,
-            loader,
-            childDependencyDeclaration
-          )
-        )
-      )
-      .then((childNodes) => {
-        node.__childNodes = childNodes.filter(identity);
-        return node;
-      }) :
-      node;
-  })
-  .catch((err) => {
-    if(optional) {
-      return null;
-    }
-    throw err;
-  });
+      return initializer[SPECIAL_PROPS.INJECT] &&
+        initializer[SPECIAL_PROPS.INJECT].length
+        ? Promise.all(
+            initializer[SPECIAL_PROPS.INJECT].map(childDependencyDeclaration =>
+              buildDependencyTree(
+                constants,
+                loader,
+                childDependencyDeclaration,
+              ),
+            ),
+          ).then(childNodes => {
+            node.__childNodes = childNodes.filter(identity);
+            return node;
+          })
+        : node;
+    })
+    .catch(err => {
+      if (optional) {
+        return null;
+      }
+      throw err;
+    });
 }
 
 function buildDependenciesHash(dependencyTrees, hash = {}) {
   return dependencyTrees.reduce(
-    (hash, tree) =>
-    buildHashFromNode(tree, hash),
-    hash
+    (hash, tree) => buildHashFromNode(tree, hash),
+    hash,
   );
 }
 
-
 function buildHashFromNode(node, hash = {}) {
-  const nodeIsALeaf = !(
-    node.__childNodes &&
-    node.__childNodes.length
-  );
+  const nodeIsALeaf = !(node.__childNodes && node.__childNodes.length);
 
   hash[node.__name] = node;
 
-  if(nodeIsALeaf) {
+  if (nodeIsALeaf) {
     return hash;
   }
 
-  node.__childNodes.forEach((childNode) => {
+  node.__childNodes.forEach(childNode => {
     hash = buildHashFromNode(childNode, hash);
   });
 
   return hash;
 }
 
-function identity(a) { return a; }
+function identity(a) {
+  return a;
+}
 
 function upperCaseFirst(str) {
   return str[0].toUpperCase() + str.slice(1);

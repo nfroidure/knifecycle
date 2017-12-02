@@ -83,7 +83,7 @@ Initializers can be of two types:
   executions silos using them (we will cover this
   topic later on).
 
-[See in context](./src/index.js#L129-L154)
+[See in context](./src/index.js#L134-L159)
 
 
 
@@ -97,7 +97,7 @@ The `?` flag indicates an optionnal dependencies.
  It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.js#L360-L369)
+[See in context](./src/util.js#L306-L315)
 
 
 
@@ -113,7 +113,7 @@ Depending of your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L467-L477)
+[See in context](./src/index.js#L451-L461)
 
 
 
@@ -133,5 +133,5 @@ For the build to work, we need:
 - the dependencies list you want to
  initialize
 
-[See in context](./src/build.js#L9-L24)
+[See in context](./src/build.js#L4-L19)
 

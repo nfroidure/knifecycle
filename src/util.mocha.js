@@ -21,9 +21,13 @@ describe('reuseSpecialProps', () => {
     // We can safely ignore coverage here since the
     // function are here just as placeholders
     /* istanbul ignore next */
-    function from() { return 'from'; }
+    function from() {
+      return 'from';
+    }
     /* istanbul ignore next */
-    function to() { return 'to'; }
+    function to() {
+      return 'to';
+    }
 
     from.$name = 'from';
     from.$type = 'service';
@@ -59,7 +63,7 @@ describe('reuseSpecialProps', () => {
   });
 });
 
-describe('wrapInitializer', (done) => {
+describe('wrapInitializer', done => {
   it('should work', () => {
     function baseInitializer() {
       return Promise.resolve(() => 'test');
@@ -72,26 +76,22 @@ describe('wrapInitializer', (done) => {
     baseInitializer.$extra = { httpHandler: false };
 
     const log = sinon.stub();
-    const newInitializer = wrapInitializer(
-      ({ log }, service) => {
-        log('Wrapping...');
-        return () => service() + '-wrapped';
-      },
-      baseInitializer
-    );
+    const newInitializer = wrapInitializer(({ log }, service) => {
+      log('Wrapping...');
+      return () => service() + '-wrapped';
+    }, baseInitializer);
 
     newInitializer({ log })
-    .then((service) => {
-      assert.equal(service(), 'test-wrapped');
-      assert.deepEqual(log.args, [['Wrapping...']]);
-    })
-    .then(done)
-    .catch(done);
+      .then(service => {
+        assert.equal(service(), 'test-wrapped');
+        assert.deepEqual(log.args, [['Wrapping...']]);
+      })
+      .then(done)
+      .catch(done);
   });
 });
 
 describe('inject', () => {
-
   it('should allow to decorate an initializer with dependencies', () => {
     const dependencies = ['ENV'];
     const newInitializer = inject(dependencies, aProvider);
@@ -109,17 +109,15 @@ describe('inject', () => {
     assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
-
 });
 
 describe('options', () => {
-
   it('should allow to decorate an initializer with options', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const baseOptions = { singleton: true };
     const newInitializer = inject(
       dependencies,
-      options(baseOptions, aProvider)
+      options(baseOptions, aProvider),
     );
 
     assert.notEqual(newInitializer, aProvider);
@@ -128,21 +126,16 @@ describe('options', () => {
     assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
   });
-
 });
 
 describe('name', () => {
-
   it('should allow to decorate an initializer with a name', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const baseOptions = { singleton: true };
     const baseName = 'hash';
     const newInitializer = inject(
       dependencies,
-      options(
-        baseOptions,
-        name(baseName, aProvider)
-      )
+      options(baseOptions, name(baseName, aProvider)),
     );
 
     assert.notEqual(newInitializer, aProvider);
@@ -152,11 +145,9 @@ describe('name', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
   });
-
 });
 
 describe('extra', () => {
-
   it('should allow to decorate an initializer with extra infos', () => {
     const extraInformations = { httpHandler: true };
     const newInitializer = extra(extraInformations, aProvider);
@@ -165,11 +156,9 @@ describe('extra', () => {
     assert.notEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraInformations);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraInformations);
   });
-
 });
 
 describe('type', () => {
-
   it('should allow to decorate an initializer with a type', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const baseOptions = { singleton: true };
@@ -177,13 +166,7 @@ describe('type', () => {
     const baseType = 'service';
     const newInitializer = inject(
       dependencies,
-      options(
-        baseOptions,
-        name(
-          baseName,
-          type(baseType, aProvider)
-        )
-      )
+      options(baseOptions, name(baseName, type(baseType, aProvider))),
     );
 
     assert.notEqual(newInitializer, aProvider);
@@ -194,22 +177,23 @@ describe('type', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
   });
-
 });
 
 describe('initializer', () => {
-
   it('should allow to decorate an initializer with every properties', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const baseOptions = { singleton: true };
     const baseName = 'hash';
     const baseType = 'service';
-    const newInitializer = initializer({
-      inject: dependencies,
-      options: baseOptions,
-      type: baseType,
-      name: baseName,
-    }, aProvider);
+    const newInitializer = initializer(
+      {
+        inject: dependencies,
+        options: baseOptions,
+        type: baseType,
+        name: baseName,
+      },
+      aProvider,
+    );
 
     assert.notEqual(newInitializer, aProvider);
     assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
@@ -219,7 +203,6 @@ describe('initializer', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
   });
-
 });
 
 describe('handler', () => {
@@ -229,29 +212,19 @@ describe('handler', () => {
       kikooo: 'kikooo',
       lol: 'lol',
     };
-    const theInitializer = handler(
-      sampleHandler,
-      injectedServices
-    );
+    const theInitializer = handler(sampleHandler, injectedServices);
 
-    assert.deepEqual(
-      theInitializer.$name,
-      sampleHandler.name
-    );
-    assert.deepEqual(
-      theInitializer.$inject,
-      ['kikooo', 'lol']
-    );
+    assert.deepEqual(theInitializer.$name, sampleHandler.name);
+    assert.deepEqual(theInitializer.$inject, ['kikooo', 'lol']);
 
     return theInitializer(services)
-    .then(theHandler => theHandler('test'))
-    .then(
-      result =>
-      assert.deepEqual(result, {
-        deps: services,
-        args: ['test'],
-      })
-    );
+      .then(theHandler => theHandler('test'))
+      .then(result =>
+        assert.deepEqual(result, {
+          deps: services,
+          args: ['test'],
+        }),
+      );
 
     function sampleHandler(deps, ...args) {
       return Promise.resolve({ deps, args });
@@ -267,11 +240,10 @@ describe('handler', () => {
 
 describe('parseDependencyDeclaration', () => {
   it('should work', () => {
-    assert.deepEqual(
-      parseDependencyDeclaration('pgsql>db'), {
-        serviceName: 'pgsql',
-        mappedName: 'db',
-        optional: false,
-      });
+    assert.deepEqual(parseDependencyDeclaration('pgsql>db'), {
+      serviceName: 'pgsql',
+      mappedName: 'db',
+      optional: false,
+    });
   });
 });

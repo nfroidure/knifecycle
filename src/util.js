@@ -11,8 +11,9 @@ export const SPECIAL_PROPS = {
   TYPE: `${SPECIAL_PROPS_PREFIX}type`,
   EXTRA: `${SPECIAL_PROPS_PREFIX}extra`,
 };
-export const ALLOWED_SPECIAL_PROPS = Object.keys(SPECIAL_PROPS)
-.map(key => SPECIAL_PROPS[key]);
+export const ALLOWED_SPECIAL_PROPS = Object.keys(SPECIAL_PROPS).map(
+  key => SPECIAL_PROPS[key],
+);
 export const DECLARATION_SEPARATOR = '>';
 export const OPTIONAL_FLAG = '?';
 
@@ -24,24 +25,20 @@ export const OPTIONAL_FLAG = '?';
  * @return {Function}      The newly built function
  */
 export function reuseSpecialProps(from, to, amend = {}) {
-  return [...new Set(
-    Object.keys(from)
-    .concat(Object.keys(amend))
-  )]
-  .filter(prop => prop.startsWith(SPECIAL_PROPS_PREFIX))
-  .reduce((fn, prop) => {
-    const value = 'undefined' !== typeof amend[prop] ?
-      amend[prop] :
-      from[prop];
-    if(value instanceof Array) {
-      fn[prop] = value.concat();
-    } else if(value instanceof Object) {
-      fn[prop] = Object.assign({}, value);
-    } else {
-      fn[prop] = value;
-    }
-    return fn;
-  }, to.bind());
+  return [...new Set(Object.keys(from).concat(Object.keys(amend)))]
+    .filter(prop => prop.startsWith(SPECIAL_PROPS_PREFIX))
+    .reduce((fn, prop) => {
+      const value =
+        'undefined' !== typeof amend[prop] ? amend[prop] : from[prop];
+      if (value instanceof Array) {
+        fn[prop] = value.concat();
+      } else if (value instanceof Object) {
+        fn[prop] = Object.assign({}, value);
+      } else {
+        fn[prop] = value;
+      }
+      return fn;
+    }, to.bind());
 }
 
 /**
@@ -55,11 +52,8 @@ export function reuseSpecialProps(from, to, amend = {}) {
  * The new initializer
  */
 export function wrapInitializer(wrapper, baseInitializer) {
-  return reuseSpecialProps(
-    baseInitializer,
-    services =>
-     baseInitializer(services)
-      .then(wrapper.bind(null, services))
+  return reuseSpecialProps(baseInitializer, services =>
+    baseInitializer(services).then(wrapper.bind(null, services)),
   );
 }
 
@@ -88,23 +82,15 @@ export function wrapInitializer(wrapper, baseInitializer) {
  * );
  */
 export function inject(dependenciesDeclarations, initializer, merge = false) {
-  const uniqueInitializer = reuseSpecialProps(
-    initializer,
-    initializer,
-    {
-      [SPECIAL_PROPS.INJECT]: merge ?
-        (
-          initializer[SPECIAL_PROPS.INJECT] ||
-          []
-        ).concat(dependenciesDeclarations) :
-        dependenciesDeclarations,
-    }
-  );
+  const uniqueInitializer = reuseSpecialProps(initializer, initializer, {
+    [SPECIAL_PROPS.INJECT]: merge
+      ? (initializer[SPECIAL_PROPS.INJECT] || []).concat(
+          dependenciesDeclarations,
+        )
+      : dependenciesDeclarations,
+  });
 
-  debug(
-    'Wrapped an initializer with dependencies:',
-    dependenciesDeclarations
-  );
+  debug('Wrapped an initializer with dependencies:', dependenciesDeclarations);
 
   return uniqueInitializer;
 }
@@ -135,24 +121,13 @@ export function inject(dependenciesDeclarations, initializer, merge = false) {
  * );
  */
 export function extra(extraInformations, initializer, merge = false) {
-  const uniqueInitializer = reuseSpecialProps(
-    initializer,
-    initializer,
-    {
-      [SPECIAL_PROPS.EXTRA]: merge ?
-        Object.assign(
-          initializer[SPECIAL_PROPS.EXTRA] ||
-          {},
-          extraInformations
-        ) :
-        extraInformations,
-    }
-  );
+  const uniqueInitializer = reuseSpecialProps(initializer, initializer, {
+    [SPECIAL_PROPS.EXTRA]: merge
+      ? Object.assign(initializer[SPECIAL_PROPS.EXTRA] || {}, extraInformations)
+      : extraInformations,
+  });
 
-  debug(
-    'Wrapped an initializer with extra informations:',
-    extraInformations
-  );
+  debug('Wrapped an initializer with extra informations:', extraInformations);
 
   return uniqueInitializer;
 }
@@ -183,24 +158,13 @@ export function extra(extraInformations, initializer, merge = false) {
  * );
  */
 export function options(options, initializer, merge = false) {
-  const uniqueInitializer = reuseSpecialProps(
-    initializer,
-    initializer,
-    {
-      [SPECIAL_PROPS.OPTIONS]: merge ?
-        options :
-        Object.assign(
-          {},
-          initializer[SPECIAL_PROPS.OPTIONS] || {},
-          options
-        ),
-    }
-  );
+  const uniqueInitializer = reuseSpecialProps(initializer, initializer, {
+    [SPECIAL_PROPS.OPTIONS]: merge
+      ? options
+      : Object.assign({}, initializer[SPECIAL_PROPS.OPTIONS] || {}, options),
+  });
 
-  debug(
-    'Wrapped an initializer with options:',
-    options
-  );
+  debug('Wrapped an initializer with options:', options);
 
   return uniqueInitializer;
 }
@@ -222,18 +186,11 @@ export function options(options, initializer, merge = false) {
  * .register(name('myService', myServiceInitializer));
  */
 export function name(name, initializer) {
-  const uniqueInitializer = reuseSpecialProps(
-    initializer,
-    initializer,
-    {
-      [SPECIAL_PROPS.NAME]: name,
-    }
-  );
+  const uniqueInitializer = reuseSpecialProps(initializer, initializer, {
+    [SPECIAL_PROPS.NAME]: name,
+  });
 
-  debug(
-    'Wrapped an initializer with a name:',
-    name
-  );
+  debug('Wrapped an initializer with a name:', name);
 
   return uniqueInitializer;
 }
@@ -261,18 +218,11 @@ export function name(name, initializer) {
  *  );
  */
 export function type(type, initializer) {
-  const uniqueInitializer = reuseSpecialProps(
-    initializer,
-    initializer,
-    {
-      [SPECIAL_PROPS.TYPE]: type,
-    }
-  );
+  const uniqueInitializer = reuseSpecialProps(initializer, initializer, {
+    [SPECIAL_PROPS.TYPE]: type,
+  });
 
-  debug(
-    'Wrapped an initializer with a type:',
-    type
-  );
+  debug('Wrapped an initializer with a type:', type);
 
   return uniqueInitializer;
 }
@@ -302,23 +252,18 @@ export function initializer(properties, initializer) {
   const uniqueInitializer = reuseSpecialProps(
     initializer,
     initializer,
-    Object.keys(properties)
-    .reduce((finalProperties, property) => {
+    Object.keys(properties).reduce((finalProperties, property) => {
       const finalProperty = SPECIAL_PROPS_PREFIX + property;
 
-      if(!ALLOWED_SPECIAL_PROPS.includes(finalProperty)) {
+      if (!ALLOWED_SPECIAL_PROPS.includes(finalProperty)) {
         throw new YError('E_BAD_PROPERTY', property);
       }
-      finalProperties[finalProperty] =
-       properties[property];
+      finalProperties[finalProperty] = properties[property];
       return finalProperties;
-    }, {})
+    }, {}),
   );
 
-  debug(
-    'Wrapped an initializer with properties:',
-    properties
-  );
+  debug('Wrapped an initializer with properties:', properties);
 
   return uniqueInitializer;
 }
@@ -345,16 +290,17 @@ export function initializer(properties, initializer) {
  * }
  */
 export function handler(handlerFunction, dependencies = []) {
-  if(!handlerFunction.name) {
+  if (!handlerFunction.name) {
     throw new YError('E_NO_HANDLER_NAME');
   }
-  return initializer({
-    name: handlerFunction.name,
-    type: 'service',
-    inject: dependencies,
-  }, (...args) => Promise.resolve(
-    handlerFunction.bind(null, ...args)
-  ));
+  return initializer(
+    {
+      name: handlerFunction.name,
+      type: 'service',
+      inject: dependencies,
+    },
+    (...args) => Promise.resolve(handlerFunction.bind(null, ...args)),
+  );
 }
 
 /* Architecture Note #1.3.1: Dependencies declaration syntax
@@ -385,10 +331,9 @@ The `?` flag indicates an optionnal dependencies.
  */
 export function parseDependencyDeclaration(dependencyDeclaration) {
   const optional = dependencyDeclaration.startsWith(OPTIONAL_FLAG);
-  const [serviceName, mappedName] = (
-    optional ?
-    dependencyDeclaration.slice(1) :
-    dependencyDeclaration
+  const [serviceName, mappedName] = (optional
+    ? dependencyDeclaration.slice(1)
+    : dependencyDeclaration
   ).split(DECLARATION_SEPARATOR);
 
   return {

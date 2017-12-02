@@ -6,6 +6,23 @@
   "engines": {
     "node": ">=6.9.5"
   },
+  "metapak": {
+    "configs": [
+      "readme",
+      "mocha",
+      "eslint",
+      "travis",
+      "codeclimate",
+      "babel",
+      "karma",
+      "jsdocs",
+      "jsarch"
+    ],
+    "data": {
+      "testsFiles": "src/*.mocha.js",
+      "files": "src/*.js"
+    }
+  },
   "files": [
     "dist",
     "src"
@@ -19,10 +36,14 @@
     "coveralls": "istanbul cover _mocha --report lcovonly -- --compilers js:babel-register src/*.mocha.js -R spec -t 5000 && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage",
     "cz": "env NODE_ENV=${NODE_ENV:-cli} git cz",
     "doc": "mkdir -p .readme; echo \"# API\" > .readme/API.md; jsdoc2md src/*.js >> .readme/API.md",
+    "karma": "karma start karma.conf.js",
     "lint": "eslint src/*.js",
+    "metapak": "metapak",
+    "mocha": "mocha --compilers js:babel-register src/*.mocha.js",
     "prepublish": "npm run compile",
-    "preversion": "npm t && npm run lint && npm run compile",
-    "test": "mocha --compilers js:babel-register src/*.mocha.js && karma start karma.conf.js",
+    "prettier": "prettier --write src/*.js",
+    "preversion": "npm t && npm run lint && npm run metapak -s && npm run compile",
+    "test": "npm run mocha && npm run karma",
     "version": "npm run changelog && git add CHANGELOG.md"
   },
   "keywords": [
@@ -34,7 +55,7 @@
   "author": "Nicolas Froidure",
   "license": "MIT",
   "devDependencies": {
-    "babel-cli": "^6.9.0",
+    "babel-cli": "^6.26.0",
     "babel-eslint": "^7.1.0",
     "babel-plugin-transform-async-to-module-method": "^6.24.1",
     "babel-plugin-transform-es2015-modules-systemjs": "^6.9.0",
@@ -43,22 +64,25 @@
     "babel-register": "^6.9.0",
     "browserify": "^14.4.0",
     "commitizen": "^2.9.6",
-    "conventional-changelog-cli": "^1.2.0",
-    "coveralls": "2.11.15",
+    "conventional-changelog-cli": "^1.3.5",
+    "coveralls": "^2.13.3",
     "cz-conventional-changelog": "^2.0.0",
-    "eslint": "3.16.0",
-    "eslint-config-simplifield": "4.1.1",
+    "eslint": "^4.12.1",
+    "eslint-plugin-prettier": "^2.3.1",
     "istanbul": "^1.0.0-alpha.2",
-    "jsarch": "1.2.1",
-    "jsdoc-to-markdown": "^3.0.0",
+    "jsarch": "^1.2.5",
+    "jsdoc-to-markdown": "^3.1.0-0",
     "karma": "^1.7.0",
-    "karma-browserify": "^5.1.1",
+    "karma-browserify": "^5.1.2",
     "karma-chrome-launcher": "^2.2.0",
     "karma-firefox-launcher": "^1.0.1",
     "karma-mocha": "^1.3.0",
     "karma-sauce-launcher": "^1.1.0",
-    "mocha": "3.2.0",
-    "mocha-lcov-reporter": "1.3.0",
+    "metapak": "^1.0.1",
+    "metapak-nfroidure": "^2.0.2",
+    "mocha": "^3.5.3",
+    "mocha-lcov-reporter": "^1.3.0",
+    "prettier": "^1.8.2",
     "sinon": "^3.0.0"
   },
   "dependencies": {
@@ -69,5 +93,21 @@
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
     }
+  },
+  "greenkeeper": {
+    "ignore": [
+      "commitizen",
+      "cz-conventional-changelog",
+      "conventional-changelog-cli",
+      "mocha",
+      "mocha-lcov-reporter",
+      "coveralls",
+      "istanbul",
+      "eslint",
+      "eslint-config-prettier",
+      "prettier",
+      "jsdoc-to-markdown",
+      "jsarch"
+    ]
   }
 }
