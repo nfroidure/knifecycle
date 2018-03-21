@@ -20,6 +20,9 @@ const INJECTOR = '$injector';
 const SILO_CONTEXT = '$siloContext';
 const FATAL_ERROR = '$fatalError';
 
+const ALLOWED_INITIALIZER_TYPES = ['provider', 'service'];
+
+const E_BAD_ANALYZER_TYPE = 'E_BAD_ANALYZER_TYPE';
 const E_UNMATCHED_DEPENDENCY = 'E_UNMATCHED_DEPENDENCY';
 const E_CIRCULAR_DEPENDENCY = 'E_CIRCULAR_DEPENDENCY';
 const E_ANONYMOUS_ANALYZER = 'E_ANONYMOUS_ANALYZER';
@@ -306,9 +309,16 @@ class Knifecycle {
     initializer[SPECIAL_PROPS.OPTIONS] =
       initializer[SPECIAL_PROPS.OPTIONS] || {};
     initializer[SPECIAL_PROPS.TYPE] =
-      initializer[SPECIAL_PROPS.TYPE] || 'provider';
+      initializer[SPECIAL_PROPS.TYPE] || ALLOWED_INITIALIZER_TYPES[0];
     if (!initializer[SPECIAL_PROPS.NAME]) {
       throw new YError(E_ANONYMOUS_ANALYZER, initializer[SPECIAL_PROPS.NAME]);
+    }
+    if (!ALLOWED_INITIALIZER_TYPES.includes(initializer[SPECIAL_PROPS.TYPE])) {
+      throw new YError(
+        E_BAD_ANALYZER_TYPE,
+        initializer[SPECIAL_PROPS.TYPE],
+        ALLOWED_INITIALIZER_TYPES,
+      );
     }
 
     if ('service' === initializer[SPECIAL_PROPS.TYPE]) {

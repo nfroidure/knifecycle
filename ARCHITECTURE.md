@@ -22,7 +22,7 @@ It is designed to have a low footprint on services code.
  can be reused elsewhere (even when not using DI) with no changes
  at all.
 
-[See in context](./src/index.js#L34-L48)
+[See in context](./src/index.js#L37-L51)
 
 
 
@@ -37,7 +37,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.js#L50-L59)
+[See in context](./src/index.js#L53-L62)
 
 
 
@@ -83,7 +83,7 @@ Initializers can be of two types:
   executions silos using them (we will cover this
   topic later on).
 
-[See in context](./src/index.js#L134-L159)
+[See in context](./src/index.js#L137-L162)
 
 
 
@@ -113,7 +113,7 @@ Depending of your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L451-L461)
+[See in context](./src/index.js#L461-L471)
 
 
 
