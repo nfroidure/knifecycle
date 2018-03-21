@@ -1,7 +1,0 @@
-{
-  "presets": ["env"],
-  "plugins": [
-    "transform-async-to-module-method",
-    "transform-object-rest-spread"
-  ]
-}
