@@ -1,3 +1,18 @@
+<a name="2.5.0"></a>
+# [2.5.0](https://github.com/nfroidure/knifecycle/compare/v2.4.2...v2.5.0) (2018-03-21)
+
+
+### Bug Fixes
+
+* **Build:** Fix build for providers ([2847929](https://github.com/nfroidure/knifecycle/commit/2847929))
+
+
+### Features
+
+* **API:** Ensure existing initializer type are provided ([bf880d9](https://github.com/nfroidure/knifecycle/commit/bf880d9))
+
+
+
 <a name="2.4.2"></a>
 ## [2.4.2](https://github.com/nfroidure/knifecycle/compare/v2.4.1...v2.4.2) (2017-12-02)
 
