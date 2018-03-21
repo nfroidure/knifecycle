@@ -81,7 +81,7 @@ export async function initialize(services = {}) {${batches
   services['${name}'] = ${name};`;
             }
             return `
-  services['${name}'] = await ${dependenciesHash[name].__initializerName}({${
+  services['${name}'] = (await ${dependenciesHash[name].__initializerName}({${
               dependenciesHash[name].__inject
                 ? `${dependenciesHash[name].__inject
                     .map(parseDependencyDeclaration)
@@ -92,7 +92,9 @@ export async function initialize(services = {}) {${batches
                     )
                     .join('')}\n  `
                 : ''
-            }});`;
+            }}))${
+              'provider' === dependenciesHash[name].__type ? '.service' : ''
+            };`;
           })
           .join('')}
 `,
@@ -133,6 +135,10 @@ function buildDependencyTree(constants, loader, dependencyDeclaration) {
           initializer && initializer[SPECIAL_PROPS.INJECT]
             ? initializer[SPECIAL_PROPS.INJECT]
             : [],
+        __type:
+          initializer && initializer[SPECIAL_PROPS.TYPE]
+            ? initializer[SPECIAL_PROPS.TYPE]
+            : 'provider',
         __initializerName: 'init' + upperCaseFirst(mappedName),
         __path: path,
         __childNodes: [],

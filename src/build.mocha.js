@@ -22,7 +22,7 @@ describe('buildInitializer', () => {
       {
         inject: ['dep1', 'NODE_ENV'],
         options: {},
-        type: 'initializer',
+        type: 'provider',
         name: 'dep2',
       },
       aProvider,
@@ -66,22 +66,22 @@ import initDep3 from './services/dep3';
 
 export async function initialize(services = {}) {
   // Initialization batch #0
-  services['dep1'] = await initDep1({
-  });
+  services['dep1'] = (await initDep1({
+  }));
   services['NODE_ENV'] = NODE_ENV;
 
   // Initialization batch #1
-  services['dep2'] = await initDep2({
+  services['dep2'] = (await initDep2({
     dep1: services['dep1'],
     NODE_ENV: services['NODE_ENV'],
-  });
+  })).service;
 
   // Initialization batch #2
-  services['dep3'] = await initDep3({
+  services['dep3'] = (await initDep3({
     dep2: services['dep2'],
     dep1: services['dep1'],
     depOpt: services['depOpt'],
-  });
+  }));
 
   return {
     dep1: services['dep1'],
