@@ -74,27 +74,43 @@ import ${dependenciesHash[name].__initializerName} from '${
 export async function initialize(services = {}) {${batches
       .map(
         (batch, index) => `
-  // Initialization batch #${index}${batch
+  // Initialization batch #${index}
+  const batch${index} = {${batch
           .map(name => {
             if (!dependenciesHash[name].__initializer) {
               return `
-  services['${name}'] = ${name};`;
+    ${name}: Promise.resolve(${name}),`;
             }
             return `
-  services['${name}'] = (await ${dependenciesHash[name].__initializerName}({${
+    ${name}: ${dependenciesHash[name].__initializerName}({${
               dependenciesHash[name].__inject
                 ? `${dependenciesHash[name].__inject
                     .map(parseDependencyDeclaration)
                     .map(
                       ({ serviceName, mappedName }) =>
                         `
-    ${serviceName}: services['${mappedName}'],`,
+      ${serviceName}: services['${mappedName}'],`,
                     )
-                    .join('')}\n  `
+                    .join('')}`
                 : ''
-            }}))${
-              'provider' === dependenciesHash[name].__type ? '.service' : ''
-            };`;
+            }
+    })${
+      'provider' === dependenciesHash[name].__type
+        ? '.then(provider => provider.service)'
+        : ''
+    },`;
+          })
+          .join('')}
+  };
+
+  await Promise.all(
+    Object.keys(batch${index})
+    .map(key => batch${index}[key])
+  );
+${batch
+          .map(name => {
+            return `
+  services['${name}'] = await batch${index}['${name}'];`;
           })
           .join('')}
 `,

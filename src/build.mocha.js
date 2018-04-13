@@ -66,22 +66,50 @@ import initDep3 from './services/dep3';
 
 export async function initialize(services = {}) {
   // Initialization batch #0
-  services['dep1'] = (await initDep1({
-  }));
-  services['NODE_ENV'] = NODE_ENV;
+  const batch0 = {
+    dep1: initDep1({
+    }),
+    NODE_ENV: Promise.resolve(NODE_ENV),
+  };
+
+  await Promise.all(
+    Object.keys(batch0)
+    .map(key => batch0[key])
+  );
+
+  services['dep1'] = await batch0['dep1'];
+  services['NODE_ENV'] = await batch0['NODE_ENV'];
 
   // Initialization batch #1
-  services['dep2'] = (await initDep2({
-    dep1: services['dep1'],
-    NODE_ENV: services['NODE_ENV'],
-  })).service;
+  const batch1 = {
+    dep2: initDep2({
+      dep1: services['dep1'],
+      NODE_ENV: services['NODE_ENV'],
+    }).then(provider => provider.service),
+  };
+
+  await Promise.all(
+    Object.keys(batch1)
+    .map(key => batch1[key])
+  );
+
+  services['dep2'] = await batch1['dep2'];
 
   // Initialization batch #2
-  services['dep3'] = (await initDep3({
-    dep2: services['dep2'],
-    dep1: services['dep1'],
-    depOpt: services['depOpt'],
-  }));
+  const batch2 = {
+    dep3: initDep3({
+      dep2: services['dep2'],
+      dep1: services['dep1'],
+      depOpt: services['depOpt'],
+    }),
+  };
+
+  await Promise.all(
+    Object.keys(batch2)
+    .map(key => batch2[key])
+  );
+
+  services['dep3'] = await batch2['dep3'];
 
   return {
     dep1: services['dep1'],
