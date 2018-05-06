@@ -43,5 +43,5 @@ jspm_packages
 # Coveralls key
 .coveralls.yml
 
-# Dist files
+# Project custom ignored file
 dist

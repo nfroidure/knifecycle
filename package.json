@@ -20,7 +20,8 @@
     ],
     "data": {
       "testsFiles": "src/*.mocha.js",
-      "files": "src/*.js"
+      "files": "src/*.js",
+      "ignore": ["dist"]
     }
   },
   "files": [
@@ -78,7 +79,7 @@
     "karma-mocha": "^1.3.0",
     "karma-sauce-launcher": "^1.1.0",
     "metapak": "^1.0.3",
-    "metapak-nfroidure": "^5.0.0",
+    "metapak-nfroidure": "^6.1.0",
     "mocha": "^5.0.0",
     "mocha-lcov-reporter": "^1.3.0",
     "prettier": "^1.11.1",
