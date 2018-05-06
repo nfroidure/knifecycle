@@ -1,3 +1,13 @@
+<a name="2.5.2"></a>
+## [2.5.2](https://github.com/nfroidure/knifecycle/compare/v2.5.1...v2.5.2) (2018-05-06)
+
+
+### Bug Fixes
+
+* **Tests:** Fix tests for Node10 ([b3511a4](https://github.com/nfroidure/knifecycle/commit/b3511a4))
+
+
+
 <a name="2.5.1"></a>
 ## [2.5.1](https://github.com/nfroidure/knifecycle/compare/v2.5.0...v2.5.1) (2018-04-13)
 
