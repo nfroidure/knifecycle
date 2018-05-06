@@ -48,7 +48,7 @@ describe('Knifecycle', () => {
     it('should fail with dependencies since it makes no sense', () => {
       assert.throws(() => {
         $.constant('time', inject(['hash3'], time));
-      }, 'E_CONSTANT_INJECTION');
+      }, /E_CONSTANT_INJECTION/);
     });
   });
 
