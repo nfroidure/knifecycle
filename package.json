@@ -88,7 +88,7 @@
     "sinon": "^4.4.6"
   },
   "dependencies": {
-    "debug": "^3.1.0",
+    "debug": "^4.0.0",
     "yerror": "^2.1.0"
   },
   "config": {
