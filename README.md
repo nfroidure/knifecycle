@@ -106,7 +106,7 @@ export const initConfig = initializer({
 // Here is the actual initializer implementation, you
 // can notice that it expect the `ENV` dependency to
 // be set as a property of an object in first argument.
-}, ({ ENV }) => {
+}, async ({ ENV }) => {
   return new Promise((resolve, reject) {
     fs.readFile(ENV.CONFIG_PATH, function(err, data) {
       if(err) {
@@ -145,25 +145,23 @@ const initDB = initializer({
   // gracefully close the service;
   // - an optional `fatalErrorPromise` property to
   // handle the service unrecoverable failure.
-  type: 'provider',,
+  type: 'provider',
   options: { singleton: true },
-}, ({ CONFIG, log }) {
-   return MongoClient.connect(CONFIG.DB_URI)
-   .then(function(db) {
-     let fatalErrorPromise = new Promise((resolve, reject) {
-       db.once('error', reject);
-     });
+}, async ({ CONFIG, log }) {
+   const db = await MongoClient.connect(CONFIG.DB_URI);
+    let fatalErrorPromise = new Promise((resolve, reject) {
+      db.once('error', reject);
+    });
 
-     // Logging only if the `log` service is defined
-     log && log('info', 'db service initialized!');
+    // Logging only if the `log` service is defined
+    log && log('info', 'db service initialized!');
 
-     return {
-       service: db,
-       dispose: db.close.bind(db, true),
-       fatalErrorPromise,
-     };
-   });
- }
+    return {
+      service: db,
+      dispose: db.close.bind(db, true),
+      fatalErrorPromise,
+    };
+ });
  ```
 
 We need a last initializer for the HTTP server itself:
@@ -176,39 +174,39 @@ const initDB = initializer({
   name: 'server',
   inject: ['ENV', 'CONFIG', '?log'],
   options: { singleton: true },
-}, ({ ENV, CONFIG, log }) => {
+}, async ({ ENV, CONFIG, log }) => {
   const app = express();
 
-  return new Promise((resolve, reject) => {
+  const server = new Promise((resolve, reject) => {
     const port = ENV.PORT || CONFIG.PORT;
     const server = app.listen(port, () => {
       log && log('info', `server listening on port ${port}!`);
       resolve(server);
     });
-  }).then(function(server) {
-    let fatalErrorPromise = new Promise((resolve, reject) {
-      app.once('error', reject);
-      server.once('error', reject);
-    });
-
-    function dispose() {
-      return new Promise((resolve, reject) => {
-        server.close((err) => {
-          if(err) {
-            reject(err);
-            return;
-          }
-          resolve();
-        })
-      });
-    }
-
-    return {
-      service: app,
-      dispose,
-      fatalErrorPromise,
-    };
   });
+
+  let fatalErrorPromise = new Promise((resolve, reject) {
+    app.once('error', reject);
+    server.once('error', reject);
+  });
+
+  function dispose() {
+    return new Promise((resolve, reject) => {
+      server.close((err) => {
+        if(err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      })
+    });
+  }
+
+  return {
+    service: app,
+    dispose,
+    fatalErrorPromise,
+  };
 });
 ```
 
@@ -239,12 +237,12 @@ getInstance()
 )
 // Finally, we have to create the `DB2_CONFIG` service
 // on which the `db2` service now depends on
-.register(name('DB2_CONFIG', inject(['CONFIG'], ({ CONFIG }) => {
+.register(name('DB2_CONFIG', inject(['CONFIG'], async ({ CONFIG }) => {
   // Let's just pick up the `db2` uri in the `CONFIG`
   // service
-  return Promise.resolve({
+  return {
     DB_URI: CONFIG.DB2_URI,
-  });
+  };
 })))
 // Add the process environment as a simple constant
 .constant('ENV', process.env)
@@ -263,15 +261,12 @@ getInstance()
 .register(name('timeRoute',
   inject(
     ['server', 'now', '?log'],
-    ({ server: app, now, log }) {
-      return Promise.resolve()
-      .then(() => {
-        app.get('/time', (req, res, next) => {
-          const curTime = now();
+    async ({ server: app, now, log }) => {
+      app.get('/time', (req, res, next) => {
+        const curTime = now();
 
-          log && log('info', 'Sending the current time:', curTime);
-          res.status(200).send(curTime);
-        });
+        log && log('info', 'Sending the current time:', curTime);
+        res.status(200).send(curTime);
       });
     }
   )
@@ -333,8 +328,15 @@ The scope of this library won't change. However the plan is:
 
 I'll also share most of my own initializers and their
  stubs/mocks in order to let you reuse it through
- your projects easily.
-
+ your projects easily. Here are the current projects
+ that use this DI lib:
+- [common-services](https://github.com/nfroidure/common-services):
+contains the services I use the most in my apps.
+- [swagger-http-router](https://github.com/nfroidure/swagger-http-router):
+ a complete HTTP router based on OpenAPI definitions with a few useful
+ services compatible with Knifecycle.
+- [memory-kv-store](https://github.com/nfroidure/memory-kv-store):
+ a simple in memory key-value store.
 
 [//]: # (::contents:end)
 
@@ -383,7 +385,7 @@ import/awaits.</p>
 <dt><a href="#initializer">initializer(properties, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to set an initializer properties.</p>
 </dd>
-<dt><a href="#handler">handler(handlerFunction, [dependencies])</a> ⇒ <code>function</code></dt>
+<dt><a href="#handler">handler(handlerFunction, [dependencies], [extra])</a> ⇒ <code>function</code></dt>
 <dd><p>Shortcut to create an initializer with a simple handler</p>
 </dd>
 <dt><a href="#parseDependencyDeclaration">parseDependencyDeclaration(dependencyDeclaration)</a> ⇒ <code>Object</code></dt>
@@ -844,7 +846,7 @@ getInstance()
 ```
 <a name="handler"></a>
 
-## handler(handlerFunction, [dependencies]) ⇒ <code>function</code>
+## handler(handlerFunction, [dependencies], [extra]) ⇒ <code>function</code>
 Shortcut to create an initializer with a simple handler
 
 **Kind**: global function  
@@ -854,6 +856,7 @@ Shortcut to create an initializer with a simple handler
 | --- | --- | --- | --- |
 | handlerFunction | <code>function</code> |  | The handler function |
 | [dependencies] | <code>Array</code> | <code>[]</code> | The dependencies to inject in it |
+| [extra] | <code>Object</code> |  | Optional extra data to associate with the handler |
 
 **Example**  
 ```js

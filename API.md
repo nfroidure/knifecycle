@@ -43,7 +43,7 @@ import/awaits.</p>
 <dt><a href="#initializer">initializer(properties, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to set an initializer properties.</p>
 </dd>
-<dt><a href="#handler">handler(handlerFunction, [dependencies])</a> ⇒ <code>function</code></dt>
+<dt><a href="#handler">handler(handlerFunction, [dependencies], [extra])</a> ⇒ <code>function</code></dt>
 <dd><p>Shortcut to create an initializer with a simple handler</p>
 </dd>
 <dt><a href="#parseDependencyDeclaration">parseDependencyDeclaration(dependencyDeclaration)</a> ⇒ <code>Object</code></dt>
@@ -504,7 +504,7 @@ getInstance()
 ```
 <a name="handler"></a>
 
-## handler(handlerFunction, [dependencies]) ⇒ <code>function</code>
+## handler(handlerFunction, [dependencies], [extra]) ⇒ <code>function</code>
 Shortcut to create an initializer with a simple handler
 
 **Kind**: global function  
@@ -514,6 +514,7 @@ Shortcut to create an initializer with a simple handler
 | --- | --- | --- | --- |
 | handlerFunction | <code>function</code> |  | The handler function |
 | [dependencies] | <code>Array</code> | <code>[]</code> | The dependencies to inject in it |
+| [extra] | <code>Object</code> |  | Optional extra data to associate with the handler |
 
 **Example**  
 ```js

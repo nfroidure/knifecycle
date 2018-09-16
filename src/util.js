@@ -274,6 +274,8 @@ export function initializer(properties, initializer) {
  * The handler function
  * @param  {Array}  [dependencies=[]]
  * The dependencies to inject in it
+ * @param  {Object}  [extra]
+ * Optional extra data to associate with the handler
  * @return {Function}
  * Returns a new initializer
  * @example
@@ -289,7 +291,7 @@ export function initializer(properties, initializer) {
  *   return row;
  * }
  */
-export function handler(handlerFunction, dependencies = []) {
+export function handler(handlerFunction, dependencies = [], extra) {
   if (!handlerFunction.name) {
     throw new YError('E_NO_HANDLER_NAME');
   }
@@ -298,8 +300,9 @@ export function handler(handlerFunction, dependencies = []) {
       name: handlerFunction.name,
       type: 'service',
       inject: dependencies,
+      extra,
     },
-    (...args) => Promise.resolve(handlerFunction.bind(null, ...args)),
+    async (...args) => handlerFunction.bind(null, ...args),
   );
 }
 
