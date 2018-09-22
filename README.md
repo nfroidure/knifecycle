@@ -14,6 +14,7 @@
 [![Coverage Status](https://coveralls.io/repos/nfroidure/knifecycle/badge.svg?branch=master)](https://coveralls.io/r/nfroidure/knifecycle?branch=master)
 [![Code Climate](https://codeclimate.com/github/nfroidure/knifecycle.svg)](https://codeclimate.com/github/nfroidure/knifecycle)
 [![Dependency Status](https://dependencyci.com/github/nfroidure/knifecycle/badge)](https://dependencyci.com/github/nfroidure/knifecycle)
+[![Package Quality](http://npm.packagequality.com/shield/knifecycle.svg)](http://packagequality.com/#?package=knifecycle)
 
 
 [//]: # (::contents:start)
@@ -894,6 +895,9 @@ parseDependencyDeclaration('pgsql>db');
   optional: false,
 }
 ```
+
+# Authors
+- [Nicolas Froidure](http://insertafter.com/en/index.html)
 
 # License
 [MIT](https://github.com/nfroidure/knifecycle/blob/master/LICENSE)
