@@ -1,3 +1,8 @@
+<a name="2.5.4"></a>
+## [2.5.4](https://github.com/nfroidure/knifecycle/compare/v2.5.3...v2.5.4) (2018-09-22)
+
+
+
 <a name="2.5.3"></a>
 ## [2.5.3](https://github.com/nfroidure/knifecycle/compare/v2.5.2...v2.5.3) (2018-09-16)
 
