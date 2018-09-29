@@ -2,6 +2,7 @@
 
 import assert from 'assert';
 import sinon from 'sinon';
+import YError from 'yerror';
 
 import { Knifecycle, inject, options } from './index';
 
@@ -145,32 +146,26 @@ describe('Knifecycle', () => {
   });
 
   describe('run', () => {
-    it('should work with no dependencies', done => {
-      $.run([])
-        .then(dependencies => {
-          assert.deepEqual(dependencies, {});
-        })
-        .then(() => done())
-        .catch(done);
+    it('should work with no dependencies', async () => {
+      const dependencies = await $.run([]);
+
+      assert.deepEqual(dependencies, {});
     });
 
-    it('should work with constant dependencies', done => {
+    it('should work with constant dependencies', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
 
-      $.run(['time', 'ENV'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), ['time', 'ENV']);
-          assert.deepEqual(dependencies, {
-            ENV,
-            time,
-          });
-        })
-        .then(() => done())
-        .catch(done);
+      const dependencies = await $.run(['time', 'ENV']);
+
+      assert.deepEqual(Object.keys(dependencies), ['time', 'ENV']);
+      assert.deepEqual(dependencies, {
+        ENV,
+        time,
+      });
     });
 
-    it('should work with service dependencies', done => {
+    it('should work with service dependencies', async () => {
       $.service(
         'sample',
         inject(['time'], function sampleService({ time }) {
@@ -179,70 +174,58 @@ describe('Knifecycle', () => {
       );
       $.constant('time', time);
 
-      $.run(['sample'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), ['sample']);
-          assert.deepEqual(dependencies, {
-            sample: 'function',
-          });
-        })
-        .then(() => done())
-        .catch(done);
+      const dependencies = await $.run(['sample']);
+
+      assert.deepEqual(Object.keys(dependencies), ['sample']);
+      assert.deepEqual(dependencies, {
+        sample: 'function',
+      });
     });
 
-    it('should work with simple dependencies', done => {
+    it('should work with simple dependencies', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider));
 
-      $.run(['time', 'hash'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-          assert.deepEqual(dependencies, {
-            hash: { ENV },
-            time,
-          });
-        })
-        .then(() => done())
-        .catch(done);
+      const dependencies = await $.run(['time', 'hash']);
+
+      assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
+      assert.deepEqual(dependencies, {
+        hash: { ENV },
+        time,
+      });
     });
 
-    it('should work with given optional dependencies', done => {
+    it('should work with given optional dependencies', async () => {
       $.constant('ENV', ENV);
       $.constant('DEBUG', {});
       $.constant('time', time);
       $.provider('hash', inject(['ENV', '?DEBUG'], hashProvider));
 
-      $.run(['time', 'hash'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-          assert.deepEqual(dependencies, {
-            hash: { ENV, DEBUG: {} },
-            time,
-          });
-        })
-        .then(() => done())
-        .catch(done);
+      const dependencies = await $.run(['time', 'hash']);
+
+      assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
+      assert.deepEqual(dependencies, {
+        hash: { ENV, DEBUG: {} },
+        time,
+      });
     });
 
-    it('should work with lacking optional dependencies', done => {
+    it('should work with lacking optional dependencies', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV', '?DEBUG'], hashProvider));
 
-      $.run(['time', 'hash'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-          assert.deepEqual(dependencies, {
-            hash: { ENV, DEBUG: {}.undef },
-            time,
-          });
-        })
-        .then(() => done())
-        .catch(done);
+      const dependencies = await $.run(['time', 'hash']);
+
+      assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
+      assert.deepEqual(dependencies, {
+        hash: { ENV, DEBUG: {}.undef },
+        time,
+      });
     });
 
-    it('should work with deeper dependencies', done => {
+    it('should work with deeper dependencies', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider));
@@ -252,15 +235,12 @@ describe('Knifecycle', () => {
       $.provider('hash4', inject(['hash3'], hashProvider));
       $.provider('hash5', inject(['hash4'], hashProvider));
 
-      $.run(['hash5', 'time'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
-        })
-        .then(() => done())
-        .catch(done);
+      const dependencies = await $.run(['hash5', 'time']);
+
+      assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
     });
 
-    it('should instanciate services once', done => {
+    it('should instanciate services once', async () => {
       const timeServiceStub = sinon.spy(timeService);
 
       $.constant('ENV', ENV);
@@ -269,21 +249,18 @@ describe('Knifecycle', () => {
       $.provider('hash2', inject(['ENV', 'time'], hashProvider));
       $.provider('hash3', inject(['ENV', 'time'], hashProvider));
 
-      $.run(['hash', 'hash2', 'hash3', 'time'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), [
-            'hash',
-            'hash2',
-            'hash3',
-            'time',
-          ]);
-          assert.deepEqual(timeServiceStub.args, [[{}]]);
-        })
-        .then(() => done())
-        .catch(done);
+      const dependencies = await $.run(['hash', 'hash2', 'hash3', 'time']);
+
+      assert.deepEqual(Object.keys(dependencies), [
+        'hash',
+        'hash2',
+        'hash3',
+        'time',
+      ]);
+      assert.deepEqual(timeServiceStub.args, [[{}]]);
     });
 
-    it('should instanciate a single mapped service', done => {
+    it('should instanciate a single mapped service', async () => {
       const providerStub = sinon.stub().returns(
         Promise.resolve({
           service: 'stub',
@@ -297,24 +274,22 @@ describe('Knifecycle', () => {
 
       $.provider('mappedStub', inject(['stub2>mappedStub2'], providerStub));
       $.provider('mappedStub2', providerStub2);
-      $.run(['stub>mappedStub'])
-        .then(dependencies => {
-          assert.deepEqual(dependencies, {
-            stub: 'stub',
-          });
-          assert.deepEqual(providerStub.args, [
-            [
-              {
-                stub2: 'stub2',
-              },
-            ],
-          ]);
-        })
-        .then(() => done())
-        .catch(done);
+
+      const dependencies = await $.run(['stub>mappedStub']);
+
+      assert.deepEqual(dependencies, {
+        stub: 'stub',
+      });
+      assert.deepEqual(providerStub.args, [
+        [
+          {
+            stub2: 'stub2',
+          },
+        ],
+      ]);
     });
 
-    it('should instanciate several services with mappings', done => {
+    it('should instanciate several services with mappings', async () => {
       const timeServiceStub = sinon.spy(timeService);
 
       $.constant('ENV', ENV);
@@ -323,93 +298,76 @@ describe('Knifecycle', () => {
       $.provider('aHash2', inject(['ENV', 'hash>aHash'], hashProvider));
       $.provider('aHash3', inject(['ENV', 'hash>aHash'], hashProvider));
 
-      $.run(['hash2>aHash2', 'hash3>aHash3', 'time>aTime'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), [
-            'hash2',
-            'hash3',
-            'time',
-          ]);
-          assert.deepEqual(timeServiceStub.args, [[{}]]);
-        })
-        .then(() => done())
-        .catch(done);
+      const dependencies = await $.run([
+        'hash2>aHash2',
+        'hash3>aHash3',
+        'time>aTime',
+      ]);
+
+      assert.deepEqual(Object.keys(dependencies), ['hash2', 'hash3', 'time']);
+      assert.deepEqual(timeServiceStub.args, [[{}]]);
     });
 
-    it('should fail with bad service', done => {
+    it('should fail with bad service', async () => {
       $.service('lol', () => {});
-      $.run(['lol'])
-        .then(() => {
-          throw new Error('E_UNEXPECTED_SUCCESS');
-        })
-        .catch(err => {
-          assert.deepEqual(err.code, 'E_BAD_SERVICE_PROMISE');
-          assert.deepEqual(err.params, ['lol']);
-        })
-        .then(() => done())
-        .catch(done);
+
+      try {
+        await $.run(['lol']);
+        throw new Error('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        assert.deepEqual(err.code, 'E_BAD_SERVICE_PROMISE');
+        assert.deepEqual(err.params, ['lol']);
+      }
     });
 
-    it('should fail with bad provider', done => {
+    it('should fail with bad provider', async () => {
       $.provider('lol', () => {});
-      $.run(['lol'])
-        .then(() => {
-          throw new Error('E_UNEXPECTED_SUCCESS');
-        })
-        .catch(err => {
-          assert.deepEqual(err.code, 'E_BAD_SERVICE_PROVIDER');
-          assert.deepEqual(err.params, ['lol']);
-        })
-        .then(() => done())
-        .catch(done);
+      try {
+        await $.run(['lol']);
+        throw new Error('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        assert.deepEqual(err.code, 'E_BAD_SERVICE_PROVIDER');
+        assert.deepEqual(err.params, ['lol']);
+      }
     });
 
-    it('should fail with bad service in a provider', done => {
+    it('should fail with bad service in a provider', async () => {
       $.provider('lol', () => Promise.resolve());
-      $.run(['lol'])
-        .then(() => {
-          throw new Error('E_UNEXPECTED_SUCCESS');
-        })
-        .catch(err => {
-          assert.deepEqual(err.code, 'E_BAD_SERVICE_PROVIDER');
-          assert.deepEqual(err.params, ['lol']);
-        })
-        .then(() => done())
-        .catch(done);
+      try {
+        await $.run(['lol']);
+        throw new Error('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        assert.deepEqual(err.code, 'E_BAD_SERVICE_PROVIDER');
+        assert.deepEqual(err.params, ['lol']);
+      }
     });
 
-    it('should fail with undeclared dependencies', done => {
-      $.run(['lol'])
-        .then(() => {
-          throw new Error('E_UNEXPECTED_SUCCESS');
-        })
-        .catch(err => {
-          assert.deepEqual(err.code, 'E_UNMATCHED_DEPENDENCY');
-          assert.deepEqual(err.params, ['lol']);
-        })
-        .then(() => done())
-        .catch(done);
+    it('should fail with undeclared dependencies', async () => {
+      try {
+        await $.run(['lol']);
+        throw new Error('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        assert.deepEqual(err.code, 'E_UNMATCHED_DEPENDENCY');
+        assert.deepEqual(err.params, ['lol']);
+      }
     });
 
-    it('should fail with undeclared dependencies upstream', done => {
+    it('should fail with undeclared dependencies upstream', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV', 'hash2'], hashProvider));
       $.provider('hash2', inject(['ENV', 'lol'], hashProvider));
 
-      $.run(['time', 'hash'])
-        .then(() => {
-          throw new Error('E_UNEXPECTED_SUCCESS');
-        })
-        .catch(err => {
-          assert.deepEqual(err.code, 'E_UNMATCHED_DEPENDENCY');
-          assert.deepEqual(err.params, ['hash', 'hash2', 'lol']);
-        })
-        .then(() => done())
-        .catch(done);
+      try {
+        await $.run(['time', 'hash']);
+        throw new Error('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        assert.deepEqual(err.code, 'E_UNMATCHED_DEPENDENCY');
+        assert.deepEqual(err.params, ['hash', 'hash2', 'lol']);
+      }
     });
 
-    it('should provide a fatal error handler', done => {
+    it('should provide a fatal error handler', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider));
@@ -424,124 +382,105 @@ describe('Knifecycle', () => {
         });
       }
 
-      function dbProvider({ ENV }) {
-        return Promise.resolve().then(() => {
-          let service;
-          const fatalErrorPromise = new Promise((resolve, reject) => {
-            service = Promise.resolve({
-              resolve,
-              reject,
-              ENV,
-            });
+      async function dbProvider({ ENV }) {
+        let service;
+        const fatalErrorPromise = new Promise((resolve, reject) => {
+          service = Promise.resolve({
+            resolve,
+            reject,
+            ENV,
           });
-
-          return {
-            service,
-            fatalErrorPromise,
-          };
         });
+
+        return {
+          service,
+          fatalErrorPromise,
+        };
       }
 
-      $.run(['time', 'hash', 'db', 'process'])
-        .then(({ process, db }) => {
-          process.fatalErrorPromise
-            .then(() => {
-              done(new Error('E_UNEXPECTED_SUCCESS'));
-            })
-            .catch(err => {
-              assert.deepEqual(err.message, 'E_DB_ERROR');
-            })
-            .then(() => done())
-            .catch(done);
-          db.reject(new Error('E_DB_ERROR'));
-        })
-        .catch(done);
+      const { process, db } = await $.run(['time', 'hash', 'db', 'process']);
+
+      try {
+        db.reject(new Error('E_DB_ERROR'));
+        await process.fatalErrorPromise;
+        throw new Error('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        assert.deepEqual(err.message, 'E_DB_ERROR');
+      }
     });
   });
 
   describe('inject', () => {
-    it('should work with no dependencies', done => {
+    it('should work with no dependencies', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider));
 
-      $.run(['time', 'hash', '$injector'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), [
-            'time',
-            'hash',
-            '$injector',
-          ]);
-          return dependencies.$injector([]).then(injectDependencies => {
-            assert.deepEqual(Object.keys(injectDependencies), []);
-            assert.deepEqual(injectDependencies, {});
-          });
-        })
-        .then(() => done())
-        .catch(done);
+      const dependencies = await $.run(['time', 'hash', '$injector']);
+      assert.deepEqual(Object.keys(dependencies), [
+        'time',
+        'hash',
+        '$injector',
+      ]);
+      const injectDependencies = await dependencies.$injector([]);
+
+      assert.deepEqual(Object.keys(injectDependencies), []);
+      assert.deepEqual(injectDependencies, {});
     });
 
-    it('should work with same dependencies then the running silo', done => {
+    it('should work with same dependencies then the running silo', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider));
 
-      $.run(['time', 'hash', '$injector'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), [
-            'time',
-            'hash',
-            '$injector',
-          ]);
-          return dependencies
-            .$injector(['time', 'hash'])
-            .then(injectDependencies => {
-              assert.deepEqual(Object.keys(injectDependencies), [
-                'time',
-                'hash',
-              ]);
-              assert.deepEqual(injectDependencies, {
-                hash: { ENV },
-                time,
-              });
-            });
-        })
-        .then(() => done())
-        .catch(done);
+      const dependencies = await $.run(['time', 'hash', '$injector']);
+      assert.deepEqual(Object.keys(dependencies), [
+        'time',
+        'hash',
+        '$injector',
+      ]);
+
+      const injectDependencies = await dependencies.$injector(['time', 'hash']);
+      assert.deepEqual(Object.keys(injectDependencies), ['time', 'hash']);
+      assert.deepEqual(injectDependencies, {
+        hash: { ENV },
+        time,
+      });
     });
 
-    it('should fail with non instanciated dependencies', done => {
+    it('should fail with non instanciated dependencies', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider));
 
-      $.run(['time', '$injector'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), ['time', '$injector']);
-          return dependencies.$injector(['time', 'hash']).catch(err => {
-            assert.equal(err.code, 'E_BAD_INJECTION');
-          });
-        })
-        .then(() => done())
-        .catch(done);
+      const dependencies = await $.run(['time', '$injector']);
+      assert.deepEqual(Object.keys(dependencies), ['time', '$injector']);
+
+      try {
+        await dependencies.$injector(['time', 'hash']);
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        assert.equal(err.code, 'E_BAD_INJECTION');
+      }
     });
 
-    it('should create dependencies when not declared as singletons', done => {
+    it('should create dependencies when not declared as singletons', async () => {
       $.constant('ENV', ENV);
       $.provider('hash', inject(['ENV'], hashProvider));
 
-      Promise.all([$.run(['hash']), $.run(['hash'])])
-        .then(([{ hash }, { hash: sameHash }]) => {
-          assert.notEqual(hash, sameHash);
-          return $.run(['hash']).then(({ hash: yaSameHash }) => {
-            assert.notEqual(hash, yaSameHash);
-          });
-        })
-        .then(() => done())
-        .catch(done);
+      const [{ hash }, { hash: sameHash }] = await Promise.all([
+        $.run(['hash']),
+        $.run(['hash']),
+      ]);
+
+      assert.notEqual(hash, sameHash);
+
+      const { hash: yaSameHash } = await $.run(['hash']);
+
+      assert.notEqual(hash, yaSameHash);
     });
 
-    it('should reuse dependencies when declared as singletons', done => {
+    it('should reuse dependencies when declared as singletons', async () => {
       $.constant('ENV', ENV);
       $.provider('hash', inject(['ENV'], hashProvider), {
         singleton: true,
@@ -559,173 +498,134 @@ describe('Knifecycle', () => {
         ),
       );
 
-      Promise.all([
+      const [
+        { hash, hash2 },
+        { hash: sameHash, hash2: sameHash2 },
+      ] = await Promise.all([
         $.run(['hash']),
         $.run(['hash']),
         $.run(['hash2']),
         $.run(['hash2']),
-      ])
-        .then(([{ hash, hash2 }, { hash: sameHash, hash2: sameHash2 }]) => {
-          assert.equal(hash, sameHash);
-          assert.equal(hash2, sameHash2);
-          return $.run(['hash']).then(({ hash: yaSameHash }) => {
-            assert.equal(hash, yaSameHash);
-          });
-        })
-        .then(() => done())
-        .catch(done);
+      ]);
+      assert.equal(hash, sameHash);
+      assert.equal(hash2, sameHash2);
+
+      const { hash: yaSameHash } = await $.run(['hash']);
+
+      assert.equal(hash, yaSameHash);
     });
   });
 
   describe('$destroy', () => {
-    it('should work even with one silo and no dependencies', done => {
-      $.run(['$destroy'])
-        .then(dependencies => {
-          assert.equal(typeof dependencies.$destroy, 'function');
+    it('should work even with one silo and no dependencies', async () => {
+      const dependencies = await $.run(['$destroy']);
+      assert.equal(typeof dependencies.$destroy, 'function');
 
-          return dependencies.$destroy();
-        })
-        .then(() => done())
-        .catch(done);
+      await dependencies.$destroy();
     });
 
-    it('should work with several silos and dependencies', done => {
+    it('should work with several silos and dependencies', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider), { singleton: true });
       $.provider('hash1', inject(['ENV'], hashProvider));
       $.provider('hash2', inject(['ENV'], hashProvider));
 
-      Promise.all([
+      const [dependencies] = await Promise.all([
         $.run(['$destroy']),
         $.run(['ENV', 'hash', 'hash1', 'time']),
         $.run(['ENV', 'hash', 'hash2']),
-      ])
-        .then(([dependencies]) => {
-          assert.equal(typeof dependencies.$destroy, 'function');
+      ]);
 
-          return dependencies.$destroy();
-        })
-        .then(() => done())
-        .catch(done);
+      assert.equal(typeof dependencies.$destroy, 'function');
+
+      await dependencies.$destroy();
     });
 
-    it('should work when trigered from several silos simultaneously', done => {
+    it('should work when trigered from several silos simultaneously', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider));
       $.provider('hash1', inject(['ENV'], hashProvider));
       $.provider('hash2', inject(['ENV'], hashProvider));
 
-      Promise.all([
+      const dependenciesBuckets = await Promise.all([
         $.run(['$destroy']),
         $.run(['$destroy', 'ENV', 'hash', 'hash1', 'time']),
         $.run(['$destroy', 'ENV', 'hash', 'hash2']),
-      ])
-        .then(dependenciesBuckets =>
-          Promise.all(
-            dependenciesBuckets.map(dependencies => dependencies.$destroy()),
-          ),
-        )
-        .then(() => done())
-        .catch(done);
+      ]);
+
+      await Promise.all(
+        dependenciesBuckets.map(dependencies => dependencies.$destroy()),
+      );
     });
 
-    it('should work when a silo shutdown is in progress', done => {
+    it('should work when a silo shutdown is in progress', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider));
       $.provider('hash1', inject(['ENV'], hashProvider));
       $.provider('hash2', inject(['ENV'], hashProvider));
 
-      Promise.all([
+      const [dependencies1, dependencies2] = await Promise.all([
         $.run(['$destroy']),
         $.run(['$dispose', 'ENV', 'hash', 'hash1', 'time']),
         $.run(['ENV', 'hash', 'hash2']),
-      ])
-        .then(([dependencies1, dependencies2]) =>
-          Promise.all([dependencies2.$dispose(), dependencies1.$destroy()]),
-        )
-        .then(() => done())
-        .catch(done);
+      ]);
+      await Promise.all([dependencies2.$dispose(), dependencies1.$destroy()]);
     });
 
-    it('should disallow new runs', done => {
+    it('should disallow new runs', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider));
       $.provider('hash1', inject(['ENV'], hashProvider));
 
-      $.run(['$destroy'])
-        .then(dependencies => {
-          assert.equal(typeof dependencies.$destroy, 'function');
+      const dependencies = await $.run(['$destroy']);
 
-          return dependencies.$destroy();
-        })
-        .then(() => {
-          assert.throws(
-            () => $.run(['ENV', 'hash', 'hash1']),
-            err => {
-              assert.equal(err.code, 'E_INSTANCE_DESTROYED');
-              return true;
-            },
-          );
-        })
-        .then(() => done())
-        .catch(done);
+      assert.equal(typeof dependencies.$destroy, 'function');
+
+      await dependencies.$destroy();
+
+      try {
+        await $.run(['ENV', 'hash', 'hash1']);
+        throw new YError('E_UNEXPECTED_SUCCES');
+      } catch (err) {
+        assert.equal(err.code, 'E_INSTANCE_DESTROYED');
+      }
     });
   });
 
   describe('$dispose', () => {
-    it('should work with no dependencies', done => {
-      $.run(['$dispose'])
-        .then(dependencies => {
-          assert.equal(typeof dependencies.$dispose, 'function');
+    it('should work with no dependencies', async () => {
+      const dependencies = await $.run(['$dispose']);
+      assert.equal(typeof dependencies.$dispose, 'function');
 
-          return dependencies.$dispose();
-        })
-        .then(() => done())
-        .catch(done);
+      return dependencies.$dispose();
     });
 
-    it('should work with constant dependencies', done => {
+    it('should work with constant dependencies', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
 
-      $.run(['time', 'ENV', '$dispose'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), [
-            'time',
-            'ENV',
-            '$dispose',
-          ]);
+      const dependencies = await $.run(['time', 'ENV', '$dispose']);
+      assert.deepEqual(Object.keys(dependencies), ['time', 'ENV', '$dispose']);
 
-          return dependencies.$dispose();
-        })
-        .then(() => done())
-        .catch(done);
+      await dependencies.$dispose();
     });
 
-    it('should work with simple dependencies', done => {
+    it('should work with simple dependencies', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider));
 
-      $.run(['time', 'hash', '$dispose'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), [
-            'time',
-            'hash',
-            '$dispose',
-          ]);
+      const dependencies = await $.run(['time', 'hash', '$dispose']);
+      assert.deepEqual(Object.keys(dependencies), ['time', 'hash', '$dispose']);
 
-          return dependencies.$dispose();
-        })
-        .then(() => done())
-        .catch(done);
+      await dependencies.$dispose();
     });
 
-    it('should work with deeper dependencies', done => {
+    it('should work with deeper dependencies', async () => {
       let shutdownCallResolve;
       let shutdownResolve;
       const shutdownCallPromise = new Promise(resolve => {
@@ -759,29 +659,29 @@ describe('Knifecycle', () => {
         ),
       );
 
-      $.run(['hash5', 'time', '$dispose', 'shutdownChecker'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), [
-            'hash5',
-            'time',
-            '$dispose',
-            'shutdownChecker',
-          ]);
+      const dependencies = await $.run([
+        'hash5',
+        'time',
+        '$dispose',
+        'shutdownChecker',
+      ]);
+      assert.deepEqual(Object.keys(dependencies), [
+        'hash5',
+        'time',
+        '$dispose',
+        'shutdownChecker',
+      ]);
 
-          shutdownCallPromise
-            .then(() => {
-              assert.deepEqual(shutdownStub.args, [[]]);
-              shutdownResolve();
-            })
-            .catch(done);
+      const finalPromise = shutdownCallPromise.then(() => {
+        assert.deepEqual(shutdownStub.args, [[]]);
+        shutdownResolve();
+      });
 
-          return dependencies.$dispose();
-        })
-        .then(done)
-        .catch(done);
+      await dependencies.$dispose();
+      await finalPromise;
     });
 
-    it('should work with deeper multi used dependencies', done => {
+    it('should work with deeper multi used dependencies', async () => {
       let shutdownCallResolve;
       let shutdownResolve;
       const shutdownCallPromise = new Promise(resolve => {
@@ -811,29 +711,29 @@ describe('Knifecycle', () => {
       $.provider('hash1', inject(['shutdownChecker'], hashProvider));
       $.provider('hash2', inject(['shutdownChecker'], hashProvider));
 
-      $.run(['hash1', 'hash2', '$dispose', 'shutdownChecker'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), [
-            'hash1',
-            'hash2',
-            '$dispose',
-            'shutdownChecker',
-          ]);
+      const dependencies = await $.run([
+        'hash1',
+        'hash2',
+        '$dispose',
+        'shutdownChecker',
+      ]);
+      assert.deepEqual(Object.keys(dependencies), [
+        'hash1',
+        'hash2',
+        '$dispose',
+        'shutdownChecker',
+      ]);
 
-          shutdownCallPromise
-            .then(() => {
-              assert.deepEqual(shutdownStub.args, [[]]);
-              shutdownResolve();
-            })
-            .catch(done);
+      const finalPromise = shutdownCallPromise.then(() => {
+        assert.deepEqual(shutdownStub.args, [[]]);
+        shutdownResolve();
+      });
 
-          return dependencies.$dispose();
-        })
-        .then(() => done())
-        .catch(done);
+      await dependencies.$dispose();
+      await finalPromise;
     });
 
-    it('should delay service shutdown to their deeper dependencies', done => {
+    it('should delay service shutdown to their deeper dependencies', async () => {
       const servicesShutdownCalls = sinon.spy(() => Promise.resolve());
 
       $.provider('hash', () =>
@@ -861,65 +761,48 @@ describe('Knifecycle', () => {
         ),
       );
 
-      $.run(['hash2', '$dispose'])
-        .then(dependencies => {
-          assert.deepEqual(Object.keys(dependencies), ['hash2', '$dispose']);
-          return dependencies.$dispose();
-        })
-        .then(() => {
-          assert.deepEqual(servicesShutdownCalls.args, [
-            ['hash2'],
-            ['hash1'],
-            ['hash'],
-          ]);
-        })
-        .then(() => done())
-        .catch(done);
+      const dependencies = await $.run(['hash2', '$dispose']);
+      assert.deepEqual(Object.keys(dependencies), ['hash2', '$dispose']);
+      await dependencies.$dispose();
+
+      assert.deepEqual(servicesShutdownCalls.args, [
+        ['hash2'],
+        ['hash1'],
+        ['hash'],
+      ]);
     });
 
-    it('should not shutdown singleton dependencies if used elsewhere', done => {
+    it('should not shutdown singleton dependencies if used elsewhere', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider), {
         singleton: true,
       });
 
-      $.run(['time', 'hash'])
-        .then(dependencies => {
-          const { hash } = dependencies;
+      const { hash } = await $.run(['time', 'hash']);
+      const dependencies = await $.run(['time', 'hash', '$dispose']);
 
-          return $.run(['time', 'hash', '$dispose']).then(dependencies => {
-            assert.equal(dependencies.hash, hash);
-            return dependencies.$dispose().then(() =>
-              $.run(['time', 'hash']).then(dependencies => {
-                assert.equal(dependencies.hash, hash);
-              }),
-            );
-          });
-        })
-        .then(() => done())
-        .catch(done);
+      assert.equal(dependencies.hash, hash);
+
+      await dependencies.$dispose();
+
+      const newDependencies = await $.run(['time', 'hash']);
+      assert.equal(newDependencies.hash, hash);
     });
 
-    it('should shutdown singleton dependencies if not used elsewhere', done => {
+    it('should shutdown singleton dependencies if not used elsewhere', async () => {
       $.constant('ENV', ENV);
       $.constant('time', time);
       $.provider('hash', inject(['ENV'], hashProvider), {
         singleton: true,
       });
 
-      $.run(['time', 'hash', '$dispose'])
-        .then(dependencies => {
-          const { hash } = dependencies;
+      const { hash, $dispose } = await $.run(['time', 'hash', '$dispose']);
 
-          return dependencies.$dispose().then(() =>
-            $.run(['time', 'hash']).then(dependencies => {
-              assert.notEqual(dependencies.hash, hash);
-            }),
-          );
-        })
-        .then(() => done())
-        .catch(done);
+      await $dispose();
+
+      const dependencies = await $.run(['time', 'hash']);
+      assert.notEqual(dependencies.hash, hash);
     });
   });
 

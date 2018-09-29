@@ -486,7 +486,7 @@ class Knifecycle {
    *  // Here goes your code
    * })
    */
-  run(dependenciesDeclarations) {
+  async run(dependenciesDeclarations) {
     const _this = this;
     const internalDependencies = [
       ...new Set(dependenciesDeclarations.concat(DISPOSE)),
@@ -521,23 +521,24 @@ class Knifecycle {
     });
     // Create a provider for the shutdown special dependency
     siloContext.servicesDescriptors.set(DISPOSE, {
-      service: () => {
+      service: async () => {
         siloContext.shutdownPromise =
           siloContext.shutdownPromise ||
           _shutdownNextServices(siloContext.servicesSequence);
 
         debug('Shutting down services');
 
-        return siloContext.shutdownPromise.then(() => {
-          this._silosContexts.delete(siloContext);
-        });
+        await siloContext.shutdownPromise;
+
+        this._silosContexts.delete(siloContext);
 
         // Shutdown services in their instanciation order
-        function _shutdownNextServices(reversedServiceSequence) {
+        async function _shutdownNextServices(reversedServiceSequence) {
           if (0 === reversedServiceSequence.length) {
-            return Promise.resolve();
+            return;
           }
-          return Promise.all(
+
+          await Promise.all(
             reversedServiceSequence.pop().map(serviceName => {
               const singletonServiceDescriptor = _this._singletonsServicesDescriptors.get(
                 serviceName,
@@ -590,7 +591,9 @@ class Knifecycle {
               );
               return serviceShutdownPromise;
             }),
-          ).then(_shutdownNextServices.bind(null, reversedServiceSequence));
+          );
+
+          await _shutdownNextServices(reversedServiceSequence);
         }
       },
       dispose: Promise.resolve.bind(Promise),
@@ -598,27 +601,26 @@ class Knifecycle {
 
     this._silosContexts.add(siloContext);
 
-    return this._initializeDependencies(
+    const servicesHash = await this._initializeDependencies(
       siloContext,
       siloContext.name,
       internalDependencies,
-    ).then(servicesHash => {
-      debug('Handling fatal errors:', siloContext.errorsPromises);
-      Promise.all(siloContext.errorsPromises).catch(
-        siloContext.throwFatalError,
-      );
-      return dependenciesDeclarations.reduce(
-        (finalHash, dependencyDeclaration) => {
-          const { serviceName, mappedName } = parseDependencyDeclaration(
-            dependencyDeclaration,
-          );
+    );
 
-          finalHash[serviceName] = servicesHash[mappedName];
-          return finalHash;
-        },
-        {},
-      );
-    });
+    debug('Handling fatal errors:', siloContext.errorsPromises);
+    Promise.all(siloContext.errorsPromises).catch(siloContext.throwFatalError);
+
+    return dependenciesDeclarations.reduce(
+      (finalHash, dependencyDeclaration) => {
+        const { serviceName, mappedName } = parseDependencyDeclaration(
+          dependencyDeclaration,
+        );
+
+        finalHash[serviceName] = servicesHash[mappedName];
+        return finalHash;
+      },
+      {},
+    );
   }
 
   /**
@@ -661,64 +663,60 @@ class Knifecycle {
    * @param  {String}     serviceProvider   Service provider.
    * @return {Promise}                      Service dependencies hash promise.
    */
-  _initializeServiceDescriptor(siloContext, serviceName) {
+  async _initializeServiceDescriptor(siloContext, serviceName) {
     const serviceProvider = this._servicesProviders.get(serviceName);
-    let serviceDescriptorPromise;
 
     debug('Initializing a service descriptor:', serviceName);
 
     if (!serviceProvider) {
       debug('No service provider:', serviceName);
-      serviceDescriptorPromise = Promise.reject(
+      const serviceDescriptorPromise = Promise.reject(
         new YError(E_UNMATCHED_DEPENDENCY, serviceName),
       );
       siloContext.servicesDescriptors.set(
         serviceName,
         serviceDescriptorPromise,
       );
-      return serviceDescriptorPromise;
+      await serviceDescriptorPromise;
     }
 
-    // A singleton service may use a reserved resource
-    // like a TCP socket. This is why we have to be aware
-    // of singleton services full shutdown before creating
-    // a new one
-    serviceDescriptorPromise = (
-      this._singletonsServicesShutdownsPromises.get(serviceName) ||
-      Promise.resolve()
-    )
-      // Anyway delete any shutdown promise before instanciating
-      // a new service
-      .then(() => {
+    const serviceDescriptorPromise = (async () => {
+      let serviceDescriptor;
+      try {
+        // A singleton service may use a reserved resource
+        // like a TCP socket. This is why we have to be aware
+        // of singleton services full shutdown before creating
+        // a new one
+
+        await (this._singletonsServicesShutdownsPromises.get(serviceName) ||
+          Promise.resolve());
+        // Anyway delete any shutdown promise before instanciating
+        // a new service
         this._singletonsServicesShutdownsPromises.delete(serviceName);
         siloContext.servicesShutdownsPromises.delete(serviceName);
-      })
-      .then(
-        this._initializeDependencies.bind(
-          this,
+
+        const servicesHash = await this._initializeDependencies(
           siloContext,
           serviceName,
           serviceProvider[SPECIAL_PROPS.INJECT],
-        ),
-      );
-
-    serviceDescriptorPromise = serviceDescriptorPromise
-      .then(servicesHash => {
-        debug('Successfully gathered service dependencies:', serviceName);
-        return serviceProvider[SPECIAL_PROPS.INJECT].reduce(
-          (finalHash, dependencyDeclaration) => {
-            const { serviceName, mappedName } = parseDependencyDeclaration(
-              dependencyDeclaration,
-            );
-
-            finalHash[serviceName] = servicesHash[mappedName];
-            return finalHash;
-          },
-          {},
         );
-      })
-      .then(serviceProvider)
-      .then(serviceDescriptor => {
+
+        debug('Successfully gathered service dependencies:', serviceName);
+
+        serviceDescriptor = await serviceProvider(
+          serviceProvider[SPECIAL_PROPS.INJECT].reduce(
+            (finalHash, dependencyDeclaration) => {
+              const { serviceName, mappedName } = parseDependencyDeclaration(
+                dependencyDeclaration,
+              );
+
+              finalHash[serviceName] = servicesHash[mappedName];
+              return finalHash;
+            },
+            {},
+          ),
+        );
+
         if (!serviceDescriptor) {
           debug('Provider did not return a descriptor:', serviceName);
           return Promise.reject(
@@ -731,9 +729,7 @@ class Knifecycle {
           siloContext.errorsPromises.push(serviceDescriptor.fatalErrorPromise);
         }
         siloContext.servicesDescriptors.set(serviceName, serviceDescriptor);
-        return serviceDescriptor;
-      })
-      .catch(err => {
+      } catch (err) {
         debug(
           'Error initializing a service descriptor:',
           serviceName,
@@ -745,7 +741,10 @@ class Knifecycle {
           );
         }
         throw err;
-      });
+      }
+      return serviceDescriptor;
+    })();
+
     if (serviceProvider[SPECIAL_PROPS.OPTIONS].singleton) {
       const handlesSet = new Set();
 
@@ -772,61 +771,57 @@ class Knifecycle {
    * @param  {Boolean}    injectOnly        Flag indicating if existing services only should be used
    * @return {Promise}                      Service dependencies hash promise.
    */
-  _initializeDependencies(
+  async _initializeDependencies(
     siloContext,
     serviceName,
     servicesDeclarations,
     injectOnly = false,
   ) {
     debug('Initializing dependencies:', serviceName, servicesDeclarations);
-    return Promise.resolve().then(() =>
-      Promise.all(
-        servicesDeclarations.map(serviceDeclaration => {
-          const { mappedName, optional } = parseDependencyDeclaration(
-            serviceDeclaration,
-          );
+    const servicesDescriptors = await Promise.all(
+      servicesDeclarations.map(serviceDeclaration => {
+        const { mappedName, optional } = parseDependencyDeclaration(
+          serviceDeclaration,
+        );
 
-          return this._getServiceDescriptor(
-            siloContext,
-            injectOnly,
-            mappedName,
-          ).catch(err => {
-            if (optional) {
-              return Promise.resolve();
-            }
-            throw err;
-          });
-        }),
-      )
-        .then(servicesDescriptors => {
-          debug(
-            'Initialized dependencies descriptors:',
-            serviceName,
-            servicesDeclarations,
-          );
-          siloContext.servicesSequence.push(
-            servicesDeclarations.map(_pickMappedNameFromDeclaration),
-          );
-          return Promise.all(
-            servicesDescriptors.map(serviceDescriptor => {
-              if (!serviceDescriptor) {
-                return {}.undef;
-              }
-              return serviceDescriptor.service;
-            }),
-          );
-        })
-        .then(services =>
-          services.reduce((hash, service, index) => {
-            const mappedName = _pickMappedNameFromDeclaration(
-              servicesDeclarations[index],
-            );
-
-            hash[mappedName] = service;
-            return hash;
-          }, {}),
-        ),
+        return this._getServiceDescriptor(
+          siloContext,
+          injectOnly,
+          mappedName,
+        ).catch(err => {
+          if (optional) {
+            return Promise.resolve();
+          }
+          throw err;
+        });
+      }),
     );
+    debug(
+      'Initialized dependencies descriptors:',
+      serviceName,
+      servicesDeclarations,
+    );
+    siloContext.servicesSequence.push(
+      servicesDeclarations.map(_pickMappedNameFromDeclaration),
+    );
+
+    const services = await Promise.all(
+      servicesDescriptors.map(serviceDescriptor => {
+        if (!serviceDescriptor) {
+          return {}.undef;
+        }
+        return serviceDescriptor.service;
+      }),
+    );
+
+    return services.reduce((hash, service, index) => {
+      const mappedName = _pickMappedNameFromDeclaration(
+        servicesDeclarations[index],
+      );
+
+      hash[mappedName] = service;
+      return hash;
+    }, {});
   }
 }
 

@@ -52,9 +52,11 @@ export function reuseSpecialProps(from, to, amend = {}) {
  * The new initializer
  */
 export function wrapInitializer(wrapper, baseInitializer) {
-  return reuseSpecialProps(baseInitializer, services =>
-    baseInitializer(services).then(wrapper.bind(null, services)),
-  );
+  return reuseSpecialProps(baseInitializer, async services => {
+    const baseInstance = await baseInitializer(services);
+
+    return wrapper(services, baseInstance);
+  });
 }
 
 /**

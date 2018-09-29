@@ -46,14 +46,14 @@ describe('buildInitializer', () => {
       : Promise.reject(new YError('E_UNMATCHED_DEPENDENCY', name));
   }
 
-  it('should build an initialization module', () =>
-    buildInitializer(mockedConstants, mockedLoader, [
+  it('should build an initialization module', async () => {
+    const content = await buildInitializer(mockedConstants, mockedLoader, [
       'dep1',
       'finalMappedDep>dep3',
-    ]).then(content => {
-      assert.equal(
-        content,
-        `
+    ]);
+    assert.equal(
+      content,
+      `
 // Definition batch #0
 import initDep1 from './services/dep1';
 const NODE_ENV = "development";
@@ -117,6 +117,6 @@ export async function initialize(services = {}) {
   };
 }
 `,
-      );
-    }));
+    );
+  });
 });

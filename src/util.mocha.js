@@ -63,8 +63,8 @@ describe('reuseSpecialProps', () => {
   });
 });
 
-describe('wrapInitializer', done => {
-  it('should work', () => {
+describe('wrapInitializer', () => {
+  it('should work', async () => {
     function baseInitializer() {
       return Promise.resolve(() => 'test');
     }
@@ -81,13 +81,9 @@ describe('wrapInitializer', done => {
       return () => service() + '-wrapped';
     }, baseInitializer);
 
-    newInitializer({ log })
-      .then(service => {
-        assert.equal(service(), 'test-wrapped');
-        assert.deepEqual(log.args, [['Wrapping...']]);
-      })
-      .then(done)
-      .catch(done);
+    const service = await newInitializer({ log });
+    assert.equal(service(), 'test-wrapped');
+    assert.deepEqual(log.args, [['Wrapping...']]);
   });
 });
 
@@ -206,7 +202,7 @@ describe('initializer', () => {
 });
 
 describe('handler', () => {
-  it('should work', () => {
+  it('should work', async () => {
     const injectedServices = ['kikooo', 'lol'];
     const services = {
       kikooo: 'kikooo',
@@ -217,14 +213,12 @@ describe('handler', () => {
     assert.deepEqual(theInitializer.$name, sampleHandler.name);
     assert.deepEqual(theInitializer.$inject, ['kikooo', 'lol']);
 
-    return theInitializer(services)
-      .then(theHandler => theHandler('test'))
-      .then(result =>
-        assert.deepEqual(result, {
-          deps: services,
-          args: ['test'],
-        }),
-      );
+    const theHandler = await theInitializer(services);
+    const result = await theHandler('test');
+    assert.deepEqual(result, {
+      deps: services,
+      args: ['test'],
+    });
 
     function sampleHandler(deps, ...args) {
       return Promise.resolve({ deps, args });
