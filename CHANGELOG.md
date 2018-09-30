@@ -1,3 +1,13 @@
+<a name="2.6.0"></a>
+# [2.6.0](https://github.com/nfroidure/knifecycle/compare/v2.5.4...v2.6.0) (2018-09-30)
+
+
+### Features
+
+* **$autoload:** Allows to autoload missing dependencies ([5b1cdb1](https://github.com/nfroidure/knifecycle/commit/5b1cdb1))
+
+
+
 <a name="2.5.4"></a>
 ## [2.5.4](https://github.com/nfroidure/knifecycle/compare/v2.5.3...v2.5.4) (2018-09-22)
 
