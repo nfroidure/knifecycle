@@ -5,6 +5,7 @@ import sinon from 'sinon';
 import YError from 'yerror';
 
 import { Knifecycle, inject, options } from './index';
+import { initializer, SPECIAL_PROPS } from './util';
 
 describe('Knifecycle', () => {
   let $;
@@ -56,6 +57,52 @@ describe('Knifecycle', () => {
   describe('service', () => {
     it('should register service', () => {
       $.service('time', timeService);
+    });
+  });
+
+  describe('register', () => {
+    it('should fail when intitializer is no a function', () => {
+      assert.throws(
+        () => {
+          $.register('not_a_function');
+        },
+        err => {
+          assert.deepEqual(err.code, 'E_BAD_INITIALIZER');
+          assert.deepEqual(err.params, ['not_a_function']);
+          return true;
+        },
+      );
+    });
+
+    it('should fail with no service name', () => {
+      assert.throws(
+        () => {
+          $.register(() => {});
+        },
+        err => {
+          assert.deepEqual(err.code, 'E_ANONYMOUS_ANALYZER');
+          assert.deepEqual(err.params, []);
+          return true;
+        },
+      );
+    });
+    it('should fail with a bad service type', () => {
+      assert.throws(
+        () => {
+          const fn = () => {};
+          fn[SPECIAL_PROPS.NAME] = 'test';
+          fn[SPECIAL_PROPS.TYPE] = 'not_allowed_type';
+          $.register(fn);
+        },
+        err => {
+          assert.deepEqual(err.code, 'E_BAD_INITIALIZER_TYPE');
+          assert.deepEqual(err.params, [
+            'not_allowed_type',
+            ['provider', 'service'],
+          ]);
+          return true;
+        },
+      );
     });
   });
 
@@ -406,6 +453,224 @@ describe('Knifecycle', () => {
         throw new Error('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.deepEqual(err.message, 'E_DB_ERROR');
+      }
+    });
+  });
+
+  describe('autoload', () => {
+    it('should work with lacking autoloaded dependencies', async () => {
+      $.register(
+        initializer(
+          {
+            type: 'service',
+            name: '$autoload',
+            inject: [],
+          },
+          async () => async serviceName => ({
+            path: '/path/of/debug',
+            initializer: initializer(
+              {
+                type: 'service',
+                name: 'DEBUG',
+                inject: [],
+              },
+              async () => 'THE_DEBUG:' + serviceName,
+            ),
+          }),
+        ),
+      );
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', inject(['ENV', '?DEBUG'], hashProvider));
+
+      const dependencies = await $.run(['time', 'hash']);
+
+      assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
+      assert.deepEqual(dependencies, {
+        hash: { ENV, DEBUG: 'THE_DEBUG:DEBUG' },
+        time,
+      });
+    });
+
+    it('should work with deeper several lacking dependencies', async () => {
+      $.register(
+        initializer(
+          {
+            name: '$autoload',
+            type: 'service',
+          },
+          async () => async serviceName => ({
+            path: `/path/to/${serviceName}`,
+            initializer: initializer(
+              {
+                type: 'provider',
+                name: serviceName,
+                inject:
+                  'hash2' === serviceName
+                    ? ['hash1']
+                    : 'hash4' === serviceName
+                      ? ['hash3']
+                      : [],
+              },
+              hashProvider,
+            ),
+          }),
+        ),
+      );
+      $.constant('ENV', ENV);
+      $.constant('time', time);
+      $.provider('hash', inject(['ENV'], hashProvider));
+      $.provider('hash1', inject(['hash'], hashProvider));
+      $.provider('hash3', inject(['hash2'], hashProvider));
+      $.provider('hash5', inject(['hash4'], hashProvider));
+
+      const dependencies = await $.run(['hash5', 'time']);
+
+      assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
+    });
+
+    it('should work with various dependencies', async () => {
+      $.provider('hash', inject(['hash2'], hashProvider));
+      $.provider('hash3', inject(['?ENV'], hashProvider));
+      $.constant('DEBUG', 1);
+      $.register(
+        initializer(
+          {
+            type: 'service',
+            name: '$autoload',
+            inject: ['?ENV', 'DEBUG'],
+          },
+          async () => async serviceName => ({
+            path: '/path/of/debug',
+            initializer: initializer(
+              {
+                type: 'service',
+                name: 'hash2',
+                inject: ['hash3'],
+              },
+              async () => 'THE_HASH:' + serviceName,
+            ),
+          }),
+        ),
+      );
+
+      const dependencies = await $.run(['hash', '?ENV']);
+
+      assert.deepEqual(Object.keys(dependencies), ['hash', 'ENV']);
+    });
+
+    it('should fail when autoload does not exists', async () => {
+      try {
+        await $.run(['test']);
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        assert.equal(err.code, 'E_UNMATCHED_DEPENDENCY');
+      }
+    });
+
+    it('should fail when autoloaded dependencies are not found', async () => {
+      $.register(
+        initializer(
+          {
+            type: 'service',
+            name: '$autoload',
+            inject: [],
+          },
+          async () => async serviceName => {
+            throw new YError('E_CANNOT_AUTOLOAD', serviceName);
+          },
+        ),
+      );
+
+      try {
+        await $.run(['test']);
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        assert.equal(err.code, 'E_CANNOT_AUTOLOAD');
+        assert.deepEqual(err.params, ['test']);
+      }
+    });
+
+    it('should fail when autoloaded dependencies are not initializers', async () => {
+      $.register(
+        initializer(
+          {
+            type: 'service',
+            name: '$autoload',
+            inject: [],
+          },
+          async () => async () => 'not_an_initializer',
+        ),
+      );
+
+      try {
+        await $.run(['test']);
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        assert.equal(err.code, 'E_BAD_AUTOLOADED_INITIALIZER');
+        assert.deepEqual(err.params, ['test', {}.undef]);
+      }
+    });
+
+    it('should fail when autoloaded dependencies are not right initializers', async () => {
+      $.register(
+        initializer(
+          {
+            type: 'service',
+            name: '$autoload',
+            inject: [],
+          },
+          async () => async serviceName => ({
+            path: '/path/of/debug',
+            initializer: initializer(
+              {
+                type: 'service',
+                name: 'not-' + serviceName,
+                inject: [],
+              },
+              async () => 'THE_TEST:' + serviceName,
+            ),
+          }),
+        ),
+      );
+
+      try {
+        await $.run(['test']);
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        assert.equal(err.code, 'E_AUTOLOADED_INITIALIZER_MISMATCH');
+        assert.deepEqual(err.params, ['test', 'not-test']);
+      }
+    });
+
+    it('should fail when autoload depends on autoloaded/unexisting dependencies', async () => {
+      $.register(
+        initializer(
+          {
+            type: 'service',
+            name: '$autoload',
+            inject: ['ENV'],
+          },
+          async () => async serviceName => ({
+            path: '/path/of/debug',
+            initializer: initializer(
+              {
+                type: 'service',
+                name: 'DEBUG',
+                inject: [],
+              },
+              async () => 'THE_DEBUG:' + serviceName,
+            ),
+          }),
+        ),
+      );
+
+      try {
+        await $.run(['test']);
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        assert.equal(err.code, 'E_AUTOLOADER_DYNAMIC_DEPENDENCY');
+        assert.deepEqual(err.params, ['ENV']);
       }
     });
   });

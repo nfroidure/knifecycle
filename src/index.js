@@ -16,20 +16,27 @@ const debug = initDebug('knifecycle');
 
 const DISPOSE = '$dispose';
 const DESTROY = '$destroy';
+const AUTOLOAD = '$autoload';
 const INJECTOR = '$injector';
 const SILO_CONTEXT = '$siloContext';
 const FATAL_ERROR = '$fatalError';
 
 const ALLOWED_INITIALIZER_TYPES = ['provider', 'service'];
 
-const E_BAD_ANALYZER_TYPE = 'E_BAD_ANALYZER_TYPE';
+const E_BAD_INITIALIZER_TYPE = 'E_BAD_INITIALIZER_TYPE';
+const E_BAD_AUTOLOADED_INITIALIZER = 'E_BAD_AUTOLOADED_INITIALIZER';
+const E_AUTOLOADED_INITIALIZER_MISMATCH = 'E_AUTOLOADED_INITIALIZER_MISMATCH';
 const E_UNMATCHED_DEPENDENCY = 'E_UNMATCHED_DEPENDENCY';
 const E_CIRCULAR_DEPENDENCY = 'E_CIRCULAR_DEPENDENCY';
+const E_BAD_INITIALIZER = 'E_BAD_INITIALIZER';
 const E_ANONYMOUS_ANALYZER = 'E_ANONYMOUS_ANALYZER';
 const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
 const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
 const E_BAD_INJECTION = 'E_BAD_INJECTION';
 const E_CONSTANT_INJECTION = 'E_CONSTANT_INJECTION';
+const E_INSTANCE_DESTROYED = 'E_INSTANCE_DESTROYED';
+const E_AUTOLOADER_DYNAMIC_DEPENDENCY = 'E_AUTOLOADER_DYNAMIC_DEPENDENCY';
+const E_BAD_CLASS = 'E_BAD_CLASS';
 
 // Constants that should use Symbol whenever possible
 const INSTANCE = '__instance';
@@ -86,7 +93,7 @@ class Knifecycle {
               $siloContext,
               $siloContext.name,
               dependenciesDeclarations,
-              true,
+              { injectOnly: true },
             ),
         }),
       ),
@@ -305,6 +312,9 @@ class Knifecycle {
   }
 
   register(initializer) {
+    if (typeof initializer !== 'function') {
+      throw new YError(E_BAD_INITIALIZER, initializer);
+    }
     initializer[SPECIAL_PROPS.INJECT] = initializer[SPECIAL_PROPS.INJECT] || [];
     initializer[SPECIAL_PROPS.OPTIONS] =
       initializer[SPECIAL_PROPS.OPTIONS] || {};
@@ -315,7 +325,7 @@ class Knifecycle {
     }
     if (!ALLOWED_INITIALIZER_TYPES.includes(initializer[SPECIAL_PROPS.TYPE])) {
       throw new YError(
-        E_BAD_ANALYZER_TYPE,
+        E_BAD_INITIALIZER_TYPE,
         initializer[SPECIAL_PROPS.TYPE],
         ALLOWED_INITIALIZER_TYPES,
       );
@@ -500,7 +510,7 @@ class Knifecycle {
     };
 
     if (this.shutdownPromise) {
-      throw new YError('E_INSTANCE_DESTROYED');
+      throw new YError(E_INSTANCE_DESTROYED);
     }
 
     // Create a provider for the special fatal error service
@@ -605,6 +615,7 @@ class Knifecycle {
       siloContext,
       siloContext.name,
       internalDependencies,
+      { injectOnly: false, autoloading: false },
     );
 
     debug('Handling fatal errors:', siloContext.errorsPromises);
@@ -625,18 +636,26 @@ class Knifecycle {
 
   /**
    * Initialize or return a service descriptor
-   * @param  {Object}     siloContext       Current execution silo context
-   * @param  {Boolean}    injectOnly        Flag indicating if existing services only should be used
-   * @param  {String}     serviceName       Service name.
+   * @param  {Object}     siloContext
+   * Current execution silo context
+   * @param  {String}     serviceName
+   * Service name.
+   * @param  {Object}     options
+   * Options for service retrieval
+   * @param  {Boolean}    options.injectOnly
+   * Flag indicating if existing services only should be used
+   * @param  {Boolean}    options.autoloading
+   * Flag to indicating $autoload dependencies on the fly loading
    * @param  {String}     serviceProvider   Service provider.
    * @return {Promise}                      Service dependencies hash promise.
    */
-  _getServiceDescriptor(siloContext, injectOnly, serviceName) {
+  _getServiceDescriptor(siloContext, serviceName, { injectOnly, autoloading }) {
     let serviceDescriptor = this._singletonsServicesDescriptors.get(
       serviceName,
     );
 
     if (serviceDescriptor) {
+      // The auto loader must only have static dependencies
       this._singletonsServicesHandles.get(serviceName).add(siloContext.name);
     } else {
       serviceDescriptor = siloContext.servicesDescriptors.get(serviceName);
@@ -653,31 +672,87 @@ class Knifecycle {
       return Promise.reject(new YError(E_BAD_INJECTION, serviceName));
     }
 
-    return this._initializeServiceDescriptor(siloContext, serviceName);
+    return this._initializeServiceDescriptor(siloContext, serviceName, {
+      autoloading: autoloading || AUTOLOAD === serviceName,
+      injectOnly,
+    });
   }
 
   /**
-   * Initialize a service
+   * Initialize a service descriptor
    * @param  {Object}     siloContext       Current execution silo context
    * @param  {String}     serviceName       Service name.
-   * @param  {String}     serviceProvider   Service provider.
+   * @param  {Object}     options
+   * Options for service retrieval
+   * @param  {Boolean}    options.injectOnly
+   * Flag indicating if existing services only should be used
+   * @param  {Boolean}    options.autoloading
+   * Flag to indicating $autoload dependendencies on the fly loading.
    * @return {Promise}                      Service dependencies hash promise.
    */
-  async _initializeServiceDescriptor(siloContext, serviceName) {
-    const serviceProvider = this._servicesProviders.get(serviceName);
+  async _initializeServiceDescriptor(
+    siloContext,
+    serviceName,
+    { autoloading, injectOnly },
+  ) {
+    let serviceProvider = this._servicesProviders.get(serviceName);
 
     debug('Initializing a service descriptor:', serviceName);
 
     if (!serviceProvider) {
       debug('No service provider:', serviceName);
-      const serviceDescriptorPromise = Promise.reject(
-        new YError(E_UNMATCHED_DEPENDENCY, serviceName),
-      );
-      siloContext.servicesDescriptors.set(
-        serviceName,
-        serviceDescriptorPromise,
-      );
-      await serviceDescriptorPromise;
+      try {
+        if (autoloading) {
+          // The auto loader must only have static dependencies
+          throw new YError(E_AUTOLOADER_DYNAMIC_DEPENDENCY, serviceName);
+        }
+        if (!this._servicesProviders.get(AUTOLOAD)) {
+          throw new YError(E_UNMATCHED_DEPENDENCY, serviceName);
+        }
+
+        debug(`Loading the $autoload to lookup for: ${serviceName}.`);
+        try {
+          const autoloadingDescriptor = await this._getServiceDescriptor(
+            siloContext,
+            AUTOLOAD,
+            { injectOnly, autoloading: true },
+          );
+          const { initializer, path } = await autoloadingDescriptor.service(
+            serviceName,
+          );
+
+          if (typeof initializer !== 'function') {
+            throw new YError(
+              E_BAD_AUTOLOADED_INITIALIZER,
+              serviceName,
+              initializer,
+            );
+          }
+
+          if (initializer[SPECIAL_PROPS.NAME] !== serviceName) {
+            throw new YError(
+              E_AUTOLOADED_INITIALIZER_MISMATCH,
+              serviceName,
+              initializer[SPECIAL_PROPS.NAME],
+            );
+          }
+
+          debug(`Loaded the auto loader at path ${path}.`);
+          this.register(initializer);
+
+          serviceProvider = this._servicesProviders.get(serviceName);
+        } catch (err) {
+          debug(`Could not load ${serviceName} via the auto loader.`);
+          throw err;
+        }
+      } catch (err) {
+        const serviceDescriptorPromise = Promise.reject(err);
+        siloContext.servicesDescriptors.set(
+          serviceName,
+          serviceDescriptorPromise,
+        );
+        await serviceDescriptorPromise;
+      }
     }
 
     const serviceDescriptorPromise = (async () => {
@@ -699,6 +774,7 @@ class Knifecycle {
           siloContext,
           serviceName,
           serviceProvider[SPECIAL_PROPS.INJECT],
+          { injectOnly, autoloading },
         );
 
         debug('Successfully gathered service dependencies:', serviceName);
@@ -768,14 +844,19 @@ class Knifecycle {
    * @param  {Object}     siloContext       Current execution silo siloContext
    * @param  {String}     serviceName       Service name.
    * @param  {String}     servicesDeclarations     Dependencies declarations.
-   * @param  {Boolean}    injectOnly        Flag indicating if existing services only should be used
+   * @param  {Object}     options
+   * Options for service retrieval
+   * @param  {Boolean}    options.injectOnly
+   * Flag indicating if existing services only should be used
+   * @param  {Boolean}    options.autoloading
+   * Flag to indicating $autoload dependendencies on the fly loading.
    * @return {Promise}                      Service dependencies hash promise.
    */
   async _initializeDependencies(
     siloContext,
     serviceName,
     servicesDeclarations,
-    injectOnly = false,
+    { injectOnly = false, autoloading = false },
   ) {
     debug('Initializing dependencies:', serviceName, servicesDeclarations);
     const servicesDescriptors = await Promise.all(
@@ -784,11 +865,10 @@ class Knifecycle {
           serviceDeclaration,
         );
 
-        return this._getServiceDescriptor(
-          siloContext,
+        return this._getServiceDescriptor(siloContext, mappedName, {
           injectOnly,
-          mappedName,
-        ).catch(err => {
+          autoloading,
+        }).catch(err => {
           if (optional) {
             return Promise.resolve();
           }
@@ -836,11 +916,9 @@ function _pickServiceNameFromDeclaration(dependencyDeclaration) {
 }
 
 function _pickMappedNameFromDeclaration(dependencyDeclaration) {
-  const { serviceName, mappedName } = parseDependencyDeclaration(
-    dependencyDeclaration,
-  );
+  const { mappedName } = parseDependencyDeclaration(dependencyDeclaration);
 
-  return mappedName || serviceName;
+  return mappedName;
 }
 
 function _applyShapes(shapes, serviceName) {
@@ -873,7 +951,7 @@ function _applyStyles(classes, styles, { serviceName, dependedServiceName }) {
   return styles.reduce((classesApplications, style) => {
     if (style.pattern.test(serviceName) && !classesApplications[serviceName]) {
       if (!classes[style.className]) {
-        throw new YError('E_BAD_CLASS', style.className, serviceName);
+        throw new YError(E_BAD_CLASS, style.className, serviceName);
       }
       classesApplications[serviceName] = style.className;
     }
@@ -882,7 +960,7 @@ function _applyStyles(classes, styles, { serviceName, dependedServiceName }) {
       !classesApplications[dependedServiceName]
     ) {
       if (!classes[style.className]) {
-        throw new YError('E_BAD_CLASS', style.className, dependedServiceName);
+        throw new YError(E_BAD_CLASS, style.className, dependedServiceName);
       }
       classesApplications[dependedServiceName] = style.className;
     }

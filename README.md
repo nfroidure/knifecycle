@@ -70,87 +70,117 @@ At this point you may think that a DI system is useless. My
 - generate Mermaid graphs of the dependency tree;
 - build raw initialization modules to avoid
  embedding Knifecycle in your builds.
+- optionally autoload services dependencies with custom
+ logic
 
 ## Usage
 
 Using `knifecycle` is all about declaring the services our
  application needs and running your application over it.
 
-Let's say we are building a web service. First, we need to
+Let's say we are building a CLI script. He is how we would
+ proceed with Knifecycle:
+ 
+ 
+ First, we need to
  handle a configuration file so we are creating an
  initializer to instanciate our `CONFIG` service:
 ```js
-// services/config.js
+// bin.js
 import fs from 'fs';
-import { initializer } from 'knifecycle';
+import Knifecycle, { initializer, inject, name } from 'knifecycle';
 
-// We are using the `initializer` decorator to
-// declare our service initializer specificities
-// Note that the initializer` decorator is pure
-// so it just adds static informations and do not
-// register the initializer to the provider yet.
-export const initConfig = initializer({
-  // we have to give our final service a name
-  // for further use in other services injections
-  name: 'CONFIG',
-  // we will need an `ENV` variable in the initializer
-  // so adding it in the injected dependencies.
-  inject: ['ENV'],
-  // our initializer is simple so we use the `service`
-  // type for the initializer which just indicate that
-  // the initializer will return a promise of the actual
-  // service
-  type: 'service',
-  // We don't want to read the config file everytime we
-  // inject it so declaring it as a singleton
-  options: { singleton: true },
-// Here is the actual initializer implementation, you
-// can notice that it expect the `ENV` dependency to
-// be set as a property of an object in first argument.
-}, async ({ ENV }) => {
-  return new Promise((resolve, reject) {
-    fs.readFile(ENV.CONFIG_PATH, function(err, data) {
-      if(err) {
-        return reject(err);
+// First of all we create a new Knifecycle instance
+const $ = new Knifecycle();
+
+// Some of our code with rely on the process environment
+// let's inject it as a constant instead of directly
+// pickking en vars in `process.env` to make our code
+// easily testable
+$.constant('ENV', process.env);
+
+// Let's do so for CLI args with another constant
+// in real world apps we would have create a service
+// that would parse args in a complexer way
+$.constant('ARGS', process.argv);
+
+// We want our CLI tool to rely on some configuration
+// Let's build an injectable service initializer that
+// reads environment variables via an injected but
+// optional `ENV` object
+async function initConfig({ ENV = { CONFIG_PATH: '.' } }) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(ENV.CONFIG_PATH, 'utf-8', (err, data) => {
+      if (err) {
+        reject(err);
+        return;
       }
       try {
         resolve(JSON.parse(data));
       } catch (err) {
         reject(err);
       }
-  }, 'utf-8');
-});
-```
+    });
+  });
+}
 
-Our service also uses a database so let's write an
- initializer for it:
- ```js
- // services/db.js
- import { initializer } from 'knifecycle';
+// We are using the `initializer` decorator to
+// declare our service initializer specificities
+// and register it with our Knifecycle instance
+$.register(
+  initializer(
+    {
+      // we have to give our final service a name
+      // for further use in other services injections
+      name: 'CONFIG',
+      // we will need an `ENV` variable in the initializer
+      // so adding it in the injected dependencies. The `?`
+      // sign tells Knifecycle that the ENV dependency
+      // is optional
+      inject: ['?ENV'],
+      // our initializer is simple so we use the `service`
+      // type for the initializer which just indicate that
+      // the initializer will return a promise of the actual
+      // service
+      type: 'service',
+      // We don't want to read the config file everytime we
+      // inject it so declaring it as a singleton
+      options: { singleton: true },
+    },
+    initConfig,
+  ),
+);
 
-const initDB = initializer({
-  name: 'db',
-  // Here we are injecting the previous `CONFIG` service
-  // plus an optional one. If it does not exist then it
-  // will silently fail and the service will be undefined.
-  inject: ['CONFIG', '?log'],
-  // The initializer type is slightly different. Indeed,
-  // we need to manage the database connection errors
-  // and wait for it to flush before shutting down the
-  // process.
-  // A service provider returns a promise of a provider
-  // descriptor exposing:
-  // - a mandatory `service` property containing the
-  // actual service;
-  // - an optional `dispose` function allowing to
-  // gracefully close the service;
-  // - an optional `fatalErrorPromise` property to
-  // handle the service unrecoverable failure.
-  type: 'provider',
-  options: { singleton: true },
-}, async ({ CONFIG, log }) {
-   const db = await MongoClient.connect(CONFIG.DB_URI);
-    let fatalErrorPromise = new Promise((resolve, reject) {
+// Our CLI also uses a database so let's write an
+// initializer for it:
+const initDB = initializer(
+  {
+    name: 'db',
+    // Here we are injecting the previous `CONFIG` service
+    // as required so that our DB cannot be connected without
+    // having a proper config.
+    inject: ['CONFIG', 'DB_URI', '?log'],
+    // The initializer type is slightly different. Indeed,
+    // we need to manage the database connection errors
+    // and wait for it to flush before shutting down the
+    // process.
+    // A service provider returns a promise of a provider
+    // descriptor exposing:
+    // - a mandatory `service` property containing the
+    // actual service;
+    // - an optional `dispose` function allowing to
+    // gracefully close the service;
+    // - an optional `fatalErrorPromise` property to
+    // handle the service unrecoverable failure.
+    type: 'provider',
+    options: { singleton: true },
+  },
+  async ({ CONFIG, DB_URI, log }) => {
+    const db = await MongoClient.connect(
+      DB_URI,
+      CONFIG.databaseOptions,
+    );
+    let fatalErrorPromise = new Promise((resolve, reject) => {
       db.once('error', reject);
     });
 
@@ -162,154 +192,130 @@ const initDB = initializer({
       dispose: db.close.bind(db, true),
       fatalErrorPromise,
     };
- });
- ```
+  },
+);
 
-We need a last initializer for the HTTP server itself:
-```js
-// services/server.js
-import { initializer } from 'knifecycle';
-import express from 'express';
+// Here we are registering our initializer apart to
+// be able to reuse it, we also declare the required
+// DB_URI constant it needs
+$.constant('DB_URI', 'posgresql://xxxx').register(initDB);
 
-const initDB = initializer({
-  name: 'server',
-  inject: ['ENV', 'CONFIG', '?log'],
-  options: { singleton: true },
-}, async ({ ENV, CONFIG, log }) => {
-  const app = express();
-
-  const server = new Promise((resolve, reject) => {
-    const port = ENV.PORT || CONFIG.PORT;
-    const server = app.listen(port, () => {
-      log && log('info', `server listening on port ${port}!`);
-      resolve(server);
-    });
-  });
-
-  let fatalErrorPromise = new Promise((resolve, reject) {
-    app.once('error', reject);
-    server.once('error', reject);
-  });
-
-  function dispose() {
-    return new Promise((resolve, reject) => {
-      server.close((err) => {
-        if(err) {
-          reject(err);
-          return;
-        }
-        resolve();
-      })
-    });
-  }
-
-  return {
-    service: app,
-    dispose,
-    fatalErrorPromise,
-  };
-});
-```
-
-Great! We are ready to make it work altogether:
-```js
-import { getInstance } from 'knifecycle';
-import initConfig from 'services/config';
-import initDB from 'services/db';
-import initServer from 'services/server';
-
-// We need only one Knifecycle instance so using
-// a the singleton API
-getInstance()
-// Registering our initializers
-.register(initConfig)
-.register(initServer)
-.register(initDB)
-// Let's say we need to have another `db`
-// service pointing to another db server.
-.register(
+// Say we need to use two different DB server
+// We can reuse our initializer by tweaking
+// some of its properties
+$.constant('DB_URI2', 'posgresql://yyyy');
+$.register(
   // First we remap the injected dependencies. It will
-  // take the `DB2_CONFIG` service and inject it as
-  // `CONFIG`
-  inject(['DB2_CONFIG>CONFIG', '?log'],
-    // Then we override its name
-    name('db2', initDB)
-  )
-)
-// Finally, we have to create the `DB2_CONFIG` service
-// on which the `db2` service now depends on
-.register(name('DB2_CONFIG', inject(['CONFIG'], async ({ CONFIG }) => {
-  // Let's just pick up the `db2` uri in the `CONFIG`
-  // service
-  return {
-    DB_URI: CONFIG.DB2_URI,
-  };
-})))
-// Add the process environment as a simple constant
-.constant('ENV', process.env)
-// Add a function providing the current timestamp
-.constant('now', Date.now.bind(Date))
-// Add a delay function
-.constant('delay', Promise.delay.bind(Promise))
-// Add process lifetime utils
-.constant('waitSignal', function waitSignal(signal) {
-  return new Promise((resolve, reject) => {
-    process.once(signal, resolve.bind(null, signal));
-  });
-})
-.constant('exit', process.exit.bind(exit))
-// Setting a route to serve the current timestamp.
-.register(name('timeRoute',
+  // take the `DB_URI2` constant and inject it as
+  // `DB_URI`
   inject(
-    ['server', 'now', '?log'],
-    async ({ server: app, now, log }) => {
-      app.get('/time', (req, res, next) => {
-        const curTime = now();
+    ['CONFIG', 'DB_URI2>DB_URI', '?log'],
+    // Then we override its name to make it
+    // available as a different service
+    name('db2', initDB),
+  ),
+);
 
-        log && log('info', 'Sending the current time:', curTime);
-        res.status(200).send(curTime);
-      });
-    }
-  )
-))
+// A lot of NodeJS functions have some side effects
+// declaring them as constants allows you to easily
+// mock/monitor/patch it. The `common-services` NPM
+// module contains a few useful ones
+$.constant('now', Date.now.bind(Date))
+  .constant('log', console.log.bind(console))
+  .constant('exit', process.exit.bind(process));
 
-// At this point, nothing is running. To instanciate
+// Finally, let's declare an `$autoload` service
+// to allow us to load only the initializers needed
+// to run the given commands
+$.register(
+  initializer(
+    {
+      name: '$autoload',
+      type: 'service',
+      inject: ['CONFIG', 'ARGS'],
+    },
+    async ({ CONFIG, ARGS }) => async serviceName => {
+      if ('command' !== serviceName) {
+        throw new Error(`${serviceName} not supported!`);
+      }
+      try {
+        const path = CONFIG.commands + '/' + ARGS[2];
+        return {
+          path,
+          initializer: require(path).default,
+        };
+      } catch (err) {
+        throw new Error(`Cannot load ${serviceName}: ${ARGS[2]}!`);
+      }
+    },
+  ),
+);
+
+// At this point, nothing is running. To instanciate the
 // services, we have to create an execution silo using
 // them. Note that we required the `$destroy` service
 // implicitly created by `knifecycle`
-.run(['server', 'timeRoute', 'waitSignal', 'exit', '$destroy'])
-// Note that despite we injected them, we do not take
-// back the `server` and `timeRoute` services. We only
-// need them to get up and running but do not need to
-// operate on them
-.then(({ waitSignal, exit, $destroy }) {
-  // We want to exit gracefully when a SIG_TERM/INT
-  // signal is received
-  Promise.any([
-    waitSignal('SIGINT'),
-    waitSignal('SIGTERM'),
-  ])
-  // The `$destroy` service will disable all silos
-  // progressively and then the services they rely
-  // on to finally resolve the returned promise
-  // once done
-  .then($destroy)
-  .then(() => {
-    // graceful shutdown was successful let's exit
-    // in peace
-    exit(0);
-  })
-  .catch((err) => {
-    console.error('Could not exit gracefully:', err);
-    exit(1);
-  });
+$.run(['command', '$destroy', 'exit', 'log'])
+  // Here, command contains the initializer eventually
+  // found by automatically loading a NodeJS module
+  // in the above `$autoload service`. The db connections
+  // we only be instanciated if that command needs it
+  .then(async ({ command, $destroy, exit, log }) => {
+    try {
+      command();
 
-})
-.catch((err) => {
-  console.error('Could not launch the app:', err);
-  process.exit(1);
-});
+      log('It worked!');
+    } catch (err) {
+      log('It failed!', err);
+    } finally {
+      // Here we ensure every db connections are closed
+      // properly
+      await $destroy().catch(err => {
+        console.error('Could not exit gracefully:', err);
+        exit(1);
+      });
+    }
+  })
+  .catch(err => {
+    console.error('Could not launch the app:', err);
+    process.exit(1);
+  });
 ```
+Running the following should make the magic happen:
+```sh
+cat "{ commands: './commands'}" > config.json
+DEBUG=knifecycle CONFIG_PATH=./config.json node -r @babel/register bin.js mycommand test
+// Prints: Could not launch the app: Error: Cannot load command: mycommand!
+// (...stack trace)
+```
+Or at least, we still have to create commands, let's create the `mycommand` one:
+```js
+// commands/mycommand.js
+import { initializer } from './dist';
+
+// A simple command that prints the given args
+export default initializer(
+  {
+    name: 'command',
+    type: 'service',
+    // Here we could have injected whatever we declared
+    // in the previous file: db, now, exit...
+    inject: ['ARGS', 'log'],
+  },
+  async ({ ARGS, log }) => {
+    return () => log('Command args:', ARGS.slice(2));
+  },
+);
+```
+So now, it works:
+```sh
+DEBUG=knifecycle CONFIG_PATH=./config.json node -r @babel/register bin.js mycommand test
+// Prints: Command args: [ 'mycommand', 'test' ]
+// It worked!
+```
+
+This is a very simple example but you can find a complexer CLI usage
+ with (`metapak`)[https://github.com/nfroidure/metapak/blob/master/bin/metapak.js].
 
 ## Debugging
 
@@ -318,6 +324,8 @@ Simply use the DEBUG environment variable by setting it to
 ```sh
 DEBUG=knifecycle npm t
 ```
+The output is very verbose but lead to a deep understanding of
+ mechanisms that take place under the hood.
 
 ## Plans
 
@@ -407,9 +415,9 @@ import/awaits.</p>
         * [.provider(serviceName, initializer, options)](#Knifecycle+provider) ⇒ [<code>Knifecycle</code>](#Knifecycle)
         * [.toMermaidGraph(options)](#Knifecycle+toMermaidGraph) ⇒ <code>String</code>
         * [.run(dependenciesDeclarations)](#Knifecycle+run) ⇒ <code>Promise</code>
-        * [._getServiceDescriptor(siloContext, injectOnly, serviceName, serviceProvider)](#Knifecycle+_getServiceDescriptor) ⇒ <code>Promise</code>
-        * [._initializeServiceDescriptor(siloContext, serviceName, serviceProvider)](#Knifecycle+_initializeServiceDescriptor) ⇒ <code>Promise</code>
-        * [._initializeDependencies(siloContext, serviceName, servicesDeclarations, injectOnly)](#Knifecycle+_initializeDependencies) ⇒ <code>Promise</code>
+        * [._getServiceDescriptor(siloContext, serviceName, options, serviceProvider)](#Knifecycle+_getServiceDescriptor) ⇒ <code>Promise</code>
+        * [._initializeServiceDescriptor(siloContext, serviceName, options)](#Knifecycle+_initializeServiceDescriptor) ⇒ <code>Promise</code>
+        * [._initializeDependencies(siloContext, serviceName, servicesDeclarations, options)](#Knifecycle+_initializeDependencies) ⇒ <code>Promise</code>
     * _static_
         * [.getInstance()](#Knifecycle.getInstance) ⇒ [<code>Knifecycle</code>](#Knifecycle)
 
@@ -587,7 +595,7 @@ $.run(['ENV'])
 ```
 <a name="Knifecycle+_getServiceDescriptor"></a>
 
-### knifecycle._getServiceDescriptor(siloContext, injectOnly, serviceName, serviceProvider) ⇒ <code>Promise</code>
+### knifecycle._getServiceDescriptor(siloContext, serviceName, options, serviceProvider) ⇒ <code>Promise</code>
 Initialize or return a service descriptor
 
 **Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
@@ -596,14 +604,16 @@ Initialize or return a service descriptor
 | Param | Type | Description |
 | --- | --- | --- |
 | siloContext | <code>Object</code> | Current execution silo context |
-| injectOnly | <code>Boolean</code> | Flag indicating if existing services only should be used |
 | serviceName | <code>String</code> | Service name. |
+| options | <code>Object</code> | Options for service retrieval |
+| options.injectOnly | <code>Boolean</code> | Flag indicating if existing services only should be used |
+| options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependencies on the fly loading |
 | serviceProvider | <code>String</code> | Service provider. |
 
 <a name="Knifecycle+_initializeServiceDescriptor"></a>
 
-### knifecycle._initializeServiceDescriptor(siloContext, serviceName, serviceProvider) ⇒ <code>Promise</code>
-Initialize a service
+### knifecycle._initializeServiceDescriptor(siloContext, serviceName, options) ⇒ <code>Promise</code>
+Initialize a service descriptor
 
 **Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
 **Returns**: <code>Promise</code> - Service dependencies hash promise.  
@@ -612,22 +622,26 @@ Initialize a service
 | --- | --- | --- |
 | siloContext | <code>Object</code> | Current execution silo context |
 | serviceName | <code>String</code> | Service name. |
-| serviceProvider | <code>String</code> | Service provider. |
+| options | <code>Object</code> | Options for service retrieval |
+| options.injectOnly | <code>Boolean</code> | Flag indicating if existing services only should be used |
+| options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependendencies on the fly loading. |
 
 <a name="Knifecycle+_initializeDependencies"></a>
 
-### knifecycle._initializeDependencies(siloContext, serviceName, servicesDeclarations, injectOnly) ⇒ <code>Promise</code>
+### knifecycle._initializeDependencies(siloContext, serviceName, servicesDeclarations, options) ⇒ <code>Promise</code>
 Initialize a service dependencies
 
 **Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
 **Returns**: <code>Promise</code> - Service dependencies hash promise.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| siloContext | <code>Object</code> |  | Current execution silo siloContext |
-| serviceName | <code>String</code> |  | Service name. |
-| servicesDeclarations | <code>String</code> |  | Dependencies declarations. |
-| injectOnly | <code>Boolean</code> | <code>false</code> | Flag indicating if existing services only should be used |
+| Param | Type | Description |
+| --- | --- | --- |
+| siloContext | <code>Object</code> | Current execution silo siloContext |
+| serviceName | <code>String</code> | Service name. |
+| servicesDeclarations | <code>String</code> | Dependencies declarations. |
+| options | <code>Object</code> | Options for service retrieval |
+| options.injectOnly | <code>Boolean</code> | Flag indicating if existing services only should be used |
+| options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependendencies on the fly loading. |
 
 <a name="Knifecycle.getInstance"></a>
 
