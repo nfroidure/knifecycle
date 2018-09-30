@@ -1,3 +1,13 @@
+<a name="2.6.2"></a>
+## [2.6.2](https://github.com/nfroidure/knifecycle/compare/v2.6.1...v2.6.2) (2018-09-30)
+
+
+### Bug Fixes
+
+* **$autoload:** Fix autoload disposal ([f087b12](https://github.com/nfroidure/knifecycle/commit/f087b12))
+
+
+
 <a name="2.6.1"></a>
 ## [2.6.1](https://github.com/nfroidure/knifecycle/compare/v2.6.0...v2.6.1) (2018-09-30)
 
