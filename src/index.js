@@ -557,13 +557,13 @@ class Knifecycle {
           }
 
           await Promise.all(
-            reversedServiceSequence.pop().map(serviceName => {
-              const singletonServiceDescriptor = _this._singletonsServicesDescriptors.get(
+            reversedServiceSequence.pop().map(async serviceName => {
+              const singletonServiceDescriptor = await _this._singletonsServicesDescriptors.get(
                 serviceName,
               );
               const serviceDescriptor =
                 singletonServiceDescriptor ||
-                siloContext.servicesDescriptors.get(serviceName);
+                (await siloContext.servicesDescriptors.get(serviceName));
               let serviceShutdownPromise =
                 _this._singletonsServicesShutdownsPromises.get(serviceName) ||
                 siloContext.servicesShutdownsPromises.get(serviceName);
@@ -720,6 +720,10 @@ class Knifecycle {
         serviceName,
         serviceDescriptorPromise,
       );
+    }
+    // Since the autoloader is a bit special it must be pushed here
+    if (AUTOLOAD === this.serviceName) {
+      siloContext.servicesSequence.unshift([AUTOLOAD]);
     }
     return serviceDescriptorPromise;
   }
@@ -930,11 +934,13 @@ class Knifecycle {
       servicesDescriptors,
     );
     siloContext.servicesSequence.push(
-      servicesDeclarations.map(_pickMappedNameFromDeclaration),
+      servicesDeclarations
+        .filter((_, index) => servicesDescriptors[index])
+        .map(_pickMappedNameFromDeclaration),
     );
 
     const services = await Promise.all(
-      servicesDescriptors.map(serviceDescriptor => {
+      servicesDescriptors.map(async serviceDescriptor => {
         if (!serviceDescriptor) {
           return {}.undef;
         }
