@@ -86,6 +86,7 @@ describe('Knifecycle', () => {
         },
       );
     });
+
     it('should fail with a bad service type', () => {
       assert.throws(
         () => {
@@ -100,6 +101,27 @@ describe('Knifecycle', () => {
             'not_allowed_type',
             ['provider', 'service'],
           ]);
+          return true;
+        },
+      );
+    });
+
+    it('should fail with special autoload intitializer that is not a singleton', () => {
+      assert.throws(
+        () => {
+          $.register(
+            initializer(
+              {
+                name: '$autoload',
+                type: 'provider',
+              },
+              () => {},
+            ),
+          );
+        },
+        err => {
+          assert.deepEqual(err.code, 'E_BAD_AUTOLOADER');
+          assert.deepEqual(err.params, [{}]);
           return true;
         },
       );
@@ -465,6 +487,9 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: [],
+            options: {
+              singleton: true,
+            },
           },
           async () => async serviceName => ({
             path: '/path/of/debug',
@@ -498,6 +523,9 @@ describe('Knifecycle', () => {
           {
             name: '$autoload',
             type: 'service',
+            options: {
+              singleton: true,
+            },
           },
           async () => async serviceName => ({
             path: `/path/to/${serviceName}`,
@@ -539,6 +567,9 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: ['?ENV', 'DEBUG'],
+            options: {
+              singleton: true,
+            },
           },
           async () => async serviceName => ({
             path: '/path/of/debug',
@@ -559,6 +590,42 @@ describe('Knifecycle', () => {
       assert.deepEqual(Object.keys(dependencies), ['hash', 'ENV']);
     });
 
+    it('should instanciate services once', async () => {
+      $.register(
+        initializer(
+          {
+            name: '$autoload',
+            type: 'service',
+            options: {
+              singleton: true,
+            },
+          },
+          async () => async serviceName => ({
+            path: `/path/to/${serviceName}`,
+            initializer: initializer(
+              {
+                type: 'provider',
+                name: serviceName,
+                inject: ['ENV', 'time'],
+              },
+              hashProvider,
+            ),
+          }),
+        ),
+      );
+      const timeServiceStub = sinon.spy(timeService);
+
+      $.constant('ENV', ENV);
+      $.service('time', timeServiceStub);
+      $.provider('hash', inject(['hash1', 'hash2', 'hash3'], hashProvider));
+      $.provider('hash_', inject(['hash1', 'hash2', 'hash3'], hashProvider));
+
+      const dependencies = await $.run(['hash', 'hash_', 'hash3']);
+
+      assert.deepEqual(timeServiceStub.args, [[{}]]);
+      assert.deepEqual(Object.keys(dependencies), ['hash', 'hash_', 'hash3']);
+    });
+
     it('should fail when autoload does not exists', async () => {
       try {
         await $.run(['test']);
@@ -575,6 +642,9 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: [],
+            options: {
+              singleton: true,
+            },
           },
           async () => async serviceName => {
             throw new YError('E_CANNOT_AUTOLOAD', serviceName);
@@ -598,6 +668,9 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: [],
+            options: {
+              singleton: true,
+            },
           },
           async () => async () => 'not_an_initializer',
         ),
@@ -619,6 +692,9 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: [],
+            options: {
+              singleton: true,
+            },
           },
           async () => async serviceName => ({
             path: '/path/of/debug',
@@ -650,6 +726,9 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: ['ENV'],
+            options: {
+              singleton: true,
+            },
           },
           async () => async serviceName => ({
             path: '/path/of/debug',

@@ -233,6 +233,8 @@ $.register(
       name: '$autoload',
       type: 'service',
       inject: ['CONFIG', 'ARGS'],
+      // Note that the auto loader must be a singleton
+      options: { singleton: true }
     },
     async ({ CONFIG, ARGS }) => async serviceName => {
       if ('command' !== serviceName) {
