@@ -5,7 +5,7 @@ import sinon from 'sinon';
 import YError from 'yerror';
 
 import { Knifecycle, inject, options } from './index';
-import { initializer, SPECIAL_PROPS } from './util';
+import { initializer, SPECIAL_PROPS, ALLOWED_INITIALIZER_TYPES } from './util';
 
 describe('Knifecycle', () => {
   let $;
@@ -45,12 +45,6 @@ describe('Knifecycle', () => {
 
     it('should register a function', () => {
       $.constant('time', time);
-    });
-
-    it('should fail with dependencies since it makes no sense', () => {
-      assert.throws(() => {
-        $.constant('time', inject(['hash3'], time));
-      }, /E_CONSTANT_INJECTION/);
     });
   });
 
@@ -98,9 +92,63 @@ describe('Knifecycle', () => {
         err => {
           assert.deepEqual(err.code, 'E_BAD_INITIALIZER_TYPE');
           assert.deepEqual(err.params, [
+            'test',
             'not_allowed_type',
-            ['provider', 'service'],
+            ALLOWED_INITIALIZER_TYPES,
           ]);
+          return true;
+        },
+      );
+    });
+
+    it('should fail with an undefined constant', () => {
+      assert.throws(
+        () => {
+          const fn = () => {};
+          fn[SPECIAL_PROPS.NAME] = 'THE_NUMBER';
+          fn[SPECIAL_PROPS.TYPE] = 'constant';
+          fn[SPECIAL_PROPS.VALUE] = {}.undef;
+          fn[SPECIAL_PROPS.OPTIONS] = { singleton: true };
+          $.register(fn);
+        },
+        err => {
+          assert.deepEqual(err.code, 'E_UNDEFINED_CONSTANT_INITIALIZER');
+          assert.deepEqual(err.params, ['THE_NUMBER']);
+          return true;
+        },
+      );
+    });
+
+    it('should fail with a constant that is not a singleton', () => {
+      assert.throws(
+        () => {
+          const fn = () => {};
+          fn[SPECIAL_PROPS.NAME] = 'THE_NUMBER';
+          fn[SPECIAL_PROPS.TYPE] = 'constant';
+          fn[SPECIAL_PROPS.VALUE] = NaN;
+          fn[SPECIAL_PROPS.OPTIONS] = { singleton: false };
+          $.register(fn);
+        },
+        err => {
+          assert.deepEqual(err.code, 'E_NON_SINGLETON_CONSTANT_INITIALIZER');
+          assert.deepEqual(err.params, ['THE_NUMBER']);
+          return true;
+        },
+      );
+    });
+
+    it('should fail with a non constant that has a value', () => {
+      assert.throws(
+        () => {
+          const fn = () => {};
+          fn[SPECIAL_PROPS.NAME] = 'myService';
+          fn[SPECIAL_PROPS.TYPE] = 'service';
+          fn[SPECIAL_PROPS.VALUE] = 42;
+          $.register(fn);
+        },
+        err => {
+          assert.deepEqual(err.code, 'E_BAD_VALUED_NON_CONSTANT_INITIALIZER');
+          assert.deepEqual(err.params, ['myService']);
           return true;
         },
       );

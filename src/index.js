@@ -1,8 +1,10 @@
 /* eslint max-len: ["warn", { "ignoreComments": true }] */
 import {
   SPECIAL_PROPS,
+  ALLOWED_INITIALIZER_TYPES,
   reuseSpecialProps,
   initializer,
+  constant,
   name,
   inject,
   type,
@@ -21,8 +23,6 @@ const INJECTOR = '$injector';
 const SILO_CONTEXT = '$siloContext';
 const FATAL_ERROR = '$fatalError';
 
-const ALLOWED_INITIALIZER_TYPES = ['provider', 'service'];
-
 const E_BAD_INITIALIZER_TYPE = 'E_BAD_INITIALIZER_TYPE';
 const E_BAD_AUTOLOADED_INITIALIZER = 'E_BAD_AUTOLOADED_INITIALIZER';
 const E_BAD_AUTOLOADER = 'E_BAD_AUTOLOADER';
@@ -34,10 +34,14 @@ const E_ANONYMOUS_ANALYZER = 'E_ANONYMOUS_ANALYZER';
 const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
 const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
 const E_BAD_INJECTION = 'E_BAD_INJECTION';
-const E_CONSTANT_INJECTION = 'E_CONSTANT_INJECTION';
 const E_INSTANCE_DESTROYED = 'E_INSTANCE_DESTROYED';
 const E_AUTOLOADER_DYNAMIC_DEPENDENCY = 'E_AUTOLOADER_DYNAMIC_DEPENDENCY';
 const E_BAD_CLASS = 'E_BAD_CLASS';
+const E_UNDEFINED_CONSTANT_INITIALIZER = 'E_UNDEFINED_CONSTANT_INITIALIZER';
+const E_NON_SINGLETON_CONSTANT_INITIALIZER =
+  'E_NON_SINGLETON_CONSTANT_INITIALIZER';
+const E_BAD_VALUED_NON_CONSTANT_INITIALIZER =
+  'E_BAD_VALUED_NON_CONSTANT_INITIALIZER';
 
 // Constants that should use Symbol whenever possible
 const INSTANCE = '__instance';
@@ -171,7 +175,7 @@ class Knifecycle {
   */
 
   /**
-   * Register a constant service
+   * Register a constant initializer
    * @param  {String} constantName
    * The name of the service
    * @param  {any}    constantValue
@@ -190,28 +194,7 @@ class Knifecycle {
    * $.constant('time', Date.now.bind(Date));
    */
   constant(constantName, constantValue) {
-    const contantLooksLikeAnInitializer =
-      constantValue instanceof Function && constantValue[SPECIAL_PROPS.INJECT];
-
-    if (contantLooksLikeAnInitializer) {
-      throw new YError(
-        E_CONSTANT_INJECTION,
-        constantValue[SPECIAL_PROPS.INJECT],
-      );
-    }
-
-    this.register(
-      initializer(
-        {
-          name: constantName,
-          options: { singleton: true },
-        },
-        Promise.resolve.bind(Promise, {
-          service: constantValue,
-          dispose: Promise.resolve.bind(Promise),
-        }),
-      ),
-    );
+    this.register(constant(constantName, constantValue));
 
     debug('Registered a new constant:', constantName);
 
@@ -334,17 +317,44 @@ class Knifecycle {
     if (!ALLOWED_INITIALIZER_TYPES.includes(initializer[SPECIAL_PROPS.TYPE])) {
       throw new YError(
         E_BAD_INITIALIZER_TYPE,
+        initializer[SPECIAL_PROPS.NAME],
         initializer[SPECIAL_PROPS.TYPE],
         ALLOWED_INITIALIZER_TYPES,
       );
     }
+    if (initializer[SPECIAL_PROPS.TYPE] === 'constant') {
+      if ('undefined' === typeof initializer[SPECIAL_PROPS.VALUE]) {
+        throw new YError(
+          E_UNDEFINED_CONSTANT_INITIALIZER,
+          initializer[SPECIAL_PROPS.NAME],
+        );
+      }
+      if (!initializer[SPECIAL_PROPS.OPTIONS].singleton) {
+        throw new YError(
+          E_NON_SINGLETON_CONSTANT_INITIALIZER,
+          initializer[SPECIAL_PROPS.NAME],
+        );
+      }
+    } else if ('undefined' !== typeof initializer[SPECIAL_PROPS.VALUE]) {
+      throw new YError(
+        E_BAD_VALUED_NON_CONSTANT_INITIALIZER,
+        initializer[SPECIAL_PROPS.NAME],
+      );
+    }
 
-    if ('service' === initializer[SPECIAL_PROPS.TYPE]) {
+    // Temporary cast service/constant initializers into
+    // providers. Best would be to threat each differently
+    // at dependencies initialization level to boost performances
+    if (
+      'service' === initializer[SPECIAL_PROPS.TYPE] ||
+      'constant' === initializer[SPECIAL_PROPS.TYPE]
+    ) {
       initializer = reuseSpecialProps(
         initializer,
         serviceAdapter.bind(null, initializer[SPECIAL_PROPS.NAME], initializer),
       );
       initializer[SPECIAL_PROPS.TYPE] = 'provider';
+      initializer[SPECIAL_PROPS.VALUE] = {}.undef;
     }
 
     const initializerDependsOfItself = initializer[SPECIAL_PROPS.INJECT]

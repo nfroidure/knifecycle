@@ -10,12 +10,17 @@ export const SPECIAL_PROPS = {
   NAME: `${SPECIAL_PROPS_PREFIX}name`,
   TYPE: `${SPECIAL_PROPS_PREFIX}type`,
   EXTRA: `${SPECIAL_PROPS_PREFIX}extra`,
+  VALUE: `${SPECIAL_PROPS_PREFIX}value`,
 };
 export const ALLOWED_SPECIAL_PROPS = Object.keys(SPECIAL_PROPS).map(
   key => SPECIAL_PROPS[key],
 );
 export const DECLARATION_SEPARATOR = '>';
 export const OPTIONAL_FLAG = '?';
+export const ALLOWED_INITIALIZER_TYPES = ['provider', 'service', 'constant'];
+
+const E_BAD_INJECT_IN_CONSTANT = 'E_BAD_INJECT_IN_CONSTANT';
+const E_CONSTANT_INJECTION = 'E_CONSTANT_INJECTION';
 
 /**
  * Apply special props to the given function from another one
@@ -42,7 +47,7 @@ export function reuseSpecialProps(from, to, amend = {}) {
 }
 
 /**
- * Allows to wrap an initializer to add extra
+ * Allows to wrap an initializer to add extra initialization steps
  * @param  {Function} wrapper
  * A function taking dependencies and the base
  * service in arguments
@@ -84,6 +89,14 @@ export function wrapInitializer(wrapper, baseInitializer) {
  * );
  */
 export function inject(dependenciesDeclarations, initializer, merge = false) {
+  if ('constant' === initializer[SPECIAL_PROPS.TYPE]) {
+    throw new YError(
+      E_BAD_INJECT_IN_CONSTANT,
+      initializer[SPECIAL_PROPS.NAME],
+      dependenciesDeclarations,
+    );
+  }
+
   const uniqueInitializer = reuseSpecialProps(initializer, initializer, {
     [SPECIAL_PROPS.INJECT]: merge
       ? (initializer[SPECIAL_PROPS.INJECT] || []).concat(
@@ -268,6 +281,49 @@ export function initializer(properties, initializer) {
   debug('Wrapped an initializer with properties:', properties);
 
   return uniqueInitializer;
+}
+
+/**
+ * Decorator that creates an initializer for a constant value
+ * @param  {String}    name
+ * The constant's name.
+ * @param  {any}  initializer
+ * The constant's value
+ * @return {Function}
+ * Returns a new initializer
+ * @example
+ *
+ * import { constant, getInstance } from 'knifecycle';
+ *
+ * getInstance()
+ *   .register(constant('THE_NUMBER', value));
+ */
+export function constant(name, value) {
+  const contantLooksLikeAnInitializer =
+    value instanceof Function && value[SPECIAL_PROPS.INJECT];
+
+  if (contantLooksLikeAnInitializer) {
+    throw new YError(E_CONSTANT_INJECTION, value[SPECIAL_PROPS.INJECT]);
+  }
+
+  const uniqueInitializer = initializer(
+    {
+      name: name,
+      type: 'constant',
+      options: { singleton: true },
+      inject: [],
+      value: value,
+    },
+    deliverConstantValue.bind(null, value),
+  );
+
+  debug(`Created an initializer from a constant ${name}.`);
+
+  return uniqueInitializer;
+}
+
+async function deliverConstantValue(value) {
+  return value;
 }
 
 /**
