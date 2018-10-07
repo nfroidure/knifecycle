@@ -11,6 +11,7 @@ import {
   extra,
   initializer,
   constant,
+  service,
   handler,
   SPECIAL_PROPS,
 } from './util';
@@ -223,6 +224,29 @@ describe('constant', () => {
     assert.throws(() => {
       constant('time', inject(['hash3'], async () => {}));
     }, /E_CONSTANT_INJECTION/);
+  });
+});
+
+describe('service', () => {
+  it('should allow to create an initializer from a service builder', async () => {
+    const aServiceBuilder = async () => {};
+    const dependencies = ['ANOTHER_ENV>ENV'];
+    const baseOptions = { singleton: true };
+    const baseName = 'hash';
+    const baseType = 'service';
+    const newInitializer = service(
+      baseName,
+      inject(dependencies, aServiceBuilder),
+      baseOptions,
+    );
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
   });
 });
 
