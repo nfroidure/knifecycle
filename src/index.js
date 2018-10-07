@@ -2,14 +2,20 @@
 import {
   SPECIAL_PROPS,
   ALLOWED_INITIALIZER_TYPES,
-  reuseSpecialProps,
-  initializer,
-  constant,
-  service,
+  DECLARATION_SEPARATOR,
+  OPTIONAL_FLAG,
   name,
   inject,
   type,
   options,
+  extra,
+  reuseSpecialProps,
+  initializer,
+  constant,
+  service,
+  provider,
+  handler,
+  wrapInitializer,
   parseDependencyDeclaration,
 } from './util';
 import YError from 'yerror';
@@ -136,6 +142,9 @@ class Knifecycle {
    * Returns a Knifecycle instance (always the same)
    * @return {Knifecycle}
    * The created/saved instance
+   * @deprecated
+   * Simply use `new Knifecycle()` and eventually recreate
+   *  this singleton by your side.
    * @example
    *
    * import { getInstance } from 'knifecycle'
@@ -183,6 +192,8 @@ class Knifecycle {
    * The constant value
    * @return {Knifecycle}
    * The Knifecycle instance (for chaining)
+   * @deprecated
+   * Use the `constant` decorator with the `Knifecycle.register` method
    * @example
    *
    * import Knifecycle from 'knifecycle'
@@ -195,11 +206,7 @@ class Knifecycle {
    * $.constant('time', Date.now.bind(Date));
    */
   constant(constantName, constantValue) {
-    this.register(constant(constantName, constantValue));
-
-    debug('Registered a new constant:', constantName);
-
-    return this;
+    return this.register(constant(constantName, constantValue));
   }
 
   /**
@@ -212,6 +219,8 @@ class Knifecycle {
    * Options attached to the initializer
    * @return {Knifecycle}
    * The Knifecycle instance (for chaining)
+   * @deprecated
+   * Use the `service` decorator with the `Knifecycle.register` method
    * @example
    *
    * import Knifecycle from 'knifecycle'
@@ -238,8 +247,7 @@ class Knifecycle {
    * }
    */
   service(serviceName, serviceBuilder, options) {
-    this.register(service(serviceName, serviceBuilder, options));
-    return this;
+    return this.register(service(serviceName, serviceBuilder, options));
   }
 
   /**
@@ -252,6 +260,8 @@ class Knifecycle {
    * Options attached to the initializer
    * @return {Knifecycle}
    * The Knifecycle instance (for chaining)
+   * @deprecated
+   * Use the `initializer` decorator with the `Knifecycle.register` method
    * @example
    *
    * import Knifecycle from 'knifecycle'
@@ -259,7 +269,7 @@ class Knifecycle {
    *
    * const $ = new Knifecycle();
    *
-   * $.provider('config', function configProvider() {
+   * $.register(provider('config', function configProvider() {
    *   return new Promise((resolve, reject) {
    *     fs.readFile('config.js', function(err, data) {
    *       let config;
@@ -276,7 +286,7 @@ class Knifecycle {
    *       });
    *     });
    *   });
-   * });
+   * }));
    */
   provider(serviceName, initializer, options = {}) {
     this.register(
@@ -285,10 +295,16 @@ class Knifecycle {
         [SPECIAL_PROPS.OPTIONS]: options,
       }),
     );
-    debug('Registered a new service provider:', serviceName);
     return this;
   }
 
+  /**
+   * Register an initializer
+   * @param  {Function}   initializer
+   * An initializer
+   * @return {Knifecycle}
+   * The Knifecycle instance (for chaining)
+   */
   register(initializer) {
     if (typeof initializer !== 'function') {
       throw new YError(E_BAD_INITIALIZER, initializer);
@@ -415,14 +431,14 @@ class Knifecycle {
    * @return {String}   Returns a string containing the Mermaid dependency graph
    * @example
    *
-   * import { Knifecycle, inject } from 'knifecycle';
+   * import { Knifecycle, inject, constant, service } from 'knifecycle';
    * import appInitializer from './app';
    *
    * const $ = new Knifecycle();
    *
-   * $.constant('ENV', process.env);
-   * $.constant('OS', require('os'));
-   * $.service('app', inject(['ENV', 'OS'], appInitializer));
+   * $.register(constant('ENV', process.env));
+   * $.register(constant('OS', require('os')));
+   * $.register(service('app', inject(['ENV', 'OS'], appInitializer)));
    * $.toMermaidGraph();
    *
    * // returns
@@ -501,7 +517,7 @@ class Knifecycle {
    *
    * const $ = new Knifecycle();
    *
-   * $.constant('ENV', process.env);
+   * $.register(constant('ENV', process.env));
    * $.run(['ENV'])
    * .then(({ ENV }) => {
    *  // Here goes your code
@@ -965,14 +981,22 @@ class Knifecycle {
 export default Knifecycle;
 export const getInstance = Knifecycle.getInstance;
 export {
+  SPECIAL_PROPS,
+  DECLARATION_SEPARATOR,
+  OPTIONAL_FLAG,
   Knifecycle,
   initializer,
   name,
-  inject,
   type,
+  inject,
+  options,
+  extra,
+  reuseSpecialProps,
+  wrapInitializer,
   constant,
   service,
-  options,
+  provider,
+  handler,
 };
 
 function _pickServiceNameFromDeclaration(dependencyDeclaration) {
