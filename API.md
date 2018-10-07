@@ -18,7 +18,7 @@ import/awaits.</p>
 <dd><p>Apply special props to the given function from another one</p>
 </dd>
 <dt><a href="#wrapInitializer">wrapInitializer(wrapper, baseInitializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Allows to wrap an initializer to add extra</p>
+<dd><p>Allows to wrap an initializer to add extra initialization steps</p>
 </dd>
 <dt><a href="#inject">inject(dependenciesDeclarations, initializer, [merge])</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator creating a new initializer with some
@@ -42,6 +42,9 @@ import/awaits.</p>
 </dd>
 <dt><a href="#initializer">initializer(properties, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to set an initializer properties.</p>
+</dd>
+<dt><a href="#constant">constant(name, initializer)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator that creates an initializer for a constant value</p>
 </dd>
 <dt><a href="#handler">handler(handlerFunction, [dependencies], [extra])</a> ⇒ <code>function</code></dt>
 <dd><p>Shortcut to create an initializer with a simple handler</p>
@@ -85,7 +88,7 @@ const $ = new Knifecycle();
 <a name="Knifecycle+constant"></a>
 
 ### knifecycle.constant(constantName, constantValue) ⇒ [<code>Knifecycle</code>](#Knifecycle)
-Register a constant service
+Register a constant initializer
 
 **Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
 **Returns**: [<code>Knifecycle</code>](#Knifecycle) - The Knifecycle instance (for chaining)  
@@ -344,7 +347,7 @@ Apply special props to the given function from another one
 <a name="wrapInitializer"></a>
 
 ## wrapInitializer(wrapper, baseInitializer) ⇒ <code>function</code>
-Allows to wrap an initializer to add extra
+Allows to wrap an initializer to add extra initialization steps
 
 **Kind**: global function  
 **Returns**: <code>function</code> - The new initializer  
@@ -507,6 +510,26 @@ getInstance()
   inject: ['ENV'],
   options: { singleton: true }
 }, myServiceInitializer));
+```
+<a name="constant"></a>
+
+## constant(name, initializer) ⇒ <code>function</code>
+Decorator that creates an initializer for a constant value
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>String</code> | The constant's name. |
+| initializer | <code>any</code> | The constant's value |
+
+**Example**  
+```js
+import { constant, getInstance } from 'knifecycle';
+
+getInstance()
+  .register(constant('THE_NUMBER', value));
 ```
 <a name="handler"></a>
 

@@ -10,6 +10,7 @@ import {
   options,
   extra,
   initializer,
+  constant,
   handler,
   SPECIAL_PROPS,
 } from './util';
@@ -198,6 +199,30 @@ describe('initializer', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
+  });
+});
+
+describe('constant', () => {
+  it('should allow to create an initializer from a constant', async () => {
+    const baseValue = 'THE_VALUE';
+    const baseName = 42;
+    const newInitializer = constant(baseName, baseValue);
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], []);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], {
+      singleton: true,
+    });
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'constant');
+    assert.equal(newInitializer[SPECIAL_PROPS.VALUE], baseValue);
+    assert.equal(await newInitializer(), baseValue);
+  });
+
+  it('should fail with dependencies since it makes no sense', () => {
+    assert.throws(() => {
+      constant('time', inject(['hash3'], async () => {}));
+    }, /E_CONSTANT_INJECTION/);
   });
 });
 
