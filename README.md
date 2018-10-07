@@ -371,7 +371,7 @@ import/awaits.</p>
 <dd><p>Apply special props to the given function from another one</p>
 </dd>
 <dt><a href="#wrapInitializer">wrapInitializer(wrapper, baseInitializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Allows to wrap an initializer to add extra</p>
+<dd><p>Allows to wrap an initializer to add extra initialization steps</p>
 </dd>
 <dt><a href="#inject">inject(dependenciesDeclarations, initializer, [merge])</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator creating a new initializer with some
@@ -399,6 +399,9 @@ import/awaits.</p>
 <dt><a href="#constant">constant(name, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator that creates an initializer for a constant value</p>
 </dd>
+<dt><a href="#service">service(name, initializer, options)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator that creates an initializer for a service</p>
+</dd>
 <dt><a href="#handler">handler(handlerFunction, [dependencies], [extra])</a> ⇒ <code>function</code></dt>
 <dd><p>Shortcut to create an initializer with a simple handler</p>
 </dd>
@@ -415,8 +418,8 @@ import/awaits.</p>
 * [Knifecycle](#Knifecycle)
     * [new Knifecycle()](#new_Knifecycle_new)
     * _instance_
-        * ~~[.constant(constantName, constantValue)](#Knifecycle+constant) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-        * [.service(serviceName, initializer, options)](#Knifecycle+service) ⇒ [<code>Knifecycle</code>](#Knifecycle)
+        * [.constant(constantName, constantValue)](#Knifecycle+constant) ⇒ [<code>Knifecycle</code>](#Knifecycle)
+        * [.service(serviceName, serviceBuilder, options)](#Knifecycle+service) ⇒ [<code>Knifecycle</code>](#Knifecycle)
         * [.provider(serviceName, initializer, options)](#Knifecycle+provider) ⇒ [<code>Knifecycle</code>](#Knifecycle)
         * [.toMermaidGraph(options)](#Knifecycle+toMermaidGraph) ⇒ <code>String</code>
         * [.run(dependenciesDeclarations)](#Knifecycle+run) ⇒ <code>Promise</code>
@@ -440,9 +443,7 @@ const $ = new Knifecycle();
 ```
 <a name="Knifecycle+constant"></a>
 
-### ~~knifecycle.constant(constantName, constantValue) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-***Deprecated***
-
+### knifecycle.constant(constantName, constantValue) ⇒ [<code>Knifecycle</code>](#Knifecycle)
 Register a constant initializer
 
 **Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
@@ -466,7 +467,7 @@ $.constant('time', Date.now.bind(Date));
 ```
 <a name="Knifecycle+service"></a>
 
-### knifecycle.service(serviceName, initializer, options) ⇒ [<code>Knifecycle</code>](#Knifecycle)
+### knifecycle.service(serviceName, serviceBuilder, options) ⇒ [<code>Knifecycle</code>](#Knifecycle)
 Register a service initializer
 
 **Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
@@ -475,7 +476,7 @@ Register a service initializer
 | Param | Type | Description |
 | --- | --- | --- |
 | serviceName | <code>String</code> | Service name |
-| initializer | <code>function</code> | An initializer returning the service promise |
+| serviceBuilder | <code>function</code> | An asynchronous function returning the actual service |
 | options | <code>Object</code> | Options attached to the initializer |
 
 **Example**  
@@ -702,7 +703,7 @@ Apply special props to the given function from another one
 <a name="wrapInitializer"></a>
 
 ## wrapInitializer(wrapper, baseInitializer) ⇒ <code>function</code>
-Allows to wrap an initializer to add extra
+Allows to wrap an initializer to add extra initialization steps
 
 **Kind**: global function  
 **Returns**: <code>function</code> - The new initializer  
@@ -881,10 +882,51 @@ Decorator that creates an initializer for a constant value
 
 **Example**  
 ```js
-import { constant, getInstance } from 'knifecycle';
+import { Knifecycle, constant, service } from 'knifecycle';
 
-getInstance()
-  .register(constant('THE_NUMBER', value));
+const { printAnswer } = new Knifecycle()
+  .register(constant('THE_NUMBER', value))
+  .register(constant('log', console.log.bind(console)))
+  .register(service(
+    'printAnswer',
+    async ({ THE_NUMBER, log }) => () => log(THE_NUMBER),
+    {
+      inject: ['THE_NUMBER', 'log'],
+    }
+  .run(['printAnswer']);
+
+printAnswer(); // 42
+```
+<a name="service"></a>
+
+## service(name, initializer, options) ⇒ <code>function</code>
+Decorator that creates an initializer for a service
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>String</code> | The service's name. |
+| initializer | <code>function</code> | An initializer returning the service promise |
+| options | <code>Object</code> | Options attached to the initializer |
+
+**Example**  
+```js
+import { Knifecycle, constant, service } from 'knifecycle';
+
+const { printAnswer } = new Knifecycle()
+  .register(constant('THE_NUMBER', value))
+  .register(constant('log', console.log.bind(console)))
+  .register(service(
+    'printAnswer',
+    async ({ THE_NUMBER, log }) => () => log(THE_NUMBER),
+    {
+      inject: ['THE_NUMBER', 'log'],
+    }
+  .run(['printAnswer']);
+
+printAnswer(); // 42
 ```
 <a name="handler"></a>
 

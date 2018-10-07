@@ -5,6 +5,7 @@ import {
   reuseSpecialProps,
   initializer,
   constant,
+  service,
   name,
   inject,
   type,
@@ -205,8 +206,8 @@ class Knifecycle {
    * Register a service initializer
    * @param  {String}     serviceName
    * Service name
-   * @param  {Function}   initializer
-   * An initializer returning the service promise
+   * @param  {Function}   serviceBuilder
+   * An asynchronous function returning the actual service
    * @param  {Object}     options
    * Options attached to the initializer
    * @return {Knifecycle}
@@ -236,16 +237,8 @@ class Knifecycle {
    *   }, 'utf-8');
    * }
    */
-  service(serviceName, initializer, options) {
-    this.register(
-      reuseSpecialProps(initializer, initializer, {
-        [SPECIAL_PROPS.NAME]: serviceName,
-        [SPECIAL_PROPS.OPTIONS]: options,
-        [SPECIAL_PROPS.TYPE]: 'service',
-      }),
-      options,
-    );
-    debug('Registered a new service initializer:', serviceName);
+  service(serviceName, serviceBuilder, options) {
+    this.register(service(serviceName, serviceBuilder, options));
     return this;
   }
 
@@ -971,7 +964,16 @@ class Knifecycle {
 
 export default Knifecycle;
 export const getInstance = Knifecycle.getInstance;
-export { Knifecycle, initializer, name, inject, type, options };
+export {
+  Knifecycle,
+  initializer,
+  name,
+  inject,
+  type,
+  constant,
+  service,
+  options,
+};
 
 function _pickServiceNameFromDeclaration(dependencyDeclaration) {
   const { serviceName } = parseDependencyDeclaration(dependencyDeclaration);

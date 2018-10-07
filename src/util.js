@@ -292,11 +292,20 @@ export function initializer(properties, initializer) {
  * @return {Function}
  * Returns a new initializer
  * @example
+ * import { Knifecycle, constant, service } from 'knifecycle';
  *
- * import { constant, getInstance } from 'knifecycle';
+ * const { printAnswer } = new Knifecycle()
+ *   .register(constant('THE_NUMBER', value))
+ *   .register(constant('log', console.log.bind(console)))
+ *   .register(service(
+ *     'printAnswer',
+ *     async ({ THE_NUMBER, log }) => () => log(THE_NUMBER),
+ *     {
+ *       inject: ['THE_NUMBER', 'log'],
+ *     }
+ *   .run(['printAnswer']);
  *
- * getInstance()
- *   .register(constant('THE_NUMBER', value));
+ * printAnswer(); // 42
  */
 export function constant(name, value) {
   const contantLooksLikeAnInitializer =
@@ -317,7 +326,45 @@ export function constant(name, value) {
     deliverConstantValue.bind(null, value),
   );
 
-  debug(`Created an initializer from a constant ${name}.`);
+  debug(`Created an initializer from a constant: ${name}.`);
+
+  return uniqueInitializer;
+}
+
+/**
+ * Decorator that creates an initializer for a service
+ * @param  {String}    name
+ * The service's name.
+ * @param  {Function}   initializer
+ * An initializer returning the service promise
+ * @param  {Object}     options
+ * Options attached to the initializer
+ * @return {Function}
+ * Returns a new initializer
+ * @example
+ * import { Knifecycle, constant, service } from 'knifecycle';
+ *
+ * const { printAnswer } = new Knifecycle()
+ *   .register(constant('THE_NUMBER', value))
+ *   .register(constant('log', console.log.bind(console)))
+ *   .register(service(
+ *     'printAnswer',
+ *     async ({ THE_NUMBER, log }) => () => log(THE_NUMBER),
+ *     {
+ *       inject: ['THE_NUMBER', 'log'],
+ *     }
+ *   .run(['printAnswer']);
+ *
+ * printAnswer(); // 42
+ */
+export function service(serviceName, serviceBuilder, options = {}) {
+  const uniqueInitializer = reuseSpecialProps(serviceBuilder, serviceBuilder, {
+    [SPECIAL_PROPS.NAME]: serviceName,
+    [SPECIAL_PROPS.TYPE]: 'service',
+    [SPECIAL_PROPS.OPTIONS]: options,
+  });
+
+  debug(`Created an initializer from a service builder: ${name}.`);
 
   return uniqueInitializer;
 }
