@@ -369,6 +369,59 @@ export function service(serviceName, serviceBuilder, options = {}) {
   return uniqueInitializer;
 }
 
+/**
+ * Decorator that creates an initializer for a provider
+ * @param  {String}    name
+ * The provider's name.
+ * @param  {Function}   provider
+ * A provider returning the service builder promise
+ * @param  {Object}     options
+ * Options attached to the initializer
+ * @return {Function}
+ * Returns a new initializer
+ * @example
+ *
+ * import Knifecycle from 'knifecycle'
+ * import fs from 'fs';
+ *
+ * const $ = new Knifecycle();
+ *
+ * $.register(provider('config', async function configProvider() {
+ *   return new Promise((resolve, reject) {
+ *     fs.readFile('config.js', function(err, data) {
+ *       let config;
+ *
+ *       if(err) {
+ *         reject(err);
+ *         return;
+ *       }
+ *
+ *       try {
+ *         config = JSON.parse(data.toString);
+ *       } catch (err) {
+ *         reject(err);
+ *         return;
+ *       }
+ *
+ *       resolve({
+ *         service: config,
+ *       });
+ *     });
+ *   });
+ * }));
+ */
+export function provider(providerName, provider, options = {}) {
+  const uniqueInitializer = reuseSpecialProps(provider, provider, {
+    [SPECIAL_PROPS.NAME]: providerName,
+    [SPECIAL_PROPS.TYPE]: 'provider',
+    [SPECIAL_PROPS.OPTIONS]: options,
+  });
+
+  debug(`Created an initializer from a provider builder: ${name}.`);
+
+  return uniqueInitializer;
+}
+
 async function deliverConstantValue(value) {
   return value;
 }
