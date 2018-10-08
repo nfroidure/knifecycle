@@ -1,14 +1,12 @@
 import assert from 'assert';
 import YError from 'yerror';
-import buildInitializer from './build';
-import { initializer } from './util';
+import initInitializerBuilder from './build';
+import Knifecycle, { initializer, constant } from '.';
 
 describe('buildInitializer', () => {
-  function aProvider() {}
-  const mockedConstants = {
-    NODE_ENV: 'development',
-  };
+  async function aProvider() {}
   const mockedDepsHash = {
+    NODE_ENV: constant('NODE_ENV', 'development'),
     dep1: initializer(
       {
         inject: [],
@@ -37,20 +35,37 @@ describe('buildInitializer', () => {
       aProvider,
     ),
   };
-  function mockedLoader(name) {
-    return mockedDepsHash[name]
-      ? Promise.resolve({
-          path: `./services/${name}`,
-          initializer: mockedDepsHash[name],
-        })
-      : Promise.reject(new YError('E_UNMATCHED_DEPENDENCY', name));
-  }
+  const initAutoloader = initializer(
+    {
+      name: '$autoload',
+      type: 'service',
+      inject: [],
+      options: {
+        singleton: true,
+      },
+    },
+    async () => {
+      return async function $autoload(name) {
+        return mockedDepsHash[name]
+          ? Promise.resolve({
+              path: `./services/${name}`,
+              initializer: mockedDepsHash[name],
+            })
+          : Promise.reject(new YError('E_UNMATCHED_DEPENDENCY', name));
+      };
+    },
+  );
 
   it('should build an initialization module', async () => {
-    const content = await buildInitializer(mockedConstants, mockedLoader, [
-      'dep1',
-      'finalMappedDep>dep3',
-    ]);
+    const $ = new Knifecycle();
+
+    $.register(constant('PWD', '~/my-project'));
+    $.register(initAutoloader);
+    $.register(initInitializerBuilder);
+
+    const { buildInitializer } = await $.run(['buildInitializer']);
+
+    const content = await buildInitializer(['dep1', 'finalMappedDep>dep3']);
     assert.equal(
       content,
       `

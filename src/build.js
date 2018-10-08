@@ -1,4 +1,4 @@
-import { SPECIAL_PROPS, parseDependencyDeclaration } from './util';
+import { SPECIAL_PROPS, parseDependencyDeclaration, initializer } from './util';
 import { buildInitializationSequence } from './sequence';
 
 /* Architecture Note #2: Build
@@ -18,89 +18,124 @@ For the build to work, we need:
  initialize
 */
 
-module.exports = buildInitializer;
+export default initializer(
+  {
+    name: 'buildInitializer',
+    type: 'service',
+    inject: ['$autoload'],
+  },
+  initInitializerBuilder,
+);
 
 /**
- * Create a JavaScript module that initialize
- * a set of dependencies with hardcoded
- * import/awaits.
- * @param  {Object}   constants
- * An hash for simple constants
- * @param  {Function} loader
- * The dependency auto-loader
- * @param  {String[]} dependencies
- * The main dependencies
- * @return {Promise<String>}
- * The JavaScript module content
+ * Instantiate the initializer builder service
+ * @param  {Object}   services
+ * The services to inject
+ * @param  {Object}   services.$autoload
+ * The dependencies autoloader
+ * @return {Promise<Function>}
+ * A promise of the buildInitializer function
  * @example
- * import buildInitializer from 'knifecycle/src/build';
+ * import initInitializerBuilder from 'knifecycle/dist/build';
  *
- * buildInitializer(constants, loader, ['entryPoint']);
+ * const buildInitializer = await initInitializerBuilder({
+ *   $autoload: async () => {},
+ * });
  */
-async function buildInitializer(constants, loader, dependencies) {
-  const dependencyTrees = await Promise.all(
-    dependencies.map(dependency =>
-      buildDependencyTree(constants, loader, dependency),
-    ),
-  );
-  const dependenciesHash = buildDependenciesHash(
-    dependencyTrees.filter(identity),
-  );
-  const batches = buildInitializationSequence({
-    __name: 'main',
-    __childNodes: dependencyTrees.filter(identity),
-  });
-  batches.pop();
+async function initInitializerBuilder({ $autoload }) {
+  return buildInitializer;
 
-  return `${batches
-    .map(
-      (batch, index) => `
+  /**
+   * Create a JavaScript module that initialize
+   * a set of dependencies with hardcoded
+   * import/awaits.
+   * @param  {String[]} dependencies
+   * The main dependencies
+   * @return {Promise<String>}
+   * The JavaScript module content
+   * @example
+   * import initInitializerBuilder from 'knifecycle/dist/build';
+   *
+   * const buildInitializer = await initInitializerBuilder({
+   *   $autoload: async () => {},
+   * });
+   *
+   * const content = await buildInitializer(['entryPoint']);
+   */
+  async function buildInitializer(dependencies) {
+    const dependencyTrees = await Promise.all(
+      dependencies.map(dependency =>
+        buildDependencyTree({ $autoload }, dependency),
+      ),
+    );
+    const dependenciesHash = buildDependenciesHash(
+      dependencyTrees.filter(identity),
+    );
+    const batches = buildInitializationSequence({
+      __name: 'main',
+      __childNodes: dependencyTrees.filter(identity),
+    });
+    batches.pop();
+
+    return `${batches
+      .map(
+        (batch, index) => `
 // Definition batch #${index}${batch
-        .map(name => {
-          if (!dependenciesHash[name].__initializer) {
-            return `
-const ${name} = ${JSON.stringify(constants[name], null, 2)};`;
-          }
+          .map(name => {
+            if (
+              'undefined' !==
+              typeof dependenciesHash[name].__initializer[SPECIAL_PROPS.VALUE]
+            ) {
+              return `
+const ${name} = ${JSON.stringify(
+                dependenciesHash[name].__initializer[SPECIAL_PROPS.VALUE],
+                null,
+                2,
+              )};`;
+            }
 
-          return `
+            return `
 import ${dependenciesHash[name].__initializerName} from '${
-            dependenciesHash[name].__path
-          }';`;
-        })
-        .join('')}`,
-    )
-    .join('\n')}
+              dependenciesHash[name].__path
+            }';`;
+          })
+          .join('')}`,
+      )
+      .join('\n')}
 
 export async function initialize(services = {}) {${batches
-    .map(
-      (batch, index) => `
+      .map(
+        (batch, index) => `
   // Initialization batch #${index}
   const batch${index} = {${batch
-        .map(name => {
-          if (!dependenciesHash[name].__initializer) {
-            return `
+          .map(name => {
+            if (
+              'undefined' !==
+              typeof dependenciesHash[name].__initializer[SPECIAL_PROPS.VALUE]
+            ) {
+              return `
     ${name}: Promise.resolve(${name}),`;
-          }
-          return `
+            }
+            return `
     ${name}: ${dependenciesHash[name].__initializerName}({${
-            dependenciesHash[name].__inject
-              ? `${dependenciesHash[name].__inject
-                  .map(parseDependencyDeclaration)
-                  .map(
-                    ({ serviceName, mappedName }) =>
-                      `
+              dependenciesHash[name].__inject
+                ? `${dependenciesHash[name].__inject
+                    .map(parseDependencyDeclaration)
+                    .map(
+                      ({ serviceName, mappedName }) =>
+                        `
       ${serviceName}: services['${mappedName}'],`,
-                  )
-                  .join('')}`
-              : ''
-          }
+                    )
+                    .join('')}`
+                : ''
+            }
     })${
       'provider' === dependenciesHash[name].__type
         ? '.then(provider => provider.service)'
         : ''
     },`;
-        })
-        .join('')}
+          })
+          .join('')}
   };
 
   await Promise.all(
@@ -108,14 +143,14 @@ export async function initialize(services = {}) {${batches
     .map(key => batch${index}[key])
   );
 ${batch
-        .map(name => {
-          return `
+          .map(name => {
+            return `
   services['${name}'] = await batch${index}['${name}'];`;
-        })
-        .join('')}
+          })
+          .join('')}
 `,
-    )
-    .join('')}
+      )
+      .join('')}
   return {${dependencies
     .map(parseDependencyDeclaration)
     .map(
@@ -127,22 +162,16 @@ ${batch
   };
 }
 `;
+  }
 }
 
-async function buildDependencyTree(constants, loader, dependencyDeclaration) {
+async function buildDependencyTree({ $autoload }, dependencyDeclaration) {
   const { mappedName, optional } = parseDependencyDeclaration(
     dependencyDeclaration,
   );
 
-  if (constants[mappedName]) {
-    return Promise.resolve({
-      __name: mappedName,
-      __constant: constants[mappedName],
-    });
-  }
-
   try {
-    const { path, initializer } = await loader(mappedName);
+    const { path, initializer } = await $autoload(mappedName);
     const node = {
       __name: mappedName,
       __initializer: initializer,
@@ -165,7 +194,7 @@ async function buildDependencyTree(constants, loader, dependencyDeclaration) {
     ) {
       const childNodes = await Promise.all(
         initializer[SPECIAL_PROPS.INJECT].map(childDependencyDeclaration =>
-          buildDependencyTree(constants, loader, childDependencyDeclaration),
+          buildDependencyTree({ $autoload }, childDependencyDeclaration),
         ),
       );
       node.__childNodes = childNodes.filter(identity);
