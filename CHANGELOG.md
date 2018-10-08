@@ -1,3 +1,14 @@
+<a name="2.7.0"></a>
+# [2.7.0](https://github.com/nfroidure/knifecycle/compare/v2.6.2...v2.7.0) (2018-10-08)
+
+
+### Features
+
+* **Decorators:** Add a `service` decorator ([3216abf](https://github.com/nfroidure/knifecycle/commit/3216abf))
+* **Decorators:** Add the `constant` decorator ([911898e](https://github.com/nfroidure/knifecycle/commit/911898e)), closes [#60](https://github.com/nfroidure/knifecycle/issues/60)
+
+
+
 <a name="2.6.2"></a>
 ## [2.6.2](https://github.com/nfroidure/knifecycle/compare/v2.6.1...v2.6.2) (2018-09-30)
 
