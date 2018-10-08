@@ -11,18 +11,20 @@
 
 The `knifecycle` project is intended to be a [dependency
  injection](https://en.wikipedia.org/wiki/Dependency_injection)
- and [inversion of control](https://en.wikipedia.org/wiki/Inversion_of_control)
+ with [inversion of control](https://en.wikipedia.org/wiki/Inversion_of_control)
  tool. It will always be tied to this goal since I prefer
- composing software instead of using frameworks.
+ composing software instead of using frameworks and DI/IC is
+ a major part to design strong software in my opinion.
 
 It is designed to have a low footprint on services code.
  There is nothing worse than having to write specific code for
  a given tool. With `knifecycle`, services can be either constants,
  functions or objects created synchronously or asynchronously. They
  can be reused elsewhere (even when not using DI) with no changes
- at all.
+ at all since they are just simple functions with annotations
+ set as a property.
 
-[See in context](./src/index.js#L56-L70)
+[See in context](./src/index.js#L53-L69)
 
 
 
@@ -37,53 +39,33 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.js#L72-L81)
+[See in context](./src/index.js#L71-L80)
 
 
 
-### One instance to rule them all
+### Creating initializers
 
-We almost never need to use several Knifecycle instances.
- This is why we are providing the `knifecycle/instance`
- module that give a direct access to a lazy instanciated
- `Knifecycle` instance.
+`knifecycle` uses initializers at its a core. An initializer is basically
+ an asynchronous function with some annotations:
+- name: it uniquely identifies the initializer so that it can be
+ referred to as another initializer dependency.
+- type: an initializer can be of three types at the moment
+ (constant, service or provider). The initializer annotations
+ varies accordsing to those types as we'll see later on.
+- injected dependencies: an array of dependencies declarations that
+ declares which initializer htis initializer depends on. Constants
+ logically cannot have dependencies.
+- options: various options like for exemple, if the initializer
+ implements the singleton pattern or not.
+- value: only used for constant, this property allows to know
+ the value the initializer resolves to without actually executing it.
+- extra: an extra property for custom use that will be propagated
+ by the various other decorators you'll find in this library.
 
-At the same time, I prefer choosing when instantiating a
- singleton this is why I decided to not do it on the behalf
- of the developers by instead providing an opt-in interface
- to this singleton.
+`Knifecycle` provides a set of decorators that allows you to simply
+ create new initializers.
 
-[See in context](./src/instance.js#L1-L12)
-
-
-
-### Declaring services
-
-The first step to use `knifecycle` is to declare
- services. There are two way of declaring services:
-- constants: a constant is a simple value that will
- never change. It can be literal values, objects
- or even functions.
-- initializers: they are asynchronous functions
- that handle the initialization phase.
-
-Initializers can be of two types:
-- services: a `service` initializer directly
- resolve to the actual service it builds. It can
- be objects, functions or literal values.
-- providers: they instead resolve to an object that
- contains the service built into the `service` property
- but also an optional `dispose` property exposing a
- method to properly stop the service and a
- `fatalErrorPromise` that will be rejected if an
- unrecoverable error happens.
-
- Initializers can be declared as singletons. This means
-  that they will be instanciated once for all for each
-  executions silos using them (we will cover this
-  topic later on).
-
-[See in context](./src/index.js#L160-L185)
+[See in context](./src/util.js#L6-L27)
 
 
 
@@ -97,23 +79,51 @@ The `?` flag indicates an optionnal dependencies.
  It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.js#L467-L476)
+[See in context](./src/util.js#L489-L498)
+
+
+
+### Registering initializers
+
+The first step to use `knifecycle` is to create a new
+ `Knifecycle` instance and register the previously
+ created initializers.
+
+Initializers can be of three types:
+- constants: a `constant` initializer resolves to
+ a constant value.
+- services: a `service` initializer directly
+ resolve to the actual service it builds. It can
+ be objects, functions or litteral values.
+- providers: they instead resolve to an object that
+ contains the service built into the `service` property
+ but also an optional `dispose` property exposing a
+ method to properly stop the service and a
+ `fatalErrorPromise` that will be rejected if an
+ unrecoverable error happens.
+
+ Initializers can be declared as singletons. This means
+  that they will be instanciated once for all for each
+  executions silos using them (we will cover this
+  topic later on).
+
+[See in context](./src/index.js#L149-L172)
 
 
 
 ### Execution silos
 
-Once all the services are declared, we need a way to bring
- them to life. Execution silos are where the magic happen.
+Once every initializers are registered, we need a way to bring
+ them to life. Execution silos are where the magic happens.
  For each call of the `run` method with given dependencies,
  a new silo is created and the required environment to
  run the actual code is leveraged.
 
-Depending of your application design, you could run it
+Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L498-L508)
+[See in context](./src/index.js#L485-L495)
 
 
 

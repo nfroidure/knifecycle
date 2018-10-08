@@ -3,6 +3,28 @@ import initDebug from 'debug';
 
 const debug = initDebug('knifecycle');
 
+/* Architecture Note #1.2: Creating initializers
+
+`knifecycle` uses initializers at its a core. An initializer is basically
+ an asynchronous function with some annotations:
+- name: it uniquely identifies the initializer so that it can be
+ referred to as another initializer dependency.
+- type: an initializer can be of three types at the moment
+ (constant, service or provider). The initializer annotations
+ varies accordsing to those types as we'll see later on.
+- injected dependencies: an array of dependencies declarations that
+ declares which initializer htis initializer depends on. Constants
+ logically cannot have dependencies.
+- options: various options like for exemple, if the initializer
+ implements the singleton pattern or not.
+- value: only used for constant, this property allows to know
+ the value the initializer resolves to without actually executing it.
+- extra: an extra property for custom use that will be propagated
+ by the various other decorators you'll find in this library.
+
+`Knifecycle` provides a set of decorators that allows you to simply
+ create new initializers.
+*/
 export const SPECIAL_PROPS_PREFIX = '$';
 export const SPECIAL_PROPS = {
   INJECT: `${SPECIAL_PROPS_PREFIX}inject`,
@@ -464,7 +486,7 @@ export function handler(handlerFunction, dependencies = [], extra) {
   );
 }
 
-/* Architecture Note #1.3.1: Dependencies declaration syntax
+/* Architecture Note #1.2.1: Dependencies declaration syntax
 
 The dependencies syntax is of the following form:
  `?serviceName>mappedName`

@@ -80,15 +80,14 @@ Using `knifecycle` is all about declaring the services our
 
 Let's say we are building a CLI script. He is how we would
  proceed with Knifecycle:
- 
- 
+  
  First, we need to
  handle a configuration file so we are creating an
  initializer to instanciate our `CONFIG` service:
 ```js
 // bin.js
 import fs from 'fs';
-import Knifecycle, { initializer, inject, name } from 'knifecycle';
+import Knifecycle, { initializer, constant, inject, name } from 'knifecycle';
 
 // First of all we create a new Knifecycle instance
 const $ = new Knifecycle();
@@ -97,12 +96,12 @@ const $ = new Knifecycle();
 // let's inject it as a constant instead of directly
 // pickking en vars in `process.env` to make our code
 // easily testable
-$.constant('ENV', process.env);
+$.register(constant('ENV', process.env));
 
 // Let's do so for CLI args with another constant
 // in real world apps we would have create a service
 // that would parse args in a complexer way
-$.constant('ARGS', process.argv);
+$.register(constant('ARGS', process.argv));
 
 // We want our CLI tool to rely on some configuration
 // Let's build an injectable service initializer that
@@ -198,12 +197,12 @@ const initDB = initializer(
 // Here we are registering our initializer apart to
 // be able to reuse it, we also declare the required
 // DB_URI constant it needs
-$.constant('DB_URI', 'posgresql://xxxx').register(initDB);
+$.register(constant('DB_URI', 'posgresql://xxxx').register(initDB));
 
 // Say we need to use two different DB server
 // We can reuse our initializer by tweaking
 // some of its properties
-$.constant('DB_URI2', 'posgresql://yyyy');
+$.register(constant('DB_URI2', 'posgresql://yyyy'));
 $.register(
   // First we remap the injected dependencies. It will
   // take the `DB_URI2` constant and inject it as
@@ -220,9 +219,9 @@ $.register(
 // declaring them as constants allows you to easily
 // mock/monitor/patch it. The `common-services` NPM
 // module contains a few useful ones
-$.constant('now', Date.now.bind(Date))
-  .constant('log', console.log.bind(console))
-  .constant('exit', process.exit.bind(process));
+$.register(constant('now', Date.now.bind(Date)))
+  .register(constant('log', console.log.bind(console)))
+  .register(constant('exit', process.exit.bind(process)));
 
 // Finally, let's declare an `$autoload` service
 // to allow us to load only the initializers needed
@@ -420,18 +419,15 @@ import/awaits.</p>
 
 * [Knifecycle](#Knifecycle)
     * [new Knifecycle()](#new_Knifecycle_new)
-    * _instance_
-        * ~~[.constant(constantName, constantValue)](#Knifecycle+constant) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-        * ~~[.service(serviceName, serviceBuilder, options)](#Knifecycle+service) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-        * ~~[.provider(serviceName, initializer, options)](#Knifecycle+provider) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-        * [.register(initializer)](#Knifecycle+register) ⇒ [<code>Knifecycle</code>](#Knifecycle)
-        * [.toMermaidGraph(options)](#Knifecycle+toMermaidGraph) ⇒ <code>String</code>
-        * [.run(dependenciesDeclarations)](#Knifecycle+run) ⇒ <code>Promise</code>
-        * [._getServiceDescriptor(siloContext, serviceName, options, serviceProvider)](#Knifecycle+_getServiceDescriptor) ⇒ <code>Promise</code>
-        * [._initializeServiceDescriptor(siloContext, serviceName, options)](#Knifecycle+_initializeServiceDescriptor) ⇒ <code>Promise</code>
-        * [._initializeDependencies(siloContext, serviceName, servicesDeclarations, options)](#Knifecycle+_initializeDependencies) ⇒ <code>Promise</code>
-    * _static_
-        * ~~[.getInstance()](#Knifecycle.getInstance) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
+    * ~~[.constant(constantName, constantValue)](#Knifecycle+constant) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
+    * ~~[.service(serviceName, serviceBuilder, options)](#Knifecycle+service) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
+    * ~~[.provider(serviceName, initializer, options)](#Knifecycle+provider) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
+    * [.register(initializer)](#Knifecycle+register) ⇒ [<code>Knifecycle</code>](#Knifecycle)
+    * [.toMermaidGraph(options)](#Knifecycle+toMermaidGraph) ⇒ <code>String</code>
+    * [.run(dependenciesDeclarations)](#Knifecycle+run) ⇒ <code>Promise</code>
+    * [._getServiceDescriptor(siloContext, serviceName, options, serviceProvider)](#Knifecycle+_getServiceDescriptor) ⇒ <code>Promise</code>
+    * [._initializeServiceDescriptor(siloContext, serviceName, options)](#Knifecycle+_initializeServiceDescriptor) ⇒ <code>Promise</code>
+    * [._initializeDependencies(siloContext, serviceName, servicesDeclarations, options)](#Knifecycle+_initializeDependencies) ⇒ <code>Promise</code>
 
 <a name="new_Knifecycle_new"></a>
 
@@ -673,21 +669,6 @@ Initialize a service dependencies
 | options.injectOnly | <code>Boolean</code> | Flag indicating if existing services only should be used |
 | options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependendencies on the fly loading. |
 
-<a name="Knifecycle.getInstance"></a>
-
-### ~~Knifecycle.getInstance() ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-***Deprecated***
-
-Returns a Knifecycle instance (always the same)
-
-**Kind**: static method of [<code>Knifecycle</code>](#Knifecycle)  
-**Returns**: [<code>Knifecycle</code>](#Knifecycle) - The created/saved instance  
-**Example**  
-```js
-import { getInstance } from 'knifecycle'
-
-const $ = getInstance();
-```
 <a name="buildInitializer"></a>
 
 ## buildInitializer(constants, loader, dependencies) ⇒ <code>Promise.&lt;String&gt;</code>

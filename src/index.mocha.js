@@ -37,16 +37,6 @@ describe('Knifecycle', () => {
     $ = new Knifecycle();
   });
 
-  describe('getInstance', () => {
-    it('should return an instance', () => {
-      assert(Knifecycle.getInstance());
-    });
-
-    it('should always return the same instance', () => {
-      assert.equal(Knifecycle.getInstance(), Knifecycle.getInstance());
-    });
-  });
-
   describe('constant', () => {
     it('should register an object', () => {
       $.constant('ENV', ENV);

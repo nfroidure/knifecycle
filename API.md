@@ -67,18 +67,15 @@ import/awaits.</p>
 
 * [Knifecycle](#Knifecycle)
     * [new Knifecycle()](#new_Knifecycle_new)
-    * _instance_
-        * ~~[.constant(constantName, constantValue)](#Knifecycle+constant) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-        * ~~[.service(serviceName, serviceBuilder, options)](#Knifecycle+service) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-        * ~~[.provider(serviceName, initializer, options)](#Knifecycle+provider) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-        * [.register(initializer)](#Knifecycle+register) ⇒ [<code>Knifecycle</code>](#Knifecycle)
-        * [.toMermaidGraph(options)](#Knifecycle+toMermaidGraph) ⇒ <code>String</code>
-        * [.run(dependenciesDeclarations)](#Knifecycle+run) ⇒ <code>Promise</code>
-        * [._getServiceDescriptor(siloContext, serviceName, options, serviceProvider)](#Knifecycle+_getServiceDescriptor) ⇒ <code>Promise</code>
-        * [._initializeServiceDescriptor(siloContext, serviceName, options)](#Knifecycle+_initializeServiceDescriptor) ⇒ <code>Promise</code>
-        * [._initializeDependencies(siloContext, serviceName, servicesDeclarations, options)](#Knifecycle+_initializeDependencies) ⇒ <code>Promise</code>
-    * _static_
-        * ~~[.getInstance()](#Knifecycle.getInstance) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
+    * ~~[.constant(constantName, constantValue)](#Knifecycle+constant) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
+    * ~~[.service(serviceName, serviceBuilder, options)](#Knifecycle+service) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
+    * ~~[.provider(serviceName, initializer, options)](#Knifecycle+provider) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
+    * [.register(initializer)](#Knifecycle+register) ⇒ [<code>Knifecycle</code>](#Knifecycle)
+    * [.toMermaidGraph(options)](#Knifecycle+toMermaidGraph) ⇒ <code>String</code>
+    * [.run(dependenciesDeclarations)](#Knifecycle+run) ⇒ <code>Promise</code>
+    * [._getServiceDescriptor(siloContext, serviceName, options, serviceProvider)](#Knifecycle+_getServiceDescriptor) ⇒ <code>Promise</code>
+    * [._initializeServiceDescriptor(siloContext, serviceName, options)](#Knifecycle+_initializeServiceDescriptor) ⇒ <code>Promise</code>
+    * [._initializeDependencies(siloContext, serviceName, servicesDeclarations, options)](#Knifecycle+_initializeDependencies) ⇒ <code>Promise</code>
 
 <a name="new_Knifecycle_new"></a>
 
@@ -320,21 +317,6 @@ Initialize a service dependencies
 | options.injectOnly | <code>Boolean</code> | Flag indicating if existing services only should be used |
 | options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependendencies on the fly loading. |
 
-<a name="Knifecycle.getInstance"></a>
-
-### ~~Knifecycle.getInstance() ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-***Deprecated***
-
-Returns a Knifecycle instance (always the same)
-
-**Kind**: static method of [<code>Knifecycle</code>](#Knifecycle)  
-**Returns**: [<code>Knifecycle</code>](#Knifecycle) - The created/saved instance  
-**Example**  
-```js
-import { getInstance } from 'knifecycle'
-
-const $ = getInstance();
-```
 <a name="buildInitializer"></a>
 
 ## buildInitializer(constants, loader, dependencies) ⇒ <code>Promise.&lt;String&gt;</code>
