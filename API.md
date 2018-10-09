@@ -9,10 +9,8 @@
 ## Functions
 
 <dl>
-<dt><a href="#buildInitializer">buildInitializer(constants, loader, dependencies)</a> ⇒ <code>Promise.&lt;String&gt;</code></dt>
-<dd><p>Create a JavaScript module that initialize
-a set of dependencies with hardcoded
-import/awaits.</p>
+<dt><a href="#initInitializerBuilder">initInitializerBuilder(services)</a> ⇒ <code>Promise.&lt;function()&gt;</code></dt>
+<dd><p>Instantiate the initializer builder service</p>
 </dd>
 <dt><a href="#reuseSpecialProps">reuseSpecialProps(from, to, [amend])</a> ⇒ <code>function</code></dt>
 <dd><p>Apply special props to the given function from another one</p>
@@ -317,27 +315,50 @@ Initialize a service dependencies
 | options.injectOnly | <code>Boolean</code> | Flag indicating if existing services only should be used |
 | options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependendencies on the fly loading. |
 
-<a name="buildInitializer"></a>
+<a name="initInitializerBuilder"></a>
 
-## buildInitializer(constants, loader, dependencies) ⇒ <code>Promise.&lt;String&gt;</code>
+## initInitializerBuilder(services) ⇒ <code>Promise.&lt;function()&gt;</code>
+Instantiate the initializer builder service
+
+**Kind**: global function  
+**Returns**: <code>Promise.&lt;function()&gt;</code> - A promise of the buildInitializer function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| services | <code>Object</code> | The services to inject |
+| services.$autoload | <code>Object</code> | The dependencies autoloader |
+
+**Example**  
+```js
+import initInitializerBuilder from 'knifecycle/dist/build';
+
+const buildInitializer = await initInitializerBuilder({
+  $autoload: async () => {},
+});
+```
+<a name="initInitializerBuilder..buildInitializer"></a>
+
+### initInitializerBuilder~buildInitializer(dependencies) ⇒ <code>Promise.&lt;String&gt;</code>
 Create a JavaScript module that initialize
 a set of dependencies with hardcoded
 import/awaits.
 
-**Kind**: global function  
+**Kind**: inner method of [<code>initInitializerBuilder</code>](#initInitializerBuilder)  
 **Returns**: <code>Promise.&lt;String&gt;</code> - The JavaScript module content  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| constants | <code>Object</code> | An hash for simple constants |
-| loader | <code>function</code> | The dependency auto-loader |
 | dependencies | <code>Array.&lt;String&gt;</code> | The main dependencies |
 
 **Example**  
 ```js
-import buildInitializer from 'knifecycle/src/build';
+import initInitializerBuilder from 'knifecycle/dist/build';
 
-buildInitializer(constants, loader, ['entryPoint']);
+const buildInitializer = await initInitializerBuilder({
+  $autoload: async () => {},
+});
+
+const content = await buildInitializer(['entryPoint']);
 ```
 <a name="reuseSpecialProps"></a>
 
