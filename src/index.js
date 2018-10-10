@@ -27,6 +27,7 @@ const DISPOSE = '$dispose';
 const DESTROY = '$destroy';
 const AUTOLOAD = '$autoload';
 const INJECTOR = '$injector';
+const INSTANCE = '$instance';
 const SILO_CONTEXT = '$siloContext';
 const FATAL_ERROR = '$fatalError';
 
@@ -96,6 +97,7 @@ class Knifecycle {
     this._singletonsServicesHandles = new Map();
     this._singletonsServicesDescriptors = new Map();
     this._singletonsServicesShutdownsPromises = new Map();
+    this.register(constant(INSTANCE, this));
     this.register(
       initializer(
         {
