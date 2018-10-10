@@ -83,8 +83,8 @@ async function initInitializerBuilder({ $autoload }) {
 // Definition batch #${index}${batch
           .map(name => {
             if (
-              'undefined' !==
-              typeof dependenciesHash[name].__initializer[SPECIAL_PROPS.VALUE]
+              'constant' ===
+              dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE]
             ) {
               return `
 const ${name} = ${JSON.stringify(
@@ -110,8 +110,8 @@ export async function initialize(services = {}) {${batches
   const batch${index} = {${batch
           .map(name => {
             if (
-              'undefined' !==
-              typeof dependenciesHash[name].__initializer[SPECIAL_PROPS.VALUE]
+              'constant' ===
+              dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE]
             ) {
               return `
     ${name}: Promise.resolve(${name}),`;

@@ -338,19 +338,35 @@ class Knifecycle {
       );
     }
 
-    // Temporary cast service/constant initializers into
+    // Constants are singletons and constant so we can set it
+    // to singleton services descriptors map directly
+    if ('constant' === initializer[SPECIAL_PROPS.TYPE]) {
+      const handlesSet = new Set();
+
+      this._singletonsServicesHandles.set(
+        initializer[SPECIAL_PROPS.NAME],
+        handlesSet,
+      );
+      this._singletonsServicesDescriptors.set(
+        initializer[SPECIAL_PROPS.NAME],
+        Promise.resolve({
+          // We do not directly use initializer[SPECIAL_PROPS.VALUE] here
+          // since it looks like there is a bug with Babel build that
+          // change functions to empty litteral objects
+          service: initializer(),
+        }),
+      );
+    }
+    // Temporary cast service initializers into
     // providers. Best would be to threat each differently
     // at dependencies initialization level to boost performances
-    if (
-      'service' === initializer[SPECIAL_PROPS.TYPE] ||
-      'constant' === initializer[SPECIAL_PROPS.TYPE]
-    ) {
+    if ('service' === initializer[SPECIAL_PROPS.TYPE]) {
       initializer = reuseSpecialProps(
         initializer,
         serviceAdapter.bind(null, initializer[SPECIAL_PROPS.NAME], initializer),
       );
       initializer[SPECIAL_PROPS.TYPE] = 'provider';
-      initializer[SPECIAL_PROPS.VALUE] = {}.undef;
+      //initializer[SPECIAL_PROPS.VALUE] = {}.undef;
     }
 
     const initializerDependsOfItself = initializer[SPECIAL_PROPS.INJECT]
@@ -746,7 +762,7 @@ class Knifecycle {
     }
 
     // The auto loader must only have static dependencies
-    // and we hace to do this check here to avoid caching
+    // and we have to do this check here to avoid caching
     // non-autoloading request and then be blocked by an
     // autoloader dep that waits for that cached load
     if (autoloading) {
