@@ -87,17 +87,14 @@ export function wrapInitializer(wrapper, baseInitializer) {
 }
 
 /**
- * Decorator creating a new initializer with some
- *  dependencies declarations appended to it.
+ * Decorator creating a new initializer with different
+ *  dependencies declarations set to it.
  * @param  {String[]}  dependenciesDeclarations
  * List of dependencies declarations to declare which
  *  services the initializer needs to resolve its
- *  own service.
+ *  own service
  * @param  {Function}  initializer
  * The initializer to tweak
- * @param  {Boolean}   [merge=false]
- * Whether dependencies should be merged with existing
- *  ones or not
  * @return {Function}
  * Returns a new initializer
  * @example
@@ -110,7 +107,7 @@ export function wrapInitializer(wrapper, baseInitializer) {
  *   inject(['ENV'], myServiceInitializer)
  * );
  */
-export function inject(dependenciesDeclarations, initializer, merge = false) {
+export function inject(dependenciesDeclarations, initializer) {
   if ('constant' === initializer[SPECIAL_PROPS.TYPE]) {
     throw new YError(
       E_BAD_INJECT_IN_CONSTANT,
@@ -120,16 +117,38 @@ export function inject(dependenciesDeclarations, initializer, merge = false) {
   }
 
   const uniqueInitializer = reuseSpecialProps(initializer, initializer, {
-    [SPECIAL_PROPS.INJECT]: merge
-      ? (initializer[SPECIAL_PROPS.INJECT] || []).concat(
-          dependenciesDeclarations,
-        )
-      : dependenciesDeclarations,
+    [SPECIAL_PROPS.INJECT]: dependenciesDeclarations,
   });
 
   debug('Wrapped an initializer with dependencies:', dependenciesDeclarations);
 
   return uniqueInitializer;
+}
+
+/**
+ * Decorator creating a new initializer with some
+ *  more dependencies declarations appended to it.
+ * @param  {String[]}  dependenciesDeclarations
+ * List of dependencies declarations to append
+ * @param  {Function}  initializer
+ * The initializer to tweak
+ * @return {Function}
+ * Returns a new initializer
+ * @example
+ *
+ * import { alsoInject, getInstance } from 'knifecycle'
+ * import myServiceInitializer from './service';
+ *
+ * getInstance()
+ * .service('myService',
+ *   alsoInject(['ENV'], myServiceInitializer)
+ * );
+ */
+export function alsoInject(dependenciesDeclarations, initializer) {
+  return inject(
+    (initializer[SPECIAL_PROPS.INJECT] || []).concat(dependenciesDeclarations),
+    initializer,
+  );
 }
 
 /**

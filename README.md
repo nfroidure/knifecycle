@@ -370,9 +370,13 @@ contains the services I use the most in my apps.
 <dt><a href="#wrapInitializer">wrapInitializer(wrapper, baseInitializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Allows to wrap an initializer to add extra initialization steps</p>
 </dd>
-<dt><a href="#inject">inject(dependenciesDeclarations, initializer, [merge])</a> ⇒ <code>function</code></dt>
+<dt><a href="#inject">inject(dependenciesDeclarations, initializer)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator creating a new initializer with different
+ dependencies declarations set to it.</p>
+</dd>
+<dt><a href="#alsoInject">alsoInject(dependenciesDeclarations, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator creating a new initializer with some
- dependencies declarations appended to it.</p>
+ more dependencies declarations appended to it.</p>
 </dd>
 <dt><a href="#extra">extra(extraInformations, initializer, [merge])</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator creating a new initializer with some
@@ -741,18 +745,17 @@ Allows to wrap an initializer to add extra initialization steps
 
 <a name="inject"></a>
 
-## inject(dependenciesDeclarations, initializer, [merge]) ⇒ <code>function</code>
-Decorator creating a new initializer with some
- dependencies declarations appended to it.
+## inject(dependenciesDeclarations, initializer) ⇒ <code>function</code>
+Decorator creating a new initializer with different
+ dependencies declarations set to it.
 
 **Kind**: global function  
 **Returns**: <code>function</code> - Returns a new initializer  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| dependenciesDeclarations | <code>Array.&lt;String&gt;</code> |  | List of dependencies declarations to declare which  services the initializer needs to resolve its  own service. |
-| initializer | <code>function</code> |  | The initializer to tweak |
-| [merge] | <code>Boolean</code> | <code>false</code> | Whether dependencies should be merged with existing  ones or not |
+| Param | Type | Description |
+| --- | --- | --- |
+| dependenciesDeclarations | <code>Array.&lt;String&gt;</code> | List of dependencies declarations to declare which  services the initializer needs to resolve its  own service |
+| initializer | <code>function</code> | The initializer to tweak |
 
 **Example**  
 ```js
@@ -762,6 +765,30 @@ import myServiceInitializer from './service';
 getInstance()
 .service('myService',
   inject(['ENV'], myServiceInitializer)
+);
+```
+<a name="alsoInject"></a>
+
+## alsoInject(dependenciesDeclarations, initializer) ⇒ <code>function</code>
+Decorator creating a new initializer with some
+ more dependencies declarations appended to it.
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| dependenciesDeclarations | <code>Array.&lt;String&gt;</code> | List of dependencies declarations to append |
+| initializer | <code>function</code> | The initializer to tweak |
+
+**Example**  
+```js
+import { alsoInject, getInstance } from 'knifecycle'
+import myServiceInitializer from './service';
+
+getInstance()
+.service('myService',
+  alsoInject(['ENV'], myServiceInitializer)
 );
 ```
 <a name="extra"></a>

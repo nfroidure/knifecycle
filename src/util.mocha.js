@@ -7,6 +7,7 @@ import {
   name,
   type,
   inject,
+  alsoInject,
   options,
   extra,
   initializer,
@@ -106,6 +107,15 @@ describe('inject', () => {
     assert.notEqual(newInitializer, aProvider);
     assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+  });
+});
+
+describe('alsoInject', () => {
+  it('should allow to decorate an initializer with dependencies', () => {
+    const newInitializer = alsoInject(['ENV'], inject(['TEST'], aProvider));
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['TEST', 'ENV']);
   });
 });
 
