@@ -175,120 +175,6 @@ class Knifecycle {
   */
 
   /**
-   * Register a constant initializer
-   * @param  {String} constantName
-   * The name of the service
-   * @param  {any}    constantValue
-   * The constant value
-   * @return {Knifecycle}
-   * The Knifecycle instance (for chaining)
-   * @deprecated
-   * Use the `constant` decorator with the `Knifecycle.register` method
-   * @example
-   *
-   * import Knifecycle from 'knifecycle'
-   *
-   * const $ = new Knifecycle();
-   *
-   * // Expose the process env
-   * $.constant('ENV', process.env);
-   * // Expose a time() function
-   * $.constant('time', Date.now.bind(Date));
-   */
-  constant(constantName, constantValue) {
-    return this.register(constant(constantName, constantValue));
-  }
-
-  /**
-   * Register a service initializer
-   * @param  {String}     serviceName
-   * Service name
-   * @param  {Function}   serviceBuilder
-   * An asynchronous function returning the actual service
-   * @param  {Object}     options
-   * Options attached to the initializer
-   * @return {Knifecycle}
-   * The Knifecycle instance (for chaining)
-   * @deprecated
-   * Use the `service` decorator with the `Knifecycle.register` method
-   * @example
-   *
-   * import Knifecycle from 'knifecycle'
-   * import fs from 'fs';
-   *
-   * const $ = new Knifecycle();
-   *
-   * $.service('config', configServiceInitializer, {
-   *   singleton: true,
-   * });
-   *
-   * function configServiceInitializer({ CONFIG_PATH }) {
-   *   return new Promise((resolve, reject) {
-   *     fs.readFile(CONFIG_PATH, function(err, data) {
-   *       if(err) {
-   *         return reject(err);
-   *       }
-   *       try {
-   *         resolve(JSON.parse(data));
-   *       } catch (err) {
-   *         reject(err);
-   *       }
-   *   }, 'utf-8');
-   * }
-   */
-  service(serviceName, serviceBuilder, options) {
-    return this.register(service(serviceName, serviceBuilder, options));
-  }
-
-  /**
-   * Register a provider initializer
-   * @param  {String}     serviceName
-   * Service name resolved by the provider
-   * @param  {Function}   initializer
-   * An initializer returning the service promise
-   * @param  {Object}     options
-   * Options attached to the initializer
-   * @return {Knifecycle}
-   * The Knifecycle instance (for chaining)
-   * @deprecated
-   * Use the `initializer` decorator with the `Knifecycle.register` method
-   * @example
-   *
-   * import Knifecycle from 'knifecycle'
-   * import fs from 'fs';
-   *
-   * const $ = new Knifecycle();
-   *
-   * $.register(provider('config', function configProvider() {
-   *   return new Promise((resolve, reject) {
-   *     fs.readFile('config.js', function(err, data) {
-   *       let config;
-   *       if(err) {
-   *         return reject(err);
-   *       }
-   *       try {
-   *         config = JSON.parse(data.toString);
-   *       } catch (err) {
-   *         return reject(err);
-   *       }
-   *       resolve({
-   *         service: config,
-   *       });
-   *     });
-   *   });
-   * }));
-   */
-  provider(serviceName, initializer, options = {}) {
-    this.register(
-      reuseSpecialProps(initializer, initializer, {
-        [SPECIAL_PROPS.NAME]: serviceName,
-        [SPECIAL_PROPS.OPTIONS]: options,
-      }),
-    );
-    return this;
-  }
-
-  /**
    * Register an initializer
    * @param  {Function}   initializer
    * An initializer
@@ -387,8 +273,14 @@ class Knifecycle {
       );
     });
 
+    debug(
+      `${
+        this._initializers.has(initializer[SPECIAL_PROPS.NAME])
+          ? 'Overridden'
+          : 'Registered'
+      } an initializer: ${initializer[SPECIAL_PROPS.NAME]}`,
+    );
     this._initializers.set(initializer[SPECIAL_PROPS.NAME], initializer);
-    debug('Registered a new initializer:', initializer[SPECIAL_PROPS.NAME]);
     return this;
   }
 

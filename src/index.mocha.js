@@ -39,11 +39,11 @@ describe('Knifecycle', () => {
 
   describe('constant', () => {
     it('should register an object', () => {
-      $.constant('ENV', ENV);
+      $.register(constant('ENV', ENV));
     });
 
     it('should register a function', () => {
-      $.constant('time', time);
+      $.register(constant('time', time));
     });
   });
 
@@ -177,13 +177,13 @@ describe('Knifecycle', () => {
 
   describe('provider', () => {
     it('should register provider', () => {
-      $.provider('hash', hashProvider);
+      $.register(provider('hash', hashProvider));
     });
 
     it('should fail with direct circular dependencies', () => {
       assert.throws(
         () => {
-          $.provider('hash', inject(['hash'], hashProvider));
+          $.register(provider('hash', inject(['hash'], hashProvider)));
         },
         err => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
@@ -196,7 +196,7 @@ describe('Knifecycle', () => {
     it('should fail with direct circular dependencies on mapped services', () => {
       assert.throws(
         () => {
-          $.provider('hash', inject(['hash>lol'], hashProvider));
+          $.register(provider('hash', inject(['hash>lol'], hashProvider)));
         },
         err => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
@@ -209,10 +209,10 @@ describe('Knifecycle', () => {
     it('should fail with circular dependencies', () => {
       assert.throws(
         () => {
-          $.provider('hash', inject(['hash3'], hashProvider));
-          $.provider('hash1', inject(['hash'], hashProvider));
-          $.provider('hash2', inject(['hash1'], hashProvider));
-          $.provider('hash3', inject(['hash'], hashProvider));
+          $.register(provider('hash', inject(['hash3'], hashProvider)));
+          $.register(provider('hash1', inject(['hash'], hashProvider)));
+          $.register(provider('hash2', inject(['hash1'], hashProvider)));
+          $.register(provider('hash3', inject(['hash'], hashProvider)));
         },
         err => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
@@ -225,10 +225,10 @@ describe('Knifecycle', () => {
     it('should fail with deeper circular dependencies', () => {
       assert.throws(
         () => {
-          $.provider('hash', inject(['hash1'], hashProvider));
-          $.provider('hash1', inject(['hash2'], hashProvider));
-          $.provider('hash2', inject(['hash3'], hashProvider));
-          $.provider('hash3', inject(['hash'], hashProvider));
+          $.register(provider('hash', inject(['hash1'], hashProvider)));
+          $.register(provider('hash1', inject(['hash2'], hashProvider)));
+          $.register(provider('hash2', inject(['hash3'], hashProvider)));
+          $.register(provider('hash3', inject(['hash'], hashProvider)));
         },
         err => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
@@ -247,10 +247,10 @@ describe('Knifecycle', () => {
     it('should fail with circular dependencies on mapped services', () => {
       assert.throws(
         () => {
-          $.provider('hash', inject(['hash3>aHash3'], hashProvider));
-          $.provider('hash1', inject(['hash>aHash'], hashProvider));
-          $.provider('hash2', inject(['hash1>aHash1'], hashProvider));
-          $.provider('hash3', inject(['hash>aHash'], hashProvider));
+          $.register(provider('hash', inject(['hash3>aHash3'], hashProvider)));
+          $.register(provider('hash1', inject(['hash>aHash'], hashProvider)));
+          $.register(provider('hash2', inject(['hash1>aHash1'], hashProvider)));
+          $.register(provider('hash3', inject(['hash>aHash'], hashProvider)));
         },
         err => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');

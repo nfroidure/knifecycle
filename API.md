@@ -69,9 +69,6 @@
 
 * [Knifecycle](#Knifecycle)
     * [new Knifecycle()](#new_Knifecycle_new)
-    * ~~[.constant(constantName, constantValue)](#Knifecycle+constant) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-    * ~~[.service(serviceName, serviceBuilder, options)](#Knifecycle+service) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-    * ~~[.provider(serviceName, initializer, options)](#Knifecycle+provider) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
     * [.register(initializer)](#Knifecycle+register) ⇒ [<code>Knifecycle</code>](#Knifecycle)
     * [.toMermaidGraph(options)](#Knifecycle+toMermaidGraph) ⇒ <code>String</code>
     * [.run(dependenciesDeclarations)](#Knifecycle+run) ⇒ <code>Promise</code>
@@ -90,115 +87,6 @@ Create a new Knifecycle instance
 import Knifecycle from 'knifecycle'
 
 const $ = new Knifecycle();
-```
-<a name="Knifecycle+constant"></a>
-
-### ~~knifecycle.constant(constantName, constantValue) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-***Deprecated***
-
-Register a constant initializer
-
-**Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
-**Returns**: [<code>Knifecycle</code>](#Knifecycle) - The Knifecycle instance (for chaining)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| constantName | <code>String</code> | The name of the service |
-| constantValue | <code>any</code> | The constant value |
-
-**Example**  
-```js
-import Knifecycle from 'knifecycle'
-
-const $ = new Knifecycle();
-
-// Expose the process env
-$.constant('ENV', process.env);
-// Expose a time() function
-$.constant('time', Date.now.bind(Date));
-```
-<a name="Knifecycle+service"></a>
-
-### ~~knifecycle.service(serviceName, serviceBuilder, options) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-***Deprecated***
-
-Register a service initializer
-
-**Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
-**Returns**: [<code>Knifecycle</code>](#Knifecycle) - The Knifecycle instance (for chaining)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| serviceName | <code>String</code> | Service name |
-| serviceBuilder | <code>function</code> | An asynchronous function returning the actual service |
-| options | <code>Object</code> | Options attached to the initializer |
-
-**Example**  
-```js
-import Knifecycle from 'knifecycle'
-import fs from 'fs';
-
-const $ = new Knifecycle();
-
-$.service('config', configServiceInitializer, {
-  singleton: true,
-});
-
-function configServiceInitializer({ CONFIG_PATH }) {
-  return new Promise((resolve, reject) {
-    fs.readFile(CONFIG_PATH, function(err, data) {
-      if(err) {
-        return reject(err);
-      }
-      try {
-        resolve(JSON.parse(data));
-      } catch (err) {
-        reject(err);
-      }
-  }, 'utf-8');
-}
-```
-<a name="Knifecycle+provider"></a>
-
-### ~~knifecycle.provider(serviceName, initializer, options) ⇒ [<code>Knifecycle</code>](#Knifecycle)~~
-***Deprecated***
-
-Register a provider initializer
-
-**Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
-**Returns**: [<code>Knifecycle</code>](#Knifecycle) - The Knifecycle instance (for chaining)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| serviceName | <code>String</code> | Service name resolved by the provider |
-| initializer | <code>function</code> | An initializer returning the service promise |
-| options | <code>Object</code> | Options attached to the initializer |
-
-**Example**  
-```js
-import Knifecycle from 'knifecycle'
-import fs from 'fs';
-
-const $ = new Knifecycle();
-
-$.register(provider('config', function configProvider() {
-  return new Promise((resolve, reject) {
-    fs.readFile('config.js', function(err, data) {
-      let config;
-      if(err) {
-        return reject(err);
-      }
-      try {
-        config = JSON.parse(data.toString);
-      } catch (err) {
-        return reject(err);
-      }
-      resolve({
-        service: config,
-      });
-    });
-  });
-}));
 ```
 <a name="Knifecycle+register"></a>
 
