@@ -1,3 +1,13 @@
+<a name="3.0.0"></a>
+# [3.0.0](https://github.com/nfroidure/knifecycle/compare/v2.7.0...v3.0.0) (2018-10-11)
+
+
+### Features
+
+* **$instance:** Add a way to inject the Knifecycle instance ([5321401](https://github.com/nfroidure/knifecycle/commit/5321401))
+
+
+
 <a name="2.7.0"></a>
 # [2.7.0](https://github.com/nfroidure/knifecycle/compare/v2.6.2...v2.7.0) (2018-10-08)
 
