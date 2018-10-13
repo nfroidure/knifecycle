@@ -227,25 +227,6 @@ class Knifecycle {
       );
     }
 
-    // Constants are singletons and constant so we can set it
-    // to singleton services descriptors map directly
-    if ('constant' === initializer[SPECIAL_PROPS.TYPE]) {
-      const handlesSet = new Set();
-
-      this._singletonsServicesHandles.set(
-        initializer[SPECIAL_PROPS.NAME],
-        handlesSet,
-      );
-      this._singletonsServicesDescriptors.set(
-        initializer[SPECIAL_PROPS.NAME],
-        Promise.resolve({
-          // We do not directly use initializer[SPECIAL_PROPS.VALUE] here
-          // since it looks like there is a bug with Babel build that
-          // change functions to empty litteral objects
-          service: initializer(),
-        }),
-      );
-    }
     // Temporary cast service initializers into
     // providers. Best would be to threat each differently
     // at dependencies initialization level to boost performances
@@ -255,7 +236,6 @@ class Knifecycle {
         serviceAdapter.bind(null, initializer[SPECIAL_PROPS.NAME], initializer),
       );
       initializer[SPECIAL_PROPS.TYPE] = 'provider';
-      //initializer[SPECIAL_PROPS.VALUE] = {}.undef;
     }
 
     const initializerDependsOfItself = initializer[SPECIAL_PROPS.INJECT]
@@ -273,13 +253,52 @@ class Knifecycle {
       );
     });
 
-    debug(
-      `${
-        this._initializers.has(initializer[SPECIAL_PROPS.NAME])
-          ? 'Overridden'
-          : 'Registered'
-      } an initializer: ${initializer[SPECIAL_PROPS.NAME]}`,
-    );
+    if (this._initializers.has(initializer[SPECIAL_PROPS.NAME])) {
+      const initializedAsSingleton =
+        this._singletonsServicesHandles.has(initializer[SPECIAL_PROPS.NAME]) &&
+        this._singletonsServicesDescriptors.has(
+          initializer[SPECIAL_PROPS.NAME],
+        ) &&
+        !this._singletonsServicesDescriptors.get(
+          initializer[SPECIAL_PROPS.NAME],
+        ).preloaded;
+      const initializedAsInstance = [...this._silosContexts.values()].some(
+        siloContext =>
+          siloContext.servicesSequence.some(sequence =>
+            sequence.includes(initializer[SPECIAL_PROPS.NAME]),
+          ),
+      );
+      if (initializedAsSingleton || initializedAsInstance) {
+        throw new YError(
+          'E_INITIALIZER_ALREADY_INSTANCIATED',
+          initializer[SPECIAL_PROPS.NAME],
+        );
+      }
+      debug(`'Overridden an initializer: ${initializer[SPECIAL_PROPS.NAME]}`);
+    } else {
+      debug(`Registered an initializer: ${initializer[SPECIAL_PROPS.NAME]}`);
+    }
+
+    // Constants are singletons and constant so we can set it
+    // to singleton services descriptors map directly
+    if ('constant' === initializer[SPECIAL_PROPS.TYPE]) {
+      const handlesSet = new Set();
+
+      this._singletonsServicesHandles.set(
+        initializer[SPECIAL_PROPS.NAME],
+        handlesSet,
+      );
+      this._singletonsServicesDescriptors.set(initializer[SPECIAL_PROPS.NAME], {
+        preloaded: true,
+        promise: Promise.resolve({
+          // We do not directly use initializer[SPECIAL_PROPS.VALUE] here
+          // since it looks like there is a bug with Babel build that
+          // change functions to empty litteral objects
+          service: initializer(),
+        }),
+      });
+    }
+
     this._initializers.set(initializer[SPECIAL_PROPS.NAME], initializer);
     return this;
   }
@@ -475,7 +494,7 @@ class Knifecycle {
 
           await Promise.all(
             reversedServiceSequence.pop().map(async serviceName => {
-              const singletonServiceDescriptor = await _this._singletonsServicesDescriptors.get(
+              const singletonServiceDescriptor = await _this._pickupSingletonServiceDescriptorPromise(
                 serviceName,
               );
               const serviceDescriptor =
@@ -590,7 +609,8 @@ class Knifecycle {
       injectOnly,
       autoloading,
     });
-    serviceDescriptorPromise = this._singletonsServicesDescriptors.get(
+
+    serviceDescriptorPromise = this._pickupSingletonServiceDescriptorPromise(
       serviceName,
     );
 
@@ -628,10 +648,10 @@ class Knifecycle {
 
       handlesSet.add(siloContext.name);
       this._singletonsServicesHandles.set(serviceName, handlesSet);
-      this._singletonsServicesDescriptors.set(
-        serviceName,
-        serviceDescriptorPromise,
-      );
+      this._singletonsServicesDescriptors.set(serviceName, {
+        preloaded: false,
+        promise: serviceDescriptorPromise,
+      });
     } else {
       siloContext.servicesDescriptors.set(
         serviceName,
@@ -718,6 +738,20 @@ class Knifecycle {
     this._initializerResolvers.set(serviceName, initializerPromise);
 
     return await initializerPromise;
+  }
+
+  _pickupSingletonServiceDescriptorPromise(serviceName) {
+    const serviceDescriptor = this._singletonsServicesDescriptors.get(
+      serviceName,
+    );
+
+    if (!serviceDescriptor) {
+      return;
+    }
+
+    serviceDescriptor.preloaded = false;
+
+    return serviceDescriptor.promise;
   }
 
   /**

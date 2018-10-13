@@ -37,23 +37,166 @@ describe('Knifecycle', () => {
     $ = new Knifecycle();
   });
 
-  describe('constant', () => {
-    it('should register an object', () => {
-      $.register(constant('ENV', ENV));
-    });
-
-    it('should register a function', () => {
-      $.register(constant('time', time));
-    });
-  });
-
-  describe('service', () => {
-    it('should register service', () => {
-      $.register(service('time', timeService));
-    });
-  });
-
   describe('register', () => {
+    describe('with constants', () => {
+      it('should work with an object', () => {
+        $.register(constant('ENV', ENV));
+      });
+
+      it('should work with a function', () => {
+        $.register(constant('time', time));
+      });
+
+      it('should work when overriding a previously set constant', async () => {
+        $.register(constant('TEST', 1));
+        $.register(constant('TEST', 2));
+        assert.deepEqual(await $.run(['TEST']), { TEST: 2 });
+      });
+
+      it('should fail when overriding an initialized constant', async () => {
+        $.register(constant('TEST', 1));
+        assert.deepEqual(await $.run(['TEST']), { TEST: 1 });
+
+        try {
+          $.register(constant('TEST', 2));
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.equal(err.code, 'E_INITIALIZER_ALREADY_INSTANCIATED');
+        }
+      });
+    });
+
+    describe('with services', () => {
+      it('should  work with a service', () => {
+        $.register(service('time', timeService));
+      });
+
+      it('should work when overriding a previously set service', async () => {
+        $.register(service('test', async () => () => 1));
+        $.register(service('test', async () => () => 2));
+
+        const { test } = await $.run(['test']);
+        assert.deepEqual(test(), 2);
+      });
+
+      it('should fail when overriding an initialized service', async () => {
+        $.register(service('test', async () => () => 1));
+        const { test } = await $.run(['test']);
+        assert.deepEqual(test(), 1);
+
+        try {
+          $.register(service('test', async () => () => 2));
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.equal(err.code, 'E_INITIALIZER_ALREADY_INSTANCIATED');
+        }
+      });
+    });
+
+    describe('with providers', () => {
+      it('should  work with a provider', () => {
+        $.register(service('hash', hashProvider));
+      });
+
+      it('should work when overriding a previously set provider', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'provider',
+              name: 'test',
+              inject: [],
+            },
+            async () => ({
+              service: 1,
+            }),
+          ),
+        );
+        $.register(
+          initializer(
+            {
+              type: 'provider',
+              name: 'test',
+              inject: [],
+            },
+            async () => ({
+              service: 2,
+            }),
+          ),
+        );
+
+        const { test } = await $.run(['test']);
+        assert.deepEqual(test, 2);
+      });
+
+      it('should work when overriding a previously set singleton provider', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'provider',
+              name: 'test',
+              inject: [],
+              options: { singleton: true },
+            },
+            async () => ({
+              service: 1,
+            }),
+          ),
+        );
+        $.register(
+          initializer(
+            {
+              type: 'provider',
+              name: 'test',
+              inject: [],
+            },
+            async () => ({
+              service: 2,
+            }),
+          ),
+        );
+
+        const { test } = await $.run(['test']);
+        assert.deepEqual(test, 2);
+      });
+
+      it('should fail when overriding an initialized provider', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'provider',
+              name: 'test',
+              inject: [],
+              options: { singleton: true },
+            },
+            async () => ({
+              service: 1,
+            }),
+          ),
+        );
+
+        const { test } = await $.run(['test']);
+        assert.deepEqual(test, 1);
+
+        try {
+          $.register(
+            initializer(
+              {
+                type: 'provider',
+                name: 'test',
+                inject: [],
+              },
+              async () => ({
+                service: 2,
+              }),
+            ),
+          );
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.equal(err.code, 'E_INITIALIZER_ALREADY_INSTANCIATED');
+        }
+      });
+    });
+
     it('should fail when intitializer is no a function', () => {
       assert.throws(
         () => {

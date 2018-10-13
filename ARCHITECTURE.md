@@ -123,7 +123,7 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L396-L406)
+[See in context](./src/index.js#L415-L425)
 
 
 
