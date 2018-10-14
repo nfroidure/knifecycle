@@ -1,3 +1,13 @@
+<a name="3.1.0"></a>
+# [3.1.0](https://github.com/nfroidure/knifecycle/compare/v3.0.0...v3.1.0) (2018-10-14)
+
+
+### Features
+
+* **Knifecycle instance:** Add extra errors for bad use ([a43aa30](https://github.com/nfroidure/knifecycle/commit/a43aa30))
+
+
+
 <a name="3.0.0"></a>
 # [3.0.0](https://github.com/nfroidure/knifecycle/compare/v2.7.0...v3.0.0) (2018-10-11)
 
