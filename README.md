@@ -46,7 +46,7 @@ You may want to look at the
 At this point you may think that a DI system is useless. My
  advice is that it depends. But at least, you should not
  make a definitive choice and allow both approaches. See
- [this Stack Overflow anser](http://stackoverflow.com/questions/9250851/do-i-need-dependency-injection-in-nodejs-or-how-to-deal-with/44084729#44084729)
+ [this StackOverflow answer](http://stackoverflow.com/questions/9250851/do-i-need-dependency-injection-in-nodejs-or-how-to-deal-with/44084729#44084729)
  for more context about this statement.
 
 ## Features
