@@ -510,7 +510,7 @@ $.run(['ENV'])
 ```
 <a name="Knifecycle+_getServiceDescriptor"></a>
 
-### knifecycle._getServiceDescriptor(siloContext, serviceName, options, serviceProvider) ⇒ <code>Promise</code>
+### knifecycle.\_getServiceDescriptor(siloContext, serviceName, options, serviceProvider) ⇒ <code>Promise</code>
 Initialize or return a service descriptor
 
 **Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
@@ -527,7 +527,7 @@ Initialize or return a service descriptor
 
 <a name="Knifecycle+_initializeServiceDescriptor"></a>
 
-### knifecycle._initializeServiceDescriptor(siloContext, serviceName, options) ⇒ <code>Promise</code>
+### knifecycle.\_initializeServiceDescriptor(siloContext, serviceName, options) ⇒ <code>Promise</code>
 Initialize a service descriptor
 
 **Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
@@ -543,7 +543,7 @@ Initialize a service descriptor
 
 <a name="Knifecycle+_initializeDependencies"></a>
 
-### knifecycle._initializeDependencies(siloContext, serviceName, servicesDeclarations, options) ⇒ <code>Promise</code>
+### knifecycle.\_initializeDependencies(siloContext, serviceName, servicesDeclarations, options) ⇒ <code>Promise</code>
 Initialize a service dependencies
 
 **Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  

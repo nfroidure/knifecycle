@@ -10,11 +10,11 @@
     "configs": [
       "main",
       "readme",
-      "mocha",
       "eslint",
       "travis",
       "codeclimate",
       "babel",
+      "mocha",
       "karma",
       "jsdocs",
       "jsarch"
@@ -36,14 +36,14 @@
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "cli": "env NODE_ENV=${NODE_ENV:-cli}",
     "compile": "babel src --out-dir=dist",
-    "cover": "nyc npm test && nyc report --reporter=text",
+    "cover": "nyc npm test && nyc report --reporter=html --reporter=text",
     "coveralls": "nyc npm test && nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage",
     "cz": "env NODE_ENV=${NODE_ENV:-cli} git cz",
     "doc": "echo \"# API\" > API.md; jsdoc2md src/*.js >> API.md",
     "karma": "karma start karma.conf.js",
     "lint": "eslint src/*.js",
     "metapak": "metapak",
-    "mocha": "mocha --compilers js:@babel/register src/*.mocha.js",
+    "mocha": "mocha --require '@babel/register' src/*.mocha.js",
     "precz": "npm t && npm run lint && npm run metapak -- -s",
     "prepublish": "npm run compile",
     "prettier": "prettier --write src/*.js",
@@ -64,19 +64,19 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@babel/cli": "^7.0.0",
-    "@babel/core": "^7.0.1",
+    "@babel/cli": "^7.1.2",
+    "@babel/core": "^7.1.2",
     "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
-    "@babel/preset-env": "^7.0.0",
+    "@babel/preset-env": "^7.1.0",
     "@babel/register": "^7.0.0",
-    "babel-eslint": "^9.0.0",
+    "babel-eslint": "^10.0.1",
     "browserify": "^16.2.2",
-    "commitizen": "^2.10.1",
-    "conventional-changelog-cli": "^2.0.5",
+    "commitizen": "^3.0.4",
+    "conventional-changelog-cli": "^2.0.11",
     "coveralls": "^3.0.2",
     "cz-conventional-changelog": "^2.1.0",
-    "eslint": "^5.6.0",
-    "eslint-plugin-prettier": "^2.6.2",
+    "eslint": "^5.8.0",
+    "eslint-plugin-prettier": "^3.0.0",
     "jsarch": "^1.3.0",
     "jsdoc-to-markdown": "^4.0.1",
     "karma": "^3.0.0",
@@ -85,15 +85,15 @@
     "karma-firefox-launcher": "^1.1.0",
     "karma-mocha": "^1.3.0",
     "karma-sauce-launcher": "^1.2.0",
-    "metapak": "^1.0.3",
-    "metapak-nfroidure": "^7.1.1",
+    "metapak": "^2.0.0",
+    "metapak-nfroidure": "8.1.0",
     "mocha": "^5.2.0",
     "nyc": "^13.0.1",
-    "prettier": "^1.14.2",
-    "sinon": "^6.3.3"
+    "prettier": "^1.14.3",
+    "sinon": "^7.1.1"
   },
   "dependencies": {
-    "debug": "^4.0.1",
+    "debug": "^4.1.0",
     "yerror": "^2.1.3"
   },
   "config": {
@@ -106,12 +106,12 @@
       "commitizen",
       "cz-conventional-changelog",
       "conventional-changelog-cli",
-      "mocha",
-      "coveralls",
-      "nyc",
       "eslint",
       "eslint-config-prettier",
       "prettier",
+      "mocha",
+      "coveralls",
+      "nyc",
       "karma",
       "karma-chrome-launcher",
       "karma-firefox-launcher",
@@ -135,5 +135,32 @@
       "@babel/plugin-proposal-object-rest-spread"
     ]
   },
-  "contributors": []
+  "contributors": [],
+  "eslintConfig": {
+    "extends": "eslint:recommended",
+    "parserOptions": {
+      "ecmaVersion": 2018,
+      "sourceType": "module",
+      "modules": true
+    },
+    "env": {
+      "es6": true,
+      "node": true,
+      "jest": true,
+      "mocha": true
+    },
+    "plugins": [
+      "prettier"
+    ],
+    "rules": {
+      "prettier/prettier": "error"
+    }
+  },
+  "prettier": {
+    "semi": true,
+    "printWidth": 80,
+    "singleQuote": true,
+    "trailingComma": "all",
+    "proseWrap": "always"
+  }
 }
