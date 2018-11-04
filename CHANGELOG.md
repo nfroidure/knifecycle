@@ -1,3 +1,23 @@
+# [4.0.0](https://github.com/nfroidure/knifecycle/compare/v3.1.0...v4.0.0) (2018-11-04)
+
+
+### chore
+
+* **Dependencies:** Update `metapak-nfroidure` ([dc65134](https://github.com/nfroidure/knifecycle/commit/dc65134))
+
+
+### Features
+
+* **autoInject:** Adds a utility function to autodetect dependencies ([03c8527](https://github.com/nfroidure/knifecycle/commit/03c8527))
+* **autoName:** Allow to set name according to the function name ([19cde56](https://github.com/nfroidure/knifecycle/commit/19cde56))
+
+
+### BREAKING CHANGES
+
+* **Dependencies:** Drop support for NodeJS < 8 versions
+
+
+
 <a name="3.1.0"></a>
 # [3.1.0](https://github.com/nfroidure/knifecycle/compare/v3.0.0...v3.1.0) (2018-10-14)
 
