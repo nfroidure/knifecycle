@@ -4,7 +4,7 @@
   "description": "Manage your NodeJS processes's lifecycle.",
   "main": "dist/index.js",
   "engines": {
-    "node": ">=6.9.5"
+    "node": ">=8.12.0"
   },
   "metapak": {
     "configs": [
@@ -24,30 +24,35 @@
       "files": "src/*.js",
       "ignore": [
         "dist"
+      ],
+      "bundleFiles": [
+        "'dist/**/*.js'"
       ]
     }
   },
   "files": [
-    "dist",
-    "src"
+    "'dist/**/*.js'",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "architecture": "jsarch src/*.js > ARCHITECTURE.md",
+    "architecture": "jsarch src/*.js > ARCHITECTURE.md && git add ARCHITECTURE.md",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "cli": "env NODE_ENV=${NODE_ENV:-cli}",
     "compile": "babel src --out-dir=dist",
     "cover": "nyc npm test && nyc report --reporter=html --reporter=text",
     "coveralls": "nyc npm test && nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage",
     "cz": "env NODE_ENV=${NODE_ENV:-cli} git cz",
-    "doc": "echo \"# API\" > API.md; jsdoc2md src/*.js >> API.md",
+    "doc": "echo \"# API\" > API.md; jsdoc2md src/*.js >> API.md && git add API.md",
     "karma": "karma start karma.conf.js",
     "lint": "eslint src/*.js",
     "metapak": "metapak",
     "mocha": "mocha --require '@babel/register' src/*.mocha.js",
-    "precz": "npm t && npm run lint && npm run metapak -- -s",
+    "precz": "npm t && npm run lint && npm run metapak -- -s && npm run doc && npm run architecture",
     "prepublish": "npm run compile",
     "prettier": "prettier --write src/*.js",
-    "preversion": "npm run compile && npm t && npm run lint && npm run metapak -- -s",
+    "preversion": "npm run compile && npm t && npm run lint && npm run metapak -- -s && npm run doc && npm run architecture",
     "test": "npm run mocha && npm run karma",
     "version": "npm run changelog && git add CHANGELOG.md"
   },
@@ -86,7 +91,7 @@
     "karma-mocha": "^1.3.0",
     "karma-sauce-launcher": "^1.2.0",
     "metapak": "^2.0.0",
-    "metapak-nfroidure": "8.1.0",
+    "metapak-nfroidure": "9.0.0",
     "mocha": "^5.2.0",
     "nyc": "^13.0.1",
     "prettier": "^1.14.3",
@@ -120,21 +125,6 @@
       "jsarch"
     ]
   },
-  "babel": {
-    "presets": [
-      [
-        "@babel/env",
-        {
-          "targets": {
-            "node": "6.9.5"
-          }
-        }
-      ]
-    ],
-    "plugins": [
-      "@babel/plugin-proposal-object-rest-spread"
-    ]
-  },
   "contributors": [],
   "eslintConfig": {
     "extends": "eslint:recommended",
@@ -162,5 +152,20 @@
     "singleQuote": true,
     "trailingComma": "all",
     "proseWrap": "always"
+  },
+  "babel": {
+    "presets": [
+      [
+        "@babel/env",
+        {
+          "targets": {
+            "node": "8.12.0"
+          }
+        }
+      ]
+    ],
+    "plugins": [
+      "@babel/plugin-proposal-object-rest-spread"
+    ]
   }
 }

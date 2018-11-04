@@ -124,6 +124,44 @@ export function inject(dependenciesDeclarations, initializer) {
 
   return uniqueInitializer;
 }
+/**
+ * Decorator creating a new initializer with different
+ *  dependencies declarations set to it according to the
+ *  given function signature.
+ * @param  {Function}  initializer
+ * The original initializer
+ * @return {Function}
+ * Returns a new initializer
+ * @example
+ *
+ * import Knifecycle, { autoInject, name } from 'knifecycle'
+ *
+ * new Knifecycle()
+ * .register(
+ *   name(
+ *     'application',
+ *     autoInject(
+ *       async ({ NODE_ENV, mysql: db }) =>
+ *         async () => db.query('SELECT applicationId FROM applications WHERE environment=?', [NODE_ENV]))
+ * );
+ */
+export function autoInject(initializer) {
+  const source = initializer.toString();
+  const matches = source.match(
+    /\s*async\s+(?:function)?\s*\(\{\s*([^}]+)\s*\}\)/,
+  );
+
+  if (!matches) {
+    throw new YError('E_AUTO_INJECTION_FAILURE', source);
+  }
+
+  const dependenciesDeclarations = matches[1]
+    .trim()
+    .split(/\s*,\s*/)
+    .map(injection => injection.split(/\s*:\s*/).shift());
+
+  return inject(dependenciesDeclarations, initializer);
+}
 
 /**
  * Decorator creating a new initializer with some

@@ -22,6 +22,11 @@
 <dd><p>Decorator creating a new initializer with different
  dependencies declarations set to it.</p>
 </dd>
+<dt><a href="#autoInject">autoInject(initializer)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator creating a new initializer with different
+ dependencies declarations set to it according to the
+ given function signature.</p>
+</dd>
 <dt><a href="#alsoInject">alsoInject(dependenciesDeclarations, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator creating a new initializer with some
  more dependencies declarations appended to it.</p>
@@ -301,6 +306,33 @@ import myServiceInitializer from './service';
 getInstance()
 .service('myService',
   inject(['ENV'], myServiceInitializer)
+);
+```
+<a name="autoInject"></a>
+
+## autoInject(initializer) ⇒ <code>function</code>
+Decorator creating a new initializer with different
+ dependencies declarations set to it according to the
+ given function signature.
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| initializer | <code>function</code> | The original initializer |
+
+**Example**  
+```js
+import Knifecycle, { autoInject, name } from 'knifecycle'
+
+new Knifecycle()
+.register(
+  name(
+    'application',
+    autoInject(
+      async ({ NODE_ENV, mysql: db }) =>
+        async () => db.query('SELECT applicationId FROM applications WHERE environment=?', [NODE_ENV]))
 );
 ```
 <a name="alsoInject"></a>

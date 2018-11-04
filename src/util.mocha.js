@@ -7,6 +7,7 @@ import {
   name,
   type,
   inject,
+  autoInject,
   alsoInject,
   options,
   extra,
@@ -107,6 +108,27 @@ describe('inject', () => {
     assert.notEqual(newInitializer, aProvider);
     assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+  });
+});
+
+describe('autoInject', () => {
+  it('should allow to decorate an initializer with dependencies', () => {
+    const baseProvider = async ({ ENV, mysql: db }) => async () => ({
+      ENV,
+      db,
+    });
+    const dependencies = ['ENV', 'mysql'];
+    const newInitializer = autoInject(baseProvider);
+
+    assert.notEqual(newInitializer, baseProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+  });
+
+  it('should fail with no injections', () => {
+    assert.throws(() => {
+      autoInject(async () => {});
+    }, /E_AUTO_INJECTION_FAILURE/);
   });
 });
 
