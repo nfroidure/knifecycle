@@ -373,6 +373,11 @@ contains the services I use the most in my apps.
 <dd><p>Decorator creating a new initializer with different
  dependencies declarations set to it.</p>
 </dd>
+<dt><a href="#autoInject">autoInject(initializer)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator creating a new initializer with different
+ dependencies declarations set to it according to the
+ given function signature.</p>
+</dd>
 <dt><a href="#alsoInject">alsoInject(dependenciesDeclarations, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator creating a new initializer with some
  more dependencies declarations appended to it.</p>
@@ -389,6 +394,9 @@ contains the services I use the most in my apps.
 </dd>
 <dt><a href="#name">name(name, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to set an initializer name.</p>
+</dd>
+<dt><a href="#autoName">autoName(initializer)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator to set an initializer name from its function name.</p>
 </dd>
 <dt><a href="#type">type(type, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to set an initializer type.</p>
@@ -654,6 +662,33 @@ getInstance()
   inject(['ENV'], myServiceInitializer)
 );
 ```
+<a name="autoInject"></a>
+
+## autoInject(initializer) ⇒ <code>function</code>
+Decorator creating a new initializer with different
+ dependencies declarations set to it according to the
+ given function signature.
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| initializer | <code>function</code> | The original initializer |
+
+**Example**  
+```js
+import Knifecycle, { autoInject, name } from 'knifecycle'
+
+new Knifecycle()
+.register(
+  name(
+    'application',
+    autoInject(
+      async ({ NODE_ENV, mysql: db }) =>
+        async () => db.query('SELECT applicationId FROM applications WHERE environment=?', [NODE_ENV]))
+);
+```
 <a name="alsoInject"></a>
 
 ## alsoInject(dependenciesDeclarations, initializer) ⇒ <code>function</code>
@@ -753,6 +788,24 @@ import myServiceInitializer from './service';
 
 getInstance()
 .register(name('myService', myServiceInitializer));
+```
+<a name="autoName"></a>
+
+## autoName(initializer) ⇒ <code>function</code>
+Decorator to set an initializer name from its function name.
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer with that name set  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| initializer | <code>function</code> | The initializer to name |
+
+**Example**  
+```js
+import { autoName } from 'knifecycle';
+
+.register(name(async function myService() {}));
 ```
 <a name="type"></a>
 

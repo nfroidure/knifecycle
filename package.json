@@ -49,10 +49,10 @@
     "lint": "eslint src/*.js",
     "metapak": "metapak",
     "mocha": "mocha --require '@babel/register' src/*.mocha.js",
-    "precz": "npm t && npm run lint && npm run metapak -- -s && npm run doc && npm run architecture",
+    "precz": "npm t && npm run lint && npm run doc && npm run architecture && npm run metapak -- -s",
     "prepublish": "npm run compile",
     "prettier": "prettier --write src/*.js",
-    "preversion": "npm run compile && npm t && npm run lint && npm run metapak -- -s && npm run doc && npm run architecture",
+    "preversion": "npm run compile && npm t && npm run lint && npm run doc && npm run architecture && npm run metapak -- -s",
     "test": "npm run mocha && npm run karma",
     "version": "npm run changelog && git add CHANGELOG.md"
   },

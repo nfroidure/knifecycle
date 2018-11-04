@@ -290,6 +290,31 @@ export function name(name, initializer) {
 }
 
 /**
+ * Decorator to set an initializer name from its function name.
+ * @param  {Function}  initializer
+ * The initializer to name
+ * @return {Function}
+ * Returns a new initializer with that name set
+ * @example
+ *
+ * import { autoName } from 'knifecycle';
+ *
+ * .register(name(async function myService() {}));
+ */
+export function autoName(initializer) {
+  const functionName = (initializer.name || '')
+    .split(' ')
+    .pop()
+    .replace(/^init(?:ialize)?([A-Z])/, (_, $1) => $1.toLowerCase());
+
+  if (!functionName) {
+    throw new YError('E_AUTO_NAMING_FAILURE', initializer.name);
+  }
+
+  return name(functionName, initializer);
+}
+
+/**
  * Decorator to set an initializer type.
  * @param  {String}    type
  * The type to set to the initializer.

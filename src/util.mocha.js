@@ -5,6 +5,7 @@ import {
   wrapInitializer,
   parseDependencyDeclaration,
   name,
+  autoName,
   type,
   inject,
   autoInject,
@@ -174,6 +175,84 @@ describe('name', () => {
     assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+  });
+});
+
+describe('autoName', () => {
+  it('should allow to decorate an initializer with its function name', () => {
+    const dependencies = ['ANOTHER_ENV>ENV'];
+    const baseOptions = { singleton: true };
+    const baseName = 'hash';
+    const newInitializer = inject(
+      dependencies,
+      options(baseOptions, autoName(async function hash() {})),
+    );
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+  });
+
+  it('should allow to decorate an initializer with its init like function name', () => {
+    const dependencies = ['ANOTHER_ENV>ENV'];
+    const baseOptions = { singleton: true };
+    const baseName = 'hash';
+    const newInitializer = inject(
+      dependencies,
+      options(baseOptions, autoName(async function initHash() {})),
+    );
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+  });
+
+  it('should allow to decorate an initializer with its initialize like function name', () => {
+    const dependencies = ['ANOTHER_ENV>ENV'];
+    const baseOptions = { singleton: true };
+    const baseName = 'hash';
+    const newInitializer = inject(
+      dependencies,
+      options(baseOptions, autoName(async function initializeHash() {})),
+    );
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+  });
+
+  it('should allow to decorate a bounded initializer', () => {
+    const dependencies = ['ANOTHER_ENV>ENV'];
+    const baseOptions = { singleton: true };
+    const baseName = 'hash';
+    const newInitializer = autoName(
+      inject(
+        dependencies,
+        options(baseOptions, async function initializeHash() {}),
+      ),
+    );
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+  });
+
+  it('should fail with anonymous functions', () => {
+    assert.throws(() => {
+      autoName(async () => {});
+    }, /E_AUTO_NAMING_FAILURE/);
   });
 });
 
