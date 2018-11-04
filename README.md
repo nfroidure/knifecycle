@@ -477,7 +477,7 @@ See [Mermaid docs](https://github.com/knsv/mermaid)
 
 **Example**  
 ```js
-import { Knifecycle, inject, constant, service } from 'knifecycle';
+import Knifecycle, { inject, constant, service } from 'knifecycle';
 import appInitializer from './app';
 
 const $ = new Knifecycle();
@@ -506,7 +506,7 @@ Creates a new execution silo
 
 **Example**  
 ```js
-import Knifecycle from 'knifecycle'
+import Knifecycle, { constant } from 'knifecycle'
 
 const $ = new Knifecycle();
 
@@ -654,12 +654,16 @@ Decorator creating a new initializer with different
 
 **Example**  
 ```js
-import { inject, getInstance } from 'knifecycle'
+import Knifecycle, { inject } from 'knifecycle'
 import myServiceInitializer from './service';
 
-getInstance()
-.service('myService',
-  inject(['ENV'], myServiceInitializer)
+new Knifecycle()
+ .register(
+   service(
+     'myService',
+     inject(['ENV'], myServiceInitializer)
+   )
+  )
 );
 ```
 <a name="autoInject"></a>
@@ -681,12 +685,16 @@ Decorator creating a new initializer with different
 import Knifecycle, { autoInject, name } from 'knifecycle'
 
 new Knifecycle()
-.register(
-  name(
-    'application',
-    autoInject(
-      async ({ NODE_ENV, mysql: db }) =>
-        async () => db.query('SELECT applicationId FROM applications WHERE environment=?', [NODE_ENV]))
+  .register(
+    name(
+      'application',
+      autoInject(
+        async ({ NODE_ENV, mysql: db }) =>
+          async () => db.query('SELECT applicationId FROM applications WHERE environment=?', [NODE_ENV])
+        )
+      )
+    )
+  )
 );
 ```
 <a name="alsoInject"></a>
@@ -705,13 +713,13 @@ Decorator creating a new initializer with some
 
 **Example**  
 ```js
-import { alsoInject, getInstance } from 'knifecycle'
+import Knifecycle, { alsoInject } from 'knifecycle'
 import myServiceInitializer from './service';
 
-getInstance()
-.service('myService',
+new Knifecycle()
+.register(service('myService',
   alsoInject(['ENV'], myServiceInitializer)
-);
+));
 ```
 <a name="extra"></a>
 
@@ -733,13 +741,13 @@ Decorator creating a new initializer with some
 
 **Example**  
 ```js
-import { extra, getInstance } from 'knifecycle'
+import Knifecycle, { extra } from 'knifecycle'
 import myServiceInitializer from './service';
 
-getInstance()
-.service('myService',
+new Knifecycle()
+.register(service('myService',
   extra({ httpHandler: true }, myServiceInitializer)
-);
+));
 ```
 <a name="options"></a>
 
@@ -758,15 +766,15 @@ Decorator to amend an initializer options.
 
 **Example**  
 ```js
-import { inject, options, getInstance } from 'knifecycle';
+import Knifecycle, { inject, options } from 'knifecycle';
 import myServiceInitializer from './service';
 
-getInstance()
-.service('myService',
+new Knifecycle()
+.register(service('myService',
   inject(['ENV'],
     options({ singleton: true}, myServiceInitializer)
   )
-);
+));
 ```
 <a name="name"></a>
 
@@ -783,10 +791,10 @@ Decorator to set an initializer name.
 
 **Example**  
 ```js
-import { name, getInstance } from 'knifecycle';
+import Knifecycle, { name } from 'knifecycle';
 import myServiceInitializer from './service';
 
-getInstance()
+new Knifecycle()
 .register(name('myService', myServiceInitializer));
 ```
 <a name="autoName"></a>
@@ -803,8 +811,9 @@ Decorator to set an initializer name from its function name.
 
 **Example**  
 ```js
-import { autoName } from 'knifecycle';
+import Knifecycle, { autoName } from 'knifecycle';
 
+new Knifecycle()
 .register(name(async function myService() {}));
 ```
 <a name="type"></a>
@@ -822,17 +831,17 @@ Decorator to set an initializer type.
 
 **Example**  
 ```js
-import { name, type, getInstance } from 'knifecycle';
+import Knifecycle, { name, type } from 'knifecycle';
 import myServiceInitializer from './service';
 
-getInstance()
+new Knifecycle()
 .register(
   type('service',
     name('myService',
       myServiceInitializer
     )
   )
- );
+);
 ```
 <a name="initializer"></a>
 
@@ -849,10 +858,10 @@ Decorator to set an initializer properties.
 
 **Example**  
 ```js
-import { initializer, getInstance } from 'knifecycle';
+import Knifecycle, { initializer } from 'knifecycle';
 import myServiceInitializer from './service';
 
-getInstance()
+new Knifecycle()
 .register(initializer({
   name: 'myService',
   type: 'service',
@@ -875,7 +884,7 @@ Decorator that creates an initializer for a constant value
 
 **Example**  
 ```js
-import { Knifecycle, constant, service } from 'knifecycle';
+import Knifecycle, { constant, service } from 'knifecycle';
 
 const { printAnswer } = new Knifecycle()
   .register(constant('THE_NUMBER', value))
@@ -906,7 +915,7 @@ Decorator that creates an initializer for a service
 
 **Example**  
 ```js
-import { Knifecycle, constant, service } from 'knifecycle';
+import Knifecycle, { constant, service } from 'knifecycle';
 
 const { printAnswer } = new Knifecycle()
   .register(constant('THE_NUMBER', value))
@@ -937,7 +946,7 @@ Decorator that creates an initializer for a provider
 
 **Example**  
 ```js
-import Knifecycle from 'knifecycle'
+import Knifecycle, { provider } from 'knifecycle'
 import fs from 'fs';
 
 const $ = new Knifecycle();
@@ -982,9 +991,9 @@ Shortcut to create an initializer with a simple handler
 
 **Example**  
 ```js
-import { initializer, getInstance } from 'knifecycle';
+import Knifecycle, { initializer } from 'knifecycle';
 
-getInstance()
+new Knifecycle()
 .register(handler(getUser, ['db', '?log']));
 
 const QUERY = `SELECT * FROM users WHERE id=$1`

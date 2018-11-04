@@ -99,12 +99,16 @@ export function wrapInitializer(wrapper, baseInitializer) {
  * Returns a new initializer
  * @example
  *
- * import { inject, getInstance } from 'knifecycle'
+ * import Knifecycle, { inject } from 'knifecycle'
  * import myServiceInitializer from './service';
  *
- * getInstance()
- * .service('myService',
- *   inject(['ENV'], myServiceInitializer)
+ * new Knifecycle()
+ *  .register(
+ *    service(
+ *      'myService',
+ *      inject(['ENV'], myServiceInitializer)
+ *    )
+ *   )
  * );
  */
 export function inject(dependenciesDeclarations, initializer) {
@@ -137,12 +141,16 @@ export function inject(dependenciesDeclarations, initializer) {
  * import Knifecycle, { autoInject, name } from 'knifecycle'
  *
  * new Knifecycle()
- * .register(
- *   name(
- *     'application',
- *     autoInject(
- *       async ({ NODE_ENV, mysql: db }) =>
- *         async () => db.query('SELECT applicationId FROM applications WHERE environment=?', [NODE_ENV]))
+ *   .register(
+ *     name(
+ *       'application',
+ *       autoInject(
+ *         async ({ NODE_ENV, mysql: db }) =>
+ *           async () => db.query('SELECT applicationId FROM applications WHERE environment=?', [NODE_ENV])
+ *         )
+ *       )
+ *     )
+ *   )
  * );
  */
 export function autoInject(initializer) {
@@ -174,13 +182,13 @@ export function autoInject(initializer) {
  * Returns a new initializer
  * @example
  *
- * import { alsoInject, getInstance } from 'knifecycle'
+ * import Knifecycle, { alsoInject } from 'knifecycle'
  * import myServiceInitializer from './service';
  *
- * getInstance()
- * .service('myService',
+ * new Knifecycle()
+ * .register(service('myService',
  *   alsoInject(['ENV'], myServiceInitializer)
- * );
+ * ));
  */
 export function alsoInject(dependenciesDeclarations, initializer) {
   return inject(
@@ -206,13 +214,13 @@ export function alsoInject(dependenciesDeclarations, initializer) {
  * Returns a new initializer
  * @example
  *
- * import { extra, getInstance } from 'knifecycle'
+ * import Knifecycle, { extra } from 'knifecycle'
  * import myServiceInitializer from './service';
  *
- * getInstance()
- * .service('myService',
+ * new Knifecycle()
+ * .register(service('myService',
  *   extra({ httpHandler: true }, myServiceInitializer)
- * );
+ * ));
  */
 export function extra(extraInformations, initializer, merge = false) {
   const uniqueInitializer = reuseSpecialProps(initializer, initializer, {
@@ -241,15 +249,15 @@ export function extra(extraInformations, initializer, merge = false) {
  * Returns a new initializer
  * @example
  *
- * import { inject, options, getInstance } from 'knifecycle';
+ * import Knifecycle, { inject, options } from 'knifecycle';
  * import myServiceInitializer from './service';
  *
- * getInstance()
- * .service('myService',
+ * new Knifecycle()
+ * .register(service('myService',
  *   inject(['ENV'],
  *     options({ singleton: true}, myServiceInitializer)
  *   )
- * );
+ * ));
  */
 export function options(options, initializer, merge = false) {
   const uniqueInitializer = reuseSpecialProps(initializer, initializer, {
@@ -273,10 +281,10 @@ export function options(options, initializer, merge = false) {
  * Returns a new initializer with that name set
  * @example
  *
- * import { name, getInstance } from 'knifecycle';
+ * import Knifecycle, { name } from 'knifecycle';
  * import myServiceInitializer from './service';
  *
- * getInstance()
+ * new Knifecycle()
  * .register(name('myService', myServiceInitializer));
  */
 export function name(name, initializer) {
@@ -297,8 +305,9 @@ export function name(name, initializer) {
  * Returns a new initializer with that name set
  * @example
  *
- * import { autoName } from 'knifecycle';
+ * import Knifecycle, { autoName } from 'knifecycle';
  *
+ * new Knifecycle()
  * .register(name(async function myService() {}));
  */
 export function autoName(initializer) {
@@ -324,17 +333,17 @@ export function autoName(initializer) {
  * Returns a new initializer
  * @example
  *
- * import { name, type, getInstance } from 'knifecycle';
+ * import Knifecycle, { name, type } from 'knifecycle';
  * import myServiceInitializer from './service';
  *
- * getInstance()
+ * new Knifecycle()
  * .register(
  *   type('service',
  *     name('myService',
  *       myServiceInitializer
  *     )
  *   )
- *  );
+ * );
  */
 export function type(type, initializer) {
   const uniqueInitializer = reuseSpecialProps(initializer, initializer, {
@@ -356,10 +365,10 @@ export function type(type, initializer) {
  * Returns a new initializer
  * @example
  *
- * import { initializer, getInstance } from 'knifecycle';
+ * import Knifecycle, { initializer } from 'knifecycle';
  * import myServiceInitializer from './service';
  *
- * getInstance()
+ * new Knifecycle()
  * .register(initializer({
  *   name: 'myService',
  *   type: 'service',
@@ -396,7 +405,7 @@ export function initializer(properties, initializer) {
  * @return {Function}
  * Returns a new initializer
  * @example
- * import { Knifecycle, constant, service } from 'knifecycle';
+ * import Knifecycle, { constant, service } from 'knifecycle';
  *
  * const { printAnswer } = new Knifecycle()
  *   .register(constant('THE_NUMBER', value))
@@ -446,7 +455,7 @@ export function constant(name, value) {
  * @return {Function}
  * Returns a new initializer
  * @example
- * import { Knifecycle, constant, service } from 'knifecycle';
+ * import Knifecycle, { constant, service } from 'knifecycle';
  *
  * const { printAnswer } = new Knifecycle()
  *   .register(constant('THE_NUMBER', value))
@@ -485,7 +494,7 @@ export function service(serviceName, serviceBuilder, options = {}) {
  * Returns a new initializer
  * @example
  *
- * import Knifecycle from 'knifecycle'
+ * import Knifecycle, { provider } from 'knifecycle'
  * import fs from 'fs';
  *
  * const $ = new Knifecycle();
@@ -541,9 +550,9 @@ async function deliverConstantValue(value) {
  * @return {Function}
  * Returns a new initializer
  * @example
- * import { initializer, getInstance } from 'knifecycle';
+ * import Knifecycle, { initializer } from 'knifecycle';
  *
- * getInstance()
+ * new Knifecycle()
  * .register(handler(getUser, ['db', '?log']));
  *
  * const QUERY = `SELECT * FROM users WHERE id=$1`

@@ -350,7 +350,7 @@ class Knifecycle {
    * @return {String}   Returns a string containing the Mermaid dependency graph
    * @example
    *
-   * import { Knifecycle, inject, constant, service } from 'knifecycle';
+   * import Knifecycle, { inject, constant, service } from 'knifecycle';
    * import appInitializer from './app';
    *
    * const $ = new Knifecycle();
@@ -432,7 +432,7 @@ class Knifecycle {
    * @return {Promise}                         Service descriptor promise
    * @example
    *
-   * import Knifecycle from 'knifecycle'
+   * import Knifecycle, { constant } from 'knifecycle'
    *
    * const $ = new Knifecycle();
    *
