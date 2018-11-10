@@ -126,6 +126,33 @@ describe('autoInject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
+  it('should allow to decorate an initializer with optional dependencies', () => {
+    const noop = () => {};
+    const baseProvider = async ({
+      ENV,
+      log = noop,
+      debug: aDebug = () => '',
+    }) => async () => ({
+      ENV,
+      log,
+      aDebug,
+    });
+    const dependencies = ['ENV', '?log', '?debug'];
+    const newInitializer = autoInject(baseProvider);
+
+    assert.notEqual(newInitializer, baseProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+  });
+
+  it('should fail with too complex injections', () => {
+    assert.throws(() => {
+      autoInject(async ({ foo: bar = { bar: 'foo' } }) => {
+        return bar;
+      });
+    }, /E_AUTO_INJECTION_FAILURE/);
+  });
+
   it('should fail with no injections', () => {
     assert.throws(() => {
       autoInject(async () => {});

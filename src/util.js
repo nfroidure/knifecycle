@@ -156,7 +156,7 @@ export function inject(dependenciesDeclarations, initializer) {
 export function autoInject(initializer) {
   const source = initializer.toString();
   const matches = source.match(
-    /\s*async\s+(?:function)?\s*\(\{\s*([^}]+)\s*\}\)/,
+    /\s*async\s+(?:function)?\s*\(\{\s*([^{}}]+)\s*\}\)/,
   );
 
   if (!matches) {
@@ -166,7 +166,15 @@ export function autoInject(initializer) {
   const dependenciesDeclarations = matches[1]
     .trim()
     .split(/\s*,\s*/)
-    .map(injection => injection.split(/\s*:\s*/).shift());
+    .map(
+      injection =>
+        (injection.includes('=') ? '?' : '') +
+        injection
+          .split(/\s*=\s*/)
+          .shift()
+          .split(/\s*:\s*/)
+          .shift(),
+    );
 
   return inject(dependenciesDeclarations, initializer);
 }
