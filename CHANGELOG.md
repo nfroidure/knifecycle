@@ -1,3 +1,12 @@
+# [4.2.0](https://github.com/nfroidure/knifecycle/compare/v4.1.0...v4.2.0) (2018-11-10)
+
+
+### Features
+
+* **handler util:** Add autodetection features for handler utils ([7190028](https://github.com/nfroidure/knifecycle/commit/7190028))
+
+
+
 # [4.1.0](https://github.com/nfroidure/knifecycle/compare/v4.0.0...v4.1.0) (2018-11-10)
 
 
