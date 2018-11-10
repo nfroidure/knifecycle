@@ -1,3 +1,12 @@
+# [4.3.0](https://github.com/nfroidure/knifecycle/compare/v4.2.0...v4.3.0) (2018-11-10)
+
+
+### Features
+
+* **autoInject util:** Allow to auto inject even with multi-args functions ([bdf4e8b](https://github.com/nfroidure/knifecycle/commit/bdf4e8b))
+
+
+
 # [4.2.0](https://github.com/nfroidure/knifecycle/compare/v4.1.0...v4.2.0) (2018-11-10)
 
 
