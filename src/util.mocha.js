@@ -145,6 +145,25 @@ describe('autoInject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
+  it('should allow to decorate an initializer with several arguments', () => {
+    const noop = () => {};
+    const baseProvider = async (
+      { ENV, log = noop, debug: aDebug = () => '' },
+      { userId },
+    ) => async () => ({
+      ENV,
+      log,
+      aDebug,
+      userId,
+    });
+    const dependencies = ['ENV', '?log', '?debug'];
+    const newInitializer = autoInject(baseProvider);
+
+    assert.notEqual(newInitializer, baseProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+  });
+
   it('should fail with too complex injections', () => {
     assert.throws(() => {
       autoInject(async ({ foo: bar = { bar: 'foo' } }) => {
