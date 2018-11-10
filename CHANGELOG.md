@@ -1,3 +1,12 @@
+# [4.1.0](https://github.com/nfroidure/knifecycle/compare/v4.0.0...v4.1.0) (2018-11-10)
+
+
+### Features
+
+* **autoInject:** Allow to detect optional injections ([ff009fb](https://github.com/nfroidure/knifecycle/commit/ff009fb)), closes [#79](https://github.com/nfroidure/knifecycle/issues/79)
+
+
+
 # [4.0.0](https://github.com/nfroidure/knifecycle/compare/v3.1.0...v4.0.0) (2018-11-04)
 
 
