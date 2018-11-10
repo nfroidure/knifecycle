@@ -3,6 +3,10 @@
   "version": "4.0.0",
   "description": "Manage your NodeJS processes's lifecycle.",
   "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nfroidure/knifecycle.git"
+  },
   "engines": {
     "node": ">=8.12.0"
   },
@@ -167,5 +171,9 @@
     "plugins": [
       "@babel/plugin-proposal-object-rest-spread"
     ]
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/nfroidure/knifecycle/issues"
+  },
+  "homepage": "https://github.com/nfroidure/knifecycle#readme"
 }
