@@ -570,19 +570,24 @@ async function deliverConstantValue(value) {
  *   return row;
  * }
  */
-export function handler(handlerFunction, dependencies = [], extra) {
-  if (!handlerFunction.name) {
-    throw new YError('E_NO_HANDLER_NAME');
+export function handler(handlerFunction, dependencies, extra) {
+  try {
+    return initializer(
+      {
+        name: autoName(handlerFunction)[SPECIAL_PROPS.NAME],
+        type: 'service',
+        inject:
+          dependencies || autoInject(handlerFunction)[SPECIAL_PROPS.INJECT],
+        extra: extra || handlerFunction[SPECIAL_PROPS.EXTRA],
+      },
+      async (...args) => handlerFunction.bind(null, ...args),
+    );
+  } catch (err) {
+    if (err.code === 'E_AUTO_NAMING_FAILURE') {
+      throw YError.wrap(err, 'E_NO_HANDLER_NAME', handlerFunction);
+    }
+    throw err;
   }
-  return initializer(
-    {
-      name: handlerFunction.name,
-      type: 'service',
-      inject: dependencies,
-      extra,
-    },
-    async (...args) => handlerFunction.bind(null, ...args),
-  );
 }
 
 /* Architecture Note #1.2.1: Dependencies declaration syntax
