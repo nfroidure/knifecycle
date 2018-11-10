@@ -126,6 +126,21 @@ describe('autoInject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
+  it('should allow to decorate an initializer with a function name', () => {
+    async function baseProvider({ ENV, mysql: db }) {
+      async () => ({
+        ENV,
+        db,
+      });
+    }
+    const dependencies = ['ENV', 'mysql'];
+    const newInitializer = autoInject(baseProvider);
+
+    assert.notEqual(newInitializer, baseProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+  });
+
   it('should allow to decorate an initializer with optional dependencies', () => {
     const noop = () => {};
     const baseProvider = async ({

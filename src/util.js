@@ -156,7 +156,7 @@ export function inject(dependenciesDeclarations, initializer) {
 export function autoInject(initializer) {
   const source = initializer.toString();
   const matches = source.match(
-    /^\s*async\s+(?:function)?\s*\(\{\s*([^{}}]+)\s*\}[^()]*\)/,
+    /^\s*async\s+(?:function)?\s*\w*\s*\(\{\s*([^{}}]+)\s*\}[^()]*\)/,
   );
 
   if (!matches) {
