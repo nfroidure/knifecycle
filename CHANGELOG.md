@@ -1,3 +1,12 @@
+## [4.3.1](https://github.com/nfroidure/knifecycle/compare/v4.3.0...v4.3.1) (2018-11-10)
+
+
+### Bug Fixes
+
+* **autoInject util:** Fix autoInject for named functions ([b3b8c10](https://github.com/nfroidure/knifecycle/commit/b3b8c10))
+
+
+
 # [4.3.0](https://github.com/nfroidure/knifecycle/compare/v4.2.0...v4.3.0) (2018-11-10)
 
 
