@@ -18,6 +18,7 @@ import {
   service,
   provider,
   handler,
+  autoHandler,
   wrapInitializer,
   parseDependencyDeclaration,
 } from './util';
@@ -934,6 +935,7 @@ export {
   service,
   provider,
   handler,
+  autoHandler,
 };
 
 function _pickServiceNameFromDeclaration(dependencyDeclaration) {

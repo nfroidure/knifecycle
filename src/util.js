@@ -551,17 +551,17 @@ async function deliverConstantValue(value) {
  * Shortcut to create an initializer with a simple handler
  * @param  {Function} handlerFunction
  * The handler function
+ * @param  {String}  name
+ * The name of the handler
  * @param  {Array}  [dependencies=[]]
  * The dependencies to inject in it
- * @param  {Object}  [extra]
- * Optional extra data to associate with the handler
  * @return {Function}
  * Returns a new initializer
  * @example
- * import Knifecycle, { initializer } from 'knifecycle';
+ * import Knifecycle, { handler } from 'knifecycle';
  *
  * new Knifecycle()
- * .register(handler(getUser, ['db', '?log']));
+ * .register(handler(getUser, 'getUser', ['db', '?log']));
  *
  * const QUERY = `SELECT * FROM users WHERE id=$1`
  * async function getUser({ db }, userId) {
@@ -570,24 +570,48 @@ async function deliverConstantValue(value) {
  *   return row;
  * }
  */
-export function handler(handlerFunction, dependencies, extra) {
-  try {
-    return initializer(
-      {
-        name: autoName(handlerFunction)[SPECIAL_PROPS.NAME],
-        type: 'service',
-        inject:
-          dependencies || autoInject(handlerFunction)[SPECIAL_PROPS.INJECT],
-        extra: extra || handlerFunction[SPECIAL_PROPS.EXTRA],
-      },
-      async (...args) => handlerFunction.bind(null, ...args),
-    );
-  } catch (err) {
-    if (err.code === 'E_AUTO_NAMING_FAILURE') {
-      throw YError.wrap(err, 'E_NO_HANDLER_NAME', handlerFunction);
-    }
-    throw err;
+export function handler(handlerFunction, name, dependencies = []) {
+  if (!name) {
+    throw new YError('E_NO_HANDLER_NAME', handlerFunction);
   }
+  return initializer(
+    {
+      name: name,
+      type: 'service',
+      inject: dependencies,
+    },
+    async (...args) => handlerFunction.bind(null, ...args),
+  );
+}
+
+/**
+ * Allows to create an initializer with a simple handler automagically
+ * @param  {Function} handlerFunction
+ * The handler function
+ * @return {Function}
+ * Returns a new initializer
+ * @example
+ * import Knifecycle, { autoHandler } from 'knifecycle';
+ *
+ * new Knifecycle()
+ * .register(autoHandler(getUser));
+ *
+ * const QUERY = `SELECT * FROM users WHERE id=$1`
+ * async function getUser({ db }, userId) {
+ *   const [row] = await db.query(QUERY, userId);
+ *
+ *   return row;
+ * }
+ */
+export function autoHandler(handlerFunction) {
+  return initializer(
+    {
+      name: autoName(handlerFunction)[SPECIAL_PROPS.NAME],
+      type: 'service',
+      inject: autoInject(handlerFunction)[SPECIAL_PROPS.INJECT],
+    },
+    async (...args) => handlerFunction.bind(null, ...args),
+  );
 }
 
 /* Architecture Note #1.2.1: Dependencies declaration syntax

@@ -737,8 +737,8 @@ describe('Knifecycle', () => {
                   'hash2' === serviceName
                     ? ['hash1']
                     : 'hash4' === serviceName
-                      ? ['hash3']
-                      : [],
+                    ? ['hash3']
+                    : [],
               },
               hashProvider,
             ),
