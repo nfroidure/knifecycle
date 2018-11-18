@@ -1,3 +1,25 @@
+# [5.0.0](https://github.com/nfroidure/knifecycle/compare/v4.3.1...v5.0.0) (2018-11-18)
+
+
+### Code Refactoring
+
+* **handler:** Split the handler utils in autoHandler and handler ([cae9b2f](https://github.com/nfroidure/knifecycle/commit/cae9b2f)), closes [#80](https://github.com/nfroidure/knifecycle/issues/80)
+* **Utils:** Change the service/provider utils signature ([84e52a6](https://github.com/nfroidure/knifecycle/commit/84e52a6))
+
+
+### Features
+
+* **auto(Service/Provider):** Add a way to automatically set provider/service ([d08dca7](https://github.com/nfroidure/knifecycle/commit/d08dca7))
+
+
+### BREAKING CHANGES
+
+* **Utils:** service/provider utils call will need to be changed everywhere
+* **handler:** handler calls will need to be converted for the new handler signature or use the
+newly created autoHandler function.
+
+
+
 ## [4.3.1](https://github.com/nfroidure/knifecycle/compare/v4.3.0...v4.3.1) (2018-11-10)
 
 
