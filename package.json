@@ -129,6 +129,13 @@
       "jsarch"
     ]
   },
+  "nyc": {
+    "exclude": [
+      "**/*.mocha.js",
+      "**/*.conf.js",
+      "dist"
+    ]
+  },
   "contributors": [],
   "eslintConfig": {
     "extends": "eslint:recommended",

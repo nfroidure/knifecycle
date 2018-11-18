@@ -15,6 +15,9 @@ import {
   initializer,
   constant,
   service,
+  autoService,
+  provider,
+  autoProvider,
   handler,
   autoHandler,
   SPECIAL_PROPS,
@@ -111,6 +114,12 @@ describe('inject', () => {
     assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
+
+  it('should fail with a constant', () => {
+    assert.throws(() => {
+      inject(['test'], constant('test', 'test'));
+    }, /E_BAD_INJECT_IN_CONSTANT/);
+  });
 });
 
 describe('autoInject', () => {
@@ -147,7 +156,7 @@ describe('autoInject', () => {
     const baseProvider = async ({
       ENV,
       log = noop,
-      debug: aDebug = () => '',
+      debug: aDebug = noop,
     }) => async () => ({
       ENV,
       log,
@@ -164,7 +173,7 @@ describe('autoInject', () => {
   it('should allow to decorate an initializer with several arguments', () => {
     const noop = () => {};
     const baseProvider = async (
-      { ENV, log = noop, debug: aDebug = () => '' },
+      { ENV, log = noop, debug: aDebug = noop },
       { userId },
     ) => async () => ({
       ENV,
@@ -178,6 +187,14 @@ describe('autoInject', () => {
     assert.notEqual(newInitializer, baseProvider);
     assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+  });
+
+  it('should fail with non async initializers', () => {
+    assert.throws(() => {
+      autoInject(({ foo: bar = { bar: 'foo' } }) => {
+        return bar;
+      });
+    }, /E_NON_ASYNC_INITIALIZER/);
   });
 
   it('should fail with too complex injections', () => {
@@ -202,6 +219,13 @@ describe('alsoInject', () => {
     assert.notEqual(newInitializer, aProvider);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['TEST', 'ENV']);
   });
+
+  it('should allow to decorate an initializer with dependencies', () => {
+    const newInitializer = alsoInject(['ENV'], aProvider);
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['ENV']);
+  });
 });
 
 describe('options', () => {
@@ -210,7 +234,7 @@ describe('options', () => {
     const baseOptions = { singleton: true };
     const newInitializer = inject(
       dependencies,
-      options(baseOptions, aProvider),
+      options(baseOptions, aProvider, false),
     );
 
     assert.notEqual(newInitializer, aProvider);
@@ -218,6 +242,26 @@ describe('options', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
     assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+  });
+
+  it('should allow to decorate an initializer with options', () => {
+    const dependencies = ['ANOTHER_ENV>ENV'];
+    const rootOptions = { yolo: true, singleton: false };
+    const baseOptions = { singleton: true };
+    const newInitializer = inject(
+      dependencies,
+      options(baseOptions, options(rootOptions, aProvider), true),
+    );
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], rootOptions);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], {
+      ...rootOptions,
+      ...baseOptions,
+    });
   });
 });
 
@@ -327,6 +371,33 @@ describe('extra', () => {
     assert.notEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraInformations);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraInformations);
   });
+
+  it('should allow to decorate an initializer with extra infos', () => {
+    const extraInformations = { httpHandler: true };
+    const newInitializer = extra(extraInformations, aProvider, true);
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraInformations);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraInformations);
+  });
+
+  it('should allow to decorate an initializer with additional extra infos', () => {
+    const baseExtraInformations = { yolo: true, httpHandler: false };
+    const additionalExtraInformations = { httpHandler: true };
+    const newInitializer = extra(
+      baseExtraInformations,
+      extra(additionalExtraInformations, aProvider),
+      true,
+    );
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.EXTRA], baseExtraInformations);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.EXTRA], baseExtraInformations);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], {
+      ...baseExtraInformations,
+      ...baseExtraInformations,
+    });
+  });
 });
 
 describe('type', () => {
@@ -374,6 +445,18 @@ describe('initializer', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
   });
+
+  it('should fail with bad properties', () => {
+    assert.throws(() => {
+      initializer(
+        {
+          name: 'yolo',
+          yolo: '',
+        },
+        async () => {},
+      );
+    }, /E_BAD_PROPERTY/);
+  });
 });
 
 describe('constant', () => {
@@ -420,6 +503,69 @@ describe('service', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
+  });
+
+  it('should fail with no service name', () => {
+    assert.throws(() => {
+      service('', async () => {});
+    }, /E_NO_SERVICE_NAME/);
+  });
+});
+
+describe('autoService', () => {
+  it('should detect the provider details', () => {
+    const baseServiceBuilder = async function initializeMySQL({ ENV }) {
+      return ENV;
+    };
+    const newInitializer = autoService(baseServiceBuilder);
+
+    assert.notEqual(newInitializer, baseServiceBuilder);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['ENV']);
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], 'mySQL');
+    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'service');
+  });
+});
+
+describe('provider', () => {
+  it('should allow to create an initializer from a provider builder', async () => {
+    const aServiceBuilder = async () => {};
+    const dependencies = ['ANOTHER_ENV>ENV'];
+    const baseOptions = { singleton: true };
+    const baseName = 'hash';
+    const baseType = 'provider';
+    const newInitializer = provider(
+      baseName,
+      inject(dependencies, aServiceBuilder),
+      baseOptions,
+    );
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
+  });
+
+  it('should fail with no provider name', () => {
+    assert.throws(() => {
+      provider('', async () => {});
+    }, /E_NO_PROVIDER_NAME/);
+  });
+});
+
+describe('autoProvider', () => {
+  it('should detect the provider details', () => {
+    const baseInitializer = async function initializeMySQL({ ENV }) {
+      return ENV;
+    };
+    const newInitializer = autoProvider(baseInitializer);
+
+    assert.notEqual(newInitializer, baseInitializer);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['ENV']);
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], 'mySQL');
+    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'provider');
   });
 });
 

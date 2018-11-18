@@ -24,7 +24,7 @@ It is designed to have a low footprint on services code.
  at all since they are just simple functions with annotations
  set as a property.
 
-[See in context](./src/index.js#L58-L74)
+[See in context](./src/index.js#L60-L76)
 
 
 
@@ -39,7 +39,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.js#L76-L85)
+[See in context](./src/index.js#L78-L87)
 
 
 
@@ -73,13 +73,13 @@ A service provider is full of state since its concern is
 
 The dependencies syntax is of the following form:
  `?serviceName>mappedName`
-The `?` flag indicates an optionnal dependencies.
- `:mappedName` is optional and says to the container to
- inject `serviceName` but to inject it as `mappedName`.
- It allows to write generic services with fixed
+The `?` flag indicates an optional dependency.
+ `>mappedName` is optional and allows to inject
+ `mappedName` as `serviceName`.
+It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.js#L617-L626)
+[See in context](./src/util.js#L668-L677)
 
 
 
@@ -107,7 +107,7 @@ Initializers can be of three types:
   executions silos using them (we will cover this
   topic later on).
 
-[See in context](./src/index.js#L155-L178)
+[See in context](./src/index.js#L157-L180)
 
 
 
@@ -123,7 +123,7 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L418-L428)
+[See in context](./src/index.js#L420-L430)
 
 
 

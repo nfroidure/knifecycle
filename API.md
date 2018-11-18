@@ -59,10 +59,16 @@
 <dt><a href="#service">service(name, initializer, options)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator that creates an initializer for a service</p>
 </dd>
+<dt><a href="#autoService">autoService(initializer)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator that auto creates a service</p>
+</dd>
 <dt><a href="#provider">provider(name, provider, options)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator that creates an initializer for a provider</p>
 </dd>
-<dt><a href="#handler">handler(handlerFunction, name, [dependencies])</a> ⇒ <code>function</code></dt>
+<dt><a href="#autoProvider">autoProvider(initializer)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator that auto creates a provider</p>
+</dd>
+<dt><a href="#handler">handler(handlerFunction, [name], [dependencies])</a> ⇒ <code>function</code></dt>
 <dd><p>Shortcut to create an initializer with a simple handler</p>
 </dd>
 <dt><a href="#autoHandler">autoHandler(handlerFunction)</a> ⇒ <code>function</code></dt>
@@ -582,6 +588,18 @@ const { printAnswer } = new Knifecycle()
 
 printAnswer(); // 42
 ```
+<a name="autoService"></a>
+
+## autoService(initializer) ⇒ <code>function</code>
+Decorator that auto creates a service
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| initializer | <code>function</code> | An initializer returning the service promise |
+
 <a name="provider"></a>
 
 ## provider(name, provider, options) ⇒ <code>function</code>
@@ -627,9 +645,21 @@ $.register(provider('config', async function configProvider() {
   });
 }));
 ```
+<a name="autoProvider"></a>
+
+## autoProvider(initializer) ⇒ <code>function</code>
+Decorator that auto creates a provider
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| initializer | <code>function</code> | An initializer returning the provider promise |
+
 <a name="handler"></a>
 
-## handler(handlerFunction, name, [dependencies]) ⇒ <code>function</code>
+## handler(handlerFunction, [name], [dependencies]) ⇒ <code>function</code>
 Shortcut to create an initializer with a simple handler
 
 **Kind**: global function  
@@ -638,7 +668,7 @@ Shortcut to create an initializer with a simple handler
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | handlerFunction | <code>function</code> |  | The handler function |
-| name | <code>String</code> |  | The name of the handler |
+| [name] | <code>String</code> |  | The name of the handler. Default to the DI prop if exists |
 | [dependencies] | <code>Array</code> | <code>[]</code> | The dependencies to inject in it |
 
 **Example**  

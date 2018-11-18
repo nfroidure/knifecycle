@@ -156,10 +156,13 @@ export function inject(dependenciesDeclarations, initializer) {
 export function autoInject(initializer) {
   const source = initializer.toString();
   const matches = source.match(
-    /^\s*async\s+(?:function)?\s*\w*\s*\(\{\s*([^{}}]+)\s*\}[^()]*\)/,
+    /^\s*(?:async\s+function(?:\s+\w+)?|async)\s*\(\{\s*([^{}}]+)\s*\}[^()]*\)/,
   );
 
   if (!matches) {
+    if (!source.match(/^\s*async/)) {
+      throw new YError('E_NON_ASYNC_INITIALIZER', source);
+    }
     throw new YError('E_AUTO_INJECTION_FAILURE', source);
   }
 
@@ -174,7 +177,8 @@ export function autoInject(initializer) {
           .shift()
           .split(/\s*:\s*/)
           .shift(),
-    );
+    )
+    .filter(injection => !/[)(\][]/.test(injection));
 
   return inject(dependenciesDeclarations, initializer);
 }
@@ -267,11 +271,11 @@ export function extra(extraInformations, initializer, merge = false) {
  *   )
  * ));
  */
-export function options(options, initializer, merge = false) {
+export function options(options, initializer, merge = true) {
   const uniqueInitializer = reuseSpecialProps(initializer, initializer, {
     [SPECIAL_PROPS.OPTIONS]: merge
-      ? options
-      : Object.assign({}, initializer[SPECIAL_PROPS.OPTIONS] || {}, options),
+      ? Object.assign({}, initializer[SPECIAL_PROPS.OPTIONS] || {}, options)
+      : options,
   });
 
   debug('Wrapped an initializer with options:', options);
@@ -479,6 +483,10 @@ export function constant(name, value) {
  * printAnswer(); // 42
  */
 export function service(serviceName, serviceBuilder, options = {}) {
+  if (!serviceName) {
+    throw new YError('E_NO_SERVICE_NAME');
+  }
+
   const uniqueInitializer = reuseSpecialProps(serviceBuilder, serviceBuilder, {
     [SPECIAL_PROPS.NAME]: serviceName,
     [SPECIAL_PROPS.TYPE]: 'service',
@@ -488,6 +496,24 @@ export function service(serviceName, serviceBuilder, options = {}) {
   debug(`Created an initializer from a service builder: ${name}.`);
 
   return uniqueInitializer;
+}
+
+/**
+ * Decorator that auto creates a service
+ * @param  {Function}   initializer
+ * An initializer returning the service promise
+ * @return {Function}
+ * Returns a new initializer
+ */
+export function autoService(serviceBuilder) {
+  return initializer(
+    {
+      name: autoName(serviceBuilder)[SPECIAL_PROPS.NAME],
+      type: 'service',
+      inject: autoInject(serviceBuilder)[SPECIAL_PROPS.INJECT],
+    },
+    serviceBuilder,
+  );
 }
 
 /**
@@ -532,6 +558,10 @@ export function service(serviceName, serviceBuilder, options = {}) {
  * }));
  */
 export function provider(providerName, provider, options = {}) {
+  if (!providerName) {
+    throw new YError('E_NO_PROVIDER_NAME');
+  }
+
   const uniqueInitializer = reuseSpecialProps(provider, provider, {
     [SPECIAL_PROPS.NAME]: providerName,
     [SPECIAL_PROPS.TYPE]: 'provider',
@@ -543,6 +573,24 @@ export function provider(providerName, provider, options = {}) {
   return uniqueInitializer;
 }
 
+/**
+ * Decorator that auto creates a provider
+ * @param  {Function}   initializer
+ * An initializer returning the provider promise
+ * @return {Function}
+ * Returns a new initializer
+ */
+export function autoProvider(baseInitializer) {
+  return initializer(
+    {
+      name: autoName(baseInitializer)[SPECIAL_PROPS.NAME],
+      type: 'provider',
+      inject: autoInject(baseInitializer)[SPECIAL_PROPS.INJECT],
+    },
+    baseInitializer,
+  );
+}
+
 async function deliverConstantValue(value) {
   return value;
 }
@@ -551,8 +599,8 @@ async function deliverConstantValue(value) {
  * Shortcut to create an initializer with a simple handler
  * @param  {Function} handlerFunction
  * The handler function
- * @param  {String}  name
- * The name of the handler
+ * @param  {String}  [name]
+ * The name of the handler. Default to the DI prop if exists
  * @param  {Array}  [dependencies=[]]
  * The dependencies to inject in it
  * @return {Function}
@@ -570,13 +618,16 @@ async function deliverConstantValue(value) {
  *   return row;
  * }
  */
-export function handler(handlerFunction, name, dependencies = []) {
+export function handler(handlerFunction, name, dependencies) {
+  name = name || handlerFunction[SPECIAL_PROPS.NAME];
+  dependencies = dependencies || handlerFunction[SPECIAL_PROPS.INJECT] || [];
+
   if (!name) {
     throw new YError('E_NO_HANDLER_NAME', handlerFunction);
   }
   return initializer(
     {
-      name: name,
+      name,
       type: 'service',
       inject: dependencies,
     },
@@ -618,10 +669,10 @@ export function autoHandler(handlerFunction) {
 
 The dependencies syntax is of the following form:
  `?serviceName>mappedName`
-The `?` flag indicates an optionnal dependencies.
- `:mappedName` is optional and says to the container to
- inject `serviceName` but to inject it as `mappedName`.
- It allows to write generic services with fixed
+The `?` flag indicates an optional dependency.
+ `>mappedName` is optional and allows to inject
+ `mappedName` as `serviceName`.
+It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 */
 

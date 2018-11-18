@@ -23,7 +23,7 @@
 
 Most (maybe all) applications rely on two kinds of dependencies.
 
-**The code dependencies** are fully covered by require/system
+**The code dependencies** are fully covered by JavaScript
  modules in a testable manner (with `mockery` or `System`
  directly). There is no need for another dependency management
  system if those libraries are pure functions (involve no
@@ -69,9 +69,9 @@ At this point you may think that a DI system is useless. My
  services references if you really need to;
 - generate Mermaid graphs of the dependency tree;
 - build raw initialization modules to avoid
- embedding Knifecycle in your builds.
+ embedding Knifecycle in your builds;
 - optionally autoload services dependencies with custom
- logic
+ logic.
 
 ## Usage
 
@@ -93,12 +93,12 @@ const $ = new Knifecycle();
 
 // Some of our code with rely on the process environment
 // let's inject it as a constant instead of directly
-// pickking en vars in `process.env` to make our code
+// pickking env vars in `process.env` to make our code
 // easily testable
 $.register(constant('ENV', process.env));
 
 // Let's do so for CLI args with another constant
-// in real world apps we would have create a service
+// in real world apps we would have created a service
 // that would parse args in a complexer way
 $.register(constant('ARGS', process.argv));
 
@@ -317,6 +317,47 @@ DEBUG=knifecycle CONFIG_PATH=./config.json node -r @babel/register bin.js mycomm
 This is a very simple example but you can find a complexer CLI usage
  with (`metapak`)[https://github.com/nfroidure/metapak/blob/master/bin/metapak.js].
 
+## Auto detection
+
+Knifecycle also provide some utility function to automatically assign
+ the initializer property declarations, the following 3 ways to declare
+ the `getUser` service are equivalent:
+```js
+import noop from 'noop';
+import { autoInject, inject, initializer, autoService } from 'knifecycle';
+
+initializer({
+  name: 'getUser',
+  inject: ['db', '?log'],
+  type: 'service',
+}, getUser);
+
+service('getUser', autoInject(getUser)));
+
+autoService(getUser);
+
+async function getUser({ db, log = noop}) {}
+```
+
+That said, if your need to build your code with `webpack`/`babel` you may
+ have to convert auto-detections to raw declarations with the
+ [babel-plugin-knifecycle](https://github.com/nfroidure/babel-plugin-knifecycle)
+ plugin.
+
+Also, keep in mind that the auto-detection is based on a simple regular
+ expression so you should care to keep initializer signatures simple to
+ avoid having a `E_AUTO_INJECTION_FAILURE` error. As a rule of thumb,
+ avoid setting complex default values.
+
+```js
+// Won't work
+autoInject(async ({ log = () => {} }) => {});
+
+// Will work
+function noop() {}
+autoInject(async ({ log = noop }) => {});
+```
+
 ## Debugging
 
 Simply use the DEBUG environment variable by setting it to
@@ -410,10 +451,16 @@ contains the services I use the most in my apps.
 <dt><a href="#service">service(name, initializer, options)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator that creates an initializer for a service</p>
 </dd>
+<dt><a href="#autoService">autoService(initializer)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator that auto creates a service</p>
+</dd>
 <dt><a href="#provider">provider(name, provider, options)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator that creates an initializer for a provider</p>
 </dd>
-<dt><a href="#handler">handler(handlerFunction, name, [dependencies])</a> ⇒ <code>function</code></dt>
+<dt><a href="#autoProvider">autoProvider(initializer)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator that auto creates a provider</p>
+</dd>
+<dt><a href="#handler">handler(handlerFunction, [name], [dependencies])</a> ⇒ <code>function</code></dt>
 <dd><p>Shortcut to create an initializer with a simple handler</p>
 </dd>
 <dt><a href="#autoHandler">autoHandler(handlerFunction)</a> ⇒ <code>function</code></dt>
@@ -933,6 +980,18 @@ const { printAnswer } = new Knifecycle()
 
 printAnswer(); // 42
 ```
+<a name="autoService"></a>
+
+## autoService(initializer) ⇒ <code>function</code>
+Decorator that auto creates a service
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| initializer | <code>function</code> | An initializer returning the service promise |
+
 <a name="provider"></a>
 
 ## provider(name, provider, options) ⇒ <code>function</code>
@@ -978,9 +1037,21 @@ $.register(provider('config', async function configProvider() {
   });
 }));
 ```
+<a name="autoProvider"></a>
+
+## autoProvider(initializer) ⇒ <code>function</code>
+Decorator that auto creates a provider
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| initializer | <code>function</code> | An initializer returning the provider promise |
+
 <a name="handler"></a>
 
-## handler(handlerFunction, name, [dependencies]) ⇒ <code>function</code>
+## handler(handlerFunction, [name], [dependencies]) ⇒ <code>function</code>
 Shortcut to create an initializer with a simple handler
 
 **Kind**: global function  
@@ -989,7 +1060,7 @@ Shortcut to create an initializer with a simple handler
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | handlerFunction | <code>function</code> |  | The handler function |
-| name | <code>String</code> |  | The name of the handler |
+| [name] | <code>String</code> |  | The name of the handler. Default to the DI prop if exists |
 | [dependencies] | <code>Array</code> | <code>[]</code> | The dependencies to inject in it |
 
 **Example**  
