@@ -89,7 +89,7 @@ export function wrapInitializer(wrapper, baseInitializer) {
 /**
  * Decorator creating a new initializer with different
  *  dependencies declarations set to it.
- * @param  {String[]}  dependenciesDeclarations
+ * @param  {Array<String>}  dependencies
  * List of dependencies declarations to declare which
  *  services the initializer needs to resolve its
  *  own service
@@ -105,26 +105,26 @@ export function wrapInitializer(wrapper, baseInitializer) {
  * new Knifecycle()
  *  .register(
  *    service(
- *      'myService',
  *      inject(['ENV'], myServiceInitializer)
+ *      'myService',
  *    )
  *   )
  * );
  */
-export function inject(dependenciesDeclarations, initializer) {
+export function inject(dependencies, initializer) {
   if ('constant' === initializer[SPECIAL_PROPS.TYPE]) {
     throw new YError(
       E_BAD_INJECT_IN_CONSTANT,
       initializer[SPECIAL_PROPS.NAME],
-      dependenciesDeclarations,
+      dependencies,
     );
   }
 
   const uniqueInitializer = reuseSpecialProps(initializer, initializer, {
-    [SPECIAL_PROPS.INJECT]: dependenciesDeclarations,
+    [SPECIAL_PROPS.INJECT]: dependencies,
   });
 
-  debug('Wrapped an initializer with dependencies:', dependenciesDeclarations);
+  debug('Wrapped an initializer with dependencies:', dependencies);
 
   return uniqueInitializer;
 }
@@ -166,7 +166,7 @@ export function autoInject(initializer) {
     throw new YError('E_AUTO_INJECTION_FAILURE', source);
   }
 
-  const dependenciesDeclarations = matches[1]
+  const dependencies = matches[1]
     .trim()
     .split(/\s*,\s*/)
     .map(
@@ -180,13 +180,13 @@ export function autoInject(initializer) {
     )
     .filter(injection => !/[)(\][]/.test(injection));
 
-  return inject(dependenciesDeclarations, initializer);
+  return inject(dependencies, initializer);
 }
 
 /**
  * Decorator creating a new initializer with some
  *  more dependencies declarations appended to it.
- * @param  {String[]}  dependenciesDeclarations
+ * @param  {Array<String>}  dependencies
  * List of dependencies declarations to append
  * @param  {Function}  initializer
  * The initializer to tweak
@@ -198,13 +198,14 @@ export function autoInject(initializer) {
  * import myServiceInitializer from './service';
  *
  * new Knifecycle()
- * .register(service('myService',
- *   alsoInject(['ENV'], myServiceInitializer)
+ * .register(service(
+ *   alsoInject(['ENV'], myServiceInitializer),
+ *   'myService',
  * ));
  */
-export function alsoInject(dependenciesDeclarations, initializer) {
+export function alsoInject(dependencies, initializer) {
   return inject(
-    (initializer[SPECIAL_PROPS.INJECT] || []).concat(dependenciesDeclarations),
+    (initializer[SPECIAL_PROPS.INJECT] || []).concat(dependencies),
     initializer,
   );
 }
@@ -230,8 +231,9 @@ export function alsoInject(dependenciesDeclarations, initializer) {
  * import myServiceInitializer from './service';
  *
  * new Knifecycle()
- * .register(service('myService',
- *   extra({ httpHandler: true }, myServiceInitializer)
+ * .register(service(
+ *   extra({ httpHandler: true }, myServiceInitializer),
+ *   'myService',
  * ));
  */
 export function extra(extraInformations, initializer, merge = false) {
@@ -265,10 +267,11 @@ export function extra(extraInformations, initializer, merge = false) {
  * import myServiceInitializer from './service';
  *
  * new Knifecycle()
- * .register(service('myService',
+ * .register(service(
  *   inject(['ENV'],
  *     options({ singleton: true}, myServiceInitializer)
- *   )
+ *   ),
+ *   'myService',
  * ));
  */
 export function options(options, initializer, merge = true) {
@@ -423,11 +426,10 @@ export function initializer(properties, initializer) {
  *   .register(constant('THE_NUMBER', value))
  *   .register(constant('log', console.log.bind(console)))
  *   .register(service(
- *     'printAnswer',
  *     async ({ THE_NUMBER, log }) => () => log(THE_NUMBER),
- *     {
- *       inject: ['THE_NUMBER', 'log'],
- *     }
+ *     'printAnswer',
+ *     ['THE_NUMBER', 'log'],
+ *   ))
  *   .run(['printAnswer']);
  *
  * printAnswer(); // 42
@@ -458,12 +460,14 @@ export function constant(name, value) {
 
 /**
  * Decorator that creates an initializer for a service
- * @param  {String}    name
- * The service's name.
- * @param  {Function}   initializer
+ * @param  {Function}   builder
  * An initializer returning the service promise
- * @param  {Object}     options
- * Options attached to the initializer
+ * @param  {String}    [name]
+ * The service's name
+ * @param  {Array<String>}    [dependencies]
+ * The service's dependencies
+ * @param  {Object}    [options]
+ * Options attached to the built initializer
  * @return {Function}
  * Returns a new initializer
  * @example
@@ -473,27 +477,29 @@ export function constant(name, value) {
  *   .register(constant('THE_NUMBER', value))
  *   .register(constant('log', console.log.bind(console)))
  *   .register(service(
- *     'printAnswer',
  *     async ({ THE_NUMBER, log }) => () => log(THE_NUMBER),
- *     {
- *       inject: ['THE_NUMBER', 'log'],
- *     }
+ *     'printAnswer',
+ *     ['THE_NUMBER', 'log'],
+ *     { singleton: true }
+ *   ))
  *   .run(['printAnswer']);
  *
  * printAnswer(); // 42
  */
-export function service(serviceName, serviceBuilder, options = {}) {
-  if (!serviceName) {
-    throw new YError('E_NO_SERVICE_NAME');
+export function service(builder, name, dependencies, options) {
+  if (!builder) {
+    throw new YError('E_NO_SERVICE_BUILDER');
   }
-
-  const uniqueInitializer = reuseSpecialProps(serviceBuilder, serviceBuilder, {
-    [SPECIAL_PROPS.NAME]: serviceName,
+  const uniqueInitializer = reuseSpecialProps(builder, builder, {
+    [SPECIAL_PROPS.NAME]: name,
     [SPECIAL_PROPS.TYPE]: 'service',
+    [SPECIAL_PROPS.INJECT]: dependencies,
     [SPECIAL_PROPS.OPTIONS]: options,
   });
 
-  debug(`Created an initializer from a service builder: ${name}.`);
+  debug(
+    `Created an initializer from a service builder: ${name || 'anonymous'}.`,
+  );
 
   return uniqueInitializer;
 }
@@ -518,12 +524,14 @@ export function autoService(serviceBuilder) {
 
 /**
  * Decorator that creates an initializer for a provider
- * @param  {String}    name
- * The provider's name.
- * @param  {Function}   provider
- * A provider returning the service builder promise
- * @param  {Object}     options
- * Options attached to the initializer
+ * @param  {Function}   builder
+ * A builder returning the provider promise
+ * @param  {String}    [name]
+ * The service's name
+ * @param  {Array<String>}    [dependencies]
+ * The service's dependencies
+ * @param  {Object}    [options]
+ * Options attached to the built initializer
  * @return {Function}
  * Returns a new initializer
  * @example
@@ -533,7 +541,9 @@ export function autoService(serviceBuilder) {
  *
  * const $ = new Knifecycle();
  *
- * $.register(provider('config', async function configProvider() {
+ * $.register(provider(configProvider, 'config'));
+ *
+ * async function configProvider() {
  *   return new Promise((resolve, reject) {
  *     fs.readFile('config.js', function(err, data) {
  *       let config;
@@ -555,20 +565,23 @@ export function autoService(serviceBuilder) {
  *       });
  *     });
  *   });
- * }));
+ * }
  */
-export function provider(providerName, provider, options = {}) {
-  if (!providerName) {
-    throw new YError('E_NO_PROVIDER_NAME');
+export function provider(builder, name, dependencies, options) {
+  if (!builder) {
+    throw new YError('E_NO_PROVIDER_BUILDER');
   }
 
-  const uniqueInitializer = reuseSpecialProps(provider, provider, {
-    [SPECIAL_PROPS.NAME]: providerName,
+  const uniqueInitializer = reuseSpecialProps(builder, builder, {
+    [SPECIAL_PROPS.NAME]: name,
     [SPECIAL_PROPS.TYPE]: 'provider',
+    [SPECIAL_PROPS.INJECT]: dependencies,
     [SPECIAL_PROPS.OPTIONS]: options,
   });
 
-  debug(`Created an initializer from a provider builder: ${name}.`);
+  debug(
+    `Created an initializer from a provider builder: ${name || 'anonymous'}.`,
+  );
 
   return uniqueInitializer;
 }
@@ -601,8 +614,10 @@ async function deliverConstantValue(value) {
  * The handler function
  * @param  {String}  [name]
  * The name of the handler. Default to the DI prop if exists
- * @param  {Array}  [dependencies=[]]
+ * @param  {Array<String>}  [dependencies=[]]
  * The dependencies to inject in it
+ * @param  {Object}    [options]
+ * Options attached to the built initializer
  * @return {Function}
  * Returns a new initializer
  * @example
@@ -618,9 +633,9 @@ async function deliverConstantValue(value) {
  *   return row;
  * }
  */
-export function handler(handlerFunction, name, dependencies) {
+export function handler(handlerFunction, name, dependencies, options) {
   name = name || handlerFunction[SPECIAL_PROPS.NAME];
-  dependencies = dependencies || handlerFunction[SPECIAL_PROPS.INJECT] || [];
+  dependencies = dependencies || handlerFunction[SPECIAL_PROPS.INJECT];
 
   if (!name) {
     throw new YError('E_NO_HANDLER_NAME', handlerFunction);
@@ -630,6 +645,7 @@ export function handler(handlerFunction, name, dependencies) {
       name,
       type: 'service',
       inject: dependencies,
+      options,
     },
     async (...args) => handlerFunction.bind(null, ...args),
   );

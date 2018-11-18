@@ -491,8 +491,9 @@ describe('service', () => {
     const baseName = 'hash';
     const baseType = 'service';
     const newInitializer = service(
+      aServiceBuilder,
       baseName,
-      inject(dependencies, aServiceBuilder),
+      dependencies,
       baseOptions,
     );
 
@@ -505,10 +506,32 @@ describe('service', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
   });
 
-  it('should fail with no service name', () => {
+  it('should allow to create an initializer from a service builder', async () => {
+    const aServiceBuilder = async () => {};
+    const dependencies = ['ANOTHER_ENV>ENV'];
+    const baseOptions = { singleton: true };
+    const baseName = 'hash';
+    const baseType = 'service';
+    const newInitializer = service(
+      name(
+        baseName,
+        inject(dependencies, options(baseOptions, aServiceBuilder)),
+      ),
+    );
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
+  });
+
+  it('should fail with no service builder', () => {
     assert.throws(() => {
-      service('', async () => {});
-    }, /E_NO_SERVICE_NAME/);
+      service();
+    }, /E_NO_SERVICE_BUILDER/);
   });
 });
 
@@ -534,8 +557,9 @@ describe('provider', () => {
     const baseName = 'hash';
     const baseType = 'provider';
     const newInitializer = provider(
+      aServiceBuilder,
       baseName,
-      inject(dependencies, aServiceBuilder),
+      dependencies,
       baseOptions,
     );
 
@@ -548,10 +572,32 @@ describe('provider', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
   });
 
-  it('should fail with no provider name', () => {
+  it('should allow to create an initializer from a provider builder', async () => {
+    const aServiceBuilder = async () => {};
+    const dependencies = ['ANOTHER_ENV>ENV'];
+    const baseOptions = { singleton: true };
+    const baseName = 'hash';
+    const baseType = 'provider';
+    const newInitializer = provider(
+      name(
+        baseName,
+        inject(dependencies, options(baseOptions, aServiceBuilder)),
+      ),
+    );
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.OPTIONS], baseOptions);
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
+  });
+
+  it('should fail with no provider builder', () => {
     assert.throws(() => {
-      provider('', async () => {});
-    }, /E_NO_PROVIDER_NAME/);
+      provider();
+    }, /E_NO_PROVIDER_BUILDER/);
   });
 });
 

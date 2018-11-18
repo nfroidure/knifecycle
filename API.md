@@ -18,7 +18,7 @@
 <dt><a href="#wrapInitializer">wrapInitializer(wrapper, baseInitializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Allows to wrap an initializer to add extra initialization steps</p>
 </dd>
-<dt><a href="#inject">inject(dependenciesDeclarations, initializer)</a> ⇒ <code>function</code></dt>
+<dt><a href="#inject">inject(dependencies, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator creating a new initializer with different
  dependencies declarations set to it.</p>
 </dd>
@@ -27,7 +27,7 @@
  dependencies declarations set to it according to the
  given function signature.</p>
 </dd>
-<dt><a href="#alsoInject">alsoInject(dependenciesDeclarations, initializer)</a> ⇒ <code>function</code></dt>
+<dt><a href="#alsoInject">alsoInject(dependencies, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator creating a new initializer with some
  more dependencies declarations appended to it.</p>
 </dd>
@@ -56,19 +56,19 @@
 <dt><a href="#constant">constant(name, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator that creates an initializer for a constant value</p>
 </dd>
-<dt><a href="#service">service(name, initializer, options)</a> ⇒ <code>function</code></dt>
+<dt><a href="#service">service(builder, [name], [dependencies], [options])</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator that creates an initializer for a service</p>
 </dd>
 <dt><a href="#autoService">autoService(initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator that auto creates a service</p>
 </dd>
-<dt><a href="#provider">provider(name, provider, options)</a> ⇒ <code>function</code></dt>
+<dt><a href="#provider">provider(builder, [name], [dependencies], [options])</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator that creates an initializer for a provider</p>
 </dd>
 <dt><a href="#autoProvider">autoProvider(initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator that auto creates a provider</p>
 </dd>
-<dt><a href="#handler">handler(handlerFunction, [name], [dependencies])</a> ⇒ <code>function</code></dt>
+<dt><a href="#handler">handler(handlerFunction, [name], [dependencies], [options])</a> ⇒ <code>function</code></dt>
 <dd><p>Shortcut to create an initializer with a simple handler</p>
 </dd>
 <dt><a href="#autoHandler">autoHandler(handlerFunction)</a> ⇒ <code>function</code></dt>
@@ -298,7 +298,7 @@ Allows to wrap an initializer to add extra initialization steps
 
 <a name="inject"></a>
 
-## inject(dependenciesDeclarations, initializer) ⇒ <code>function</code>
+## inject(dependencies, initializer) ⇒ <code>function</code>
 Decorator creating a new initializer with different
  dependencies declarations set to it.
 
@@ -307,7 +307,7 @@ Decorator creating a new initializer with different
 
 | Param | Type | Description |
 | --- | --- | --- |
-| dependenciesDeclarations | <code>Array.&lt;String&gt;</code> | List of dependencies declarations to declare which  services the initializer needs to resolve its  own service |
+| dependencies | <code>Array.&lt;String&gt;</code> | List of dependencies declarations to declare which  services the initializer needs to resolve its  own service |
 | initializer | <code>function</code> | The initializer to tweak |
 
 **Example**  
@@ -318,8 +318,8 @@ import myServiceInitializer from './service';
 new Knifecycle()
  .register(
    service(
-     'myService',
      inject(['ENV'], myServiceInitializer)
+     'myService',
    )
   )
 );
@@ -357,7 +357,7 @@ new Knifecycle()
 ```
 <a name="alsoInject"></a>
 
-## alsoInject(dependenciesDeclarations, initializer) ⇒ <code>function</code>
+## alsoInject(dependencies, initializer) ⇒ <code>function</code>
 Decorator creating a new initializer with some
  more dependencies declarations appended to it.
 
@@ -366,7 +366,7 @@ Decorator creating a new initializer with some
 
 | Param | Type | Description |
 | --- | --- | --- |
-| dependenciesDeclarations | <code>Array.&lt;String&gt;</code> | List of dependencies declarations to append |
+| dependencies | <code>Array.&lt;String&gt;</code> | List of dependencies declarations to append |
 | initializer | <code>function</code> | The initializer to tweak |
 
 **Example**  
@@ -375,8 +375,9 @@ import Knifecycle, { alsoInject } from 'knifecycle'
 import myServiceInitializer from './service';
 
 new Knifecycle()
-.register(service('myService',
-  alsoInject(['ENV'], myServiceInitializer)
+.register(service(
+  alsoInject(['ENV'], myServiceInitializer),
+  'myService',
 ));
 ```
 <a name="extra"></a>
@@ -403,8 +404,9 @@ import Knifecycle, { extra } from 'knifecycle'
 import myServiceInitializer from './service';
 
 new Knifecycle()
-.register(service('myService',
-  extra({ httpHandler: true }, myServiceInitializer)
+.register(service(
+  extra({ httpHandler: true }, myServiceInitializer),
+  'myService',
 ));
 ```
 <a name="options"></a>
@@ -428,10 +430,11 @@ import Knifecycle, { inject, options } from 'knifecycle';
 import myServiceInitializer from './service';
 
 new Knifecycle()
-.register(service('myService',
+.register(service(
   inject(['ENV'],
     options({ singleton: true}, myServiceInitializer)
-  )
+  ),
+  'myService',
 ));
 ```
 <a name="name"></a>
@@ -548,18 +551,17 @@ const { printAnswer } = new Knifecycle()
   .register(constant('THE_NUMBER', value))
   .register(constant('log', console.log.bind(console)))
   .register(service(
-    'printAnswer',
     async ({ THE_NUMBER, log }) => () => log(THE_NUMBER),
-    {
-      inject: ['THE_NUMBER', 'log'],
-    }
+    'printAnswer',
+    ['THE_NUMBER', 'log'],
+  ))
   .run(['printAnswer']);
 
 printAnswer(); // 42
 ```
 <a name="service"></a>
 
-## service(name, initializer, options) ⇒ <code>function</code>
+## service(builder, [name], [dependencies], [options]) ⇒ <code>function</code>
 Decorator that creates an initializer for a service
 
 **Kind**: global function  
@@ -567,9 +569,10 @@ Decorator that creates an initializer for a service
 
 | Param | Type | Description |
 | --- | --- | --- |
-| name | <code>String</code> | The service's name. |
-| initializer | <code>function</code> | An initializer returning the service promise |
-| options | <code>Object</code> | Options attached to the initializer |
+| builder | <code>function</code> | An initializer returning the service promise |
+| [name] | <code>String</code> | The service's name |
+| [dependencies] | <code>Array.&lt;String&gt;</code> | The service's dependencies |
+| [options] | <code>Object</code> | Options attached to the built initializer |
 
 **Example**  
 ```js
@@ -579,11 +582,11 @@ const { printAnswer } = new Knifecycle()
   .register(constant('THE_NUMBER', value))
   .register(constant('log', console.log.bind(console)))
   .register(service(
-    'printAnswer',
     async ({ THE_NUMBER, log }) => () => log(THE_NUMBER),
-    {
-      inject: ['THE_NUMBER', 'log'],
-    }
+    'printAnswer',
+    ['THE_NUMBER', 'log'],
+    { singleton: true }
+  ))
   .run(['printAnswer']);
 
 printAnswer(); // 42
@@ -602,7 +605,7 @@ Decorator that auto creates a service
 
 <a name="provider"></a>
 
-## provider(name, provider, options) ⇒ <code>function</code>
+## provider(builder, [name], [dependencies], [options]) ⇒ <code>function</code>
 Decorator that creates an initializer for a provider
 
 **Kind**: global function  
@@ -610,9 +613,10 @@ Decorator that creates an initializer for a provider
 
 | Param | Type | Description |
 | --- | --- | --- |
-| name | <code>String</code> | The provider's name. |
-| provider | <code>function</code> | A provider returning the service builder promise |
-| options | <code>Object</code> | Options attached to the initializer |
+| builder | <code>function</code> | A builder returning the provider promise |
+| [name] | <code>String</code> | The service's name |
+| [dependencies] | <code>Array.&lt;String&gt;</code> | The service's dependencies |
+| [options] | <code>Object</code> | Options attached to the built initializer |
 
 **Example**  
 ```js
@@ -621,7 +625,9 @@ import fs from 'fs';
 
 const $ = new Knifecycle();
 
-$.register(provider('config', async function configProvider() {
+$.register(provider(configProvider, 'config'));
+
+async function configProvider() {
   return new Promise((resolve, reject) {
     fs.readFile('config.js', function(err, data) {
       let config;
@@ -643,7 +649,7 @@ $.register(provider('config', async function configProvider() {
       });
     });
   });
-}));
+}
 ```
 <a name="autoProvider"></a>
 
@@ -659,7 +665,7 @@ Decorator that auto creates a provider
 
 <a name="handler"></a>
 
-## handler(handlerFunction, [name], [dependencies]) ⇒ <code>function</code>
+## handler(handlerFunction, [name], [dependencies], [options]) ⇒ <code>function</code>
 Shortcut to create an initializer with a simple handler
 
 **Kind**: global function  
@@ -669,7 +675,8 @@ Shortcut to create an initializer with a simple handler
 | --- | --- | --- | --- |
 | handlerFunction | <code>function</code> |  | The handler function |
 | [name] | <code>String</code> |  | The name of the handler. Default to the DI prop if exists |
-| [dependencies] | <code>Array</code> | <code>[]</code> | The dependencies to inject in it |
+| [dependencies] | <code>Array.&lt;String&gt;</code> | <code>[]</code> | The dependencies to inject in it |
+| [options] | <code>Object</code> |  | Options attached to the built initializer |
 
 **Example**  
 ```js

@@ -9,7 +9,6 @@ import {
   Knifecycle,
   initializer,
   inject,
-  options,
   constant,
   service,
   provider,
@@ -68,24 +67,24 @@ describe('Knifecycle', () => {
 
     describe('with services', () => {
       it('should  work with a service', () => {
-        $.register(service('time', timeService));
+        $.register(service(timeService, 'time'));
       });
 
       it('should work when overriding a previously set service', async () => {
-        $.register(service('test', async () => () => 1));
-        $.register(service('test', async () => () => 2));
+        $.register(service(async () => () => 1, 'test'));
+        $.register(service(async () => () => 2, 'test'));
 
         const { test } = await $.run(['test']);
         assert.deepEqual(test(), 2);
       });
 
       it('should fail when overriding an initialized service', async () => {
-        $.register(service('test', async () => () => 1));
+        $.register(service(async () => () => 1, 'test'));
         const { test } = await $.run(['test']);
         assert.deepEqual(test(), 1);
 
         try {
-          $.register(service('test', async () => () => 2));
+          $.register(service(async () => () => 2, 'test'));
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           assert.equal(err.code, 'E_INITIALIZER_ALREADY_INSTANCIATED');
@@ -95,7 +94,7 @@ describe('Knifecycle', () => {
 
     describe('with providers', () => {
       it('should  work with a provider', () => {
-        $.register(service('hash', hashProvider));
+        $.register(service(hashProvider, 'hash'));
       });
 
       it('should work when overriding a previously set provider', async () => {
@@ -320,13 +319,13 @@ describe('Knifecycle', () => {
 
   describe('provider', () => {
     it('should register provider', () => {
-      $.register(provider('hash', hashProvider));
+      $.register(provider(hashProvider, 'hash'));
     });
 
     it('should fail with direct circular dependencies', () => {
       assert.throws(
         () => {
-          $.register(provider('hash', inject(['hash'], hashProvider)));
+          $.register(provider(hashProvider, 'hash', ['hash']));
         },
         err => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
@@ -339,7 +338,7 @@ describe('Knifecycle', () => {
     it('should fail with direct circular dependencies on mapped services', () => {
       assert.throws(
         () => {
-          $.register(provider('hash', inject(['hash>lol'], hashProvider)));
+          $.register(provider(hashProvider, 'hash', ['hash>lol']));
         },
         err => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
@@ -352,10 +351,10 @@ describe('Knifecycle', () => {
     it('should fail with circular dependencies', () => {
       assert.throws(
         () => {
-          $.register(provider('hash', inject(['hash3'], hashProvider)));
-          $.register(provider('hash1', inject(['hash'], hashProvider)));
-          $.register(provider('hash2', inject(['hash1'], hashProvider)));
-          $.register(provider('hash3', inject(['hash'], hashProvider)));
+          $.register(provider(inject(['hash3'], hashProvider), 'hash'));
+          $.register(provider(inject(['hash'], hashProvider), 'hash1'));
+          $.register(provider(inject(['hash1'], hashProvider), 'hash2'));
+          $.register(provider(inject(['hash'], hashProvider), 'hash3'));
         },
         err => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
@@ -368,10 +367,10 @@ describe('Knifecycle', () => {
     it('should fail with deeper circular dependencies', () => {
       assert.throws(
         () => {
-          $.register(provider('hash', inject(['hash1'], hashProvider)));
-          $.register(provider('hash1', inject(['hash2'], hashProvider)));
-          $.register(provider('hash2', inject(['hash3'], hashProvider)));
-          $.register(provider('hash3', inject(['hash'], hashProvider)));
+          $.register(provider(inject(['hash1'], hashProvider), 'hash'));
+          $.register(provider(inject(['hash2'], hashProvider), 'hash1'));
+          $.register(provider(inject(['hash3'], hashProvider), 'hash2'));
+          $.register(provider(inject(['hash'], hashProvider), 'hash3'));
         },
         err => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
@@ -390,10 +389,10 @@ describe('Knifecycle', () => {
     it('should fail with circular dependencies on mapped services', () => {
       assert.throws(
         () => {
-          $.register(provider('hash', inject(['hash3>aHash3'], hashProvider)));
-          $.register(provider('hash1', inject(['hash>aHash'], hashProvider)));
-          $.register(provider('hash2', inject(['hash1>aHash1'], hashProvider)));
-          $.register(provider('hash3', inject(['hash>aHash'], hashProvider)));
+          $.register(provider(inject(['hash3>aHash3'], hashProvider), 'hash'));
+          $.register(provider(inject(['hash>aHash'], hashProvider), 'hash1'));
+          $.register(provider(inject(['hash1>aHash1'], hashProvider), 'hash2'));
+          $.register(provider(inject(['hash>aHash'], hashProvider), 'hash3'));
         },
         err => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
@@ -427,10 +426,10 @@ describe('Knifecycle', () => {
     it('should work with service dependencies', async () => {
       $.register(
         service(
-          'sample',
           inject(['time'], function sampleService({ time }) {
             return Promise.resolve(typeof time);
           }),
+          'sample',
         ),
       );
       $.register(constant('time', time));
@@ -446,7 +445,7 @@ describe('Knifecycle', () => {
     it('should work with simple dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
 
       const dependencies = await $.run(['time', 'hash']);
 
@@ -461,7 +460,7 @@ describe('Knifecycle', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('DEBUG', {}));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV', '?DEBUG'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV', '?DEBUG']));
 
       const dependencies = await $.run(['time', 'hash']);
 
@@ -475,7 +474,7 @@ describe('Knifecycle', () => {
     it('should work with lacking optional dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV', '?DEBUG'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV', '?DEBUG']));
 
       const dependencies = await $.run(['time', 'hash']);
 
@@ -489,12 +488,12 @@ describe('Knifecycle', () => {
     it('should work with deeper dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
-      $.register(provider('hash1', inject(['hash'], hashProvider)));
-      $.register(provider('hash2', inject(['hash1'], hashProvider)));
-      $.register(provider('hash3', inject(['hash2'], hashProvider)));
-      $.register(provider('hash4', inject(['hash3'], hashProvider)));
-      $.register(provider('hash5', inject(['hash4'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
+      $.register(provider(hashProvider, 'hash1', ['hash']));
+      $.register(provider(hashProvider, 'hash2', ['hash1']));
+      $.register(provider(hashProvider, 'hash3', ['hash2']));
+      $.register(provider(hashProvider, 'hash4', ['hash3']));
+      $.register(provider(hashProvider, 'hash5', ['hash4']));
 
       const dependencies = await $.run(['hash5', 'time']);
 
@@ -505,10 +504,10 @@ describe('Knifecycle', () => {
       const timeServiceStub = sinon.spy(timeService);
 
       $.register(constant('ENV', ENV));
-      $.register(service('time', timeServiceStub));
-      $.register(provider('hash', inject(['ENV', 'time'], hashProvider)));
-      $.register(provider('hash2', inject(['ENV', 'time'], hashProvider)));
-      $.register(provider('hash3', inject(['ENV', 'time'], hashProvider)));
+      $.register(service(timeServiceStub, 'time'));
+      $.register(provider(hashProvider, 'hash', ['ENV', 'time']));
+      $.register(provider(hashProvider, 'hash2', ['ENV', 'time']));
+      $.register(provider(hashProvider, 'hash3', ['ENV', 'time']));
 
       const dependencies = await $.run(['hash', 'hash2', 'hash3', 'time']);
 
@@ -533,10 +532,8 @@ describe('Knifecycle', () => {
         }),
       );
 
-      $.register(
-        provider('mappedStub', inject(['stub2>mappedStub2'], providerStub)),
-      );
-      $.register(provider('mappedStub2', providerStub2));
+      $.register(provider(providerStub, 'mappedStub', ['stub2>mappedStub2']));
+      $.register(provider(providerStub2, 'mappedStub2'));
 
       const dependencies = await $.run(['stub>mappedStub']);
 
@@ -556,16 +553,10 @@ describe('Knifecycle', () => {
       const timeServiceStub = sinon.spy(timeService);
 
       $.register(constant('ENV', ENV));
-      $.register(service('aTime', timeServiceStub));
-      $.register(
-        provider('aHash', inject(['ENV', 'time>aTime'], hashProvider)),
-      );
-      $.register(
-        provider('aHash2', inject(['ENV', 'hash>aHash'], hashProvider)),
-      );
-      $.register(
-        provider('aHash3', inject(['ENV', 'hash>aHash'], hashProvider)),
-      );
+      $.register(service(timeServiceStub, 'aTime'));
+      $.register(provider(hashProvider, 'aHash', ['ENV', 'time>aTime']));
+      $.register(provider(hashProvider, 'aHash2', ['ENV', 'hash>aHash']));
+      $.register(provider(hashProvider, 'aHash3', ['ENV', 'hash>aHash']));
 
       const dependencies = await $.run([
         'hash2>aHash2',
@@ -578,7 +569,7 @@ describe('Knifecycle', () => {
     });
 
     it('should fail with bad service', async () => {
-      $.register(service('lol', () => {}));
+      $.register(service(() => {}, 'lol'));
 
       try {
         await $.run(['lol']);
@@ -590,7 +581,7 @@ describe('Knifecycle', () => {
     });
 
     it('should fail with bad provider', async () => {
-      $.register(provider('lol', () => {}));
+      $.register(provider(() => {}, 'lol'));
       try {
         await $.run(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
@@ -601,7 +592,7 @@ describe('Knifecycle', () => {
     });
 
     it('should fail with bad service in a provider', async () => {
-      $.register(provider('lol', () => Promise.resolve()));
+      $.register(provider(() => Promise.resolve(), 'lol'));
       try {
         await $.run(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
@@ -624,8 +615,8 @@ describe('Knifecycle', () => {
     it('should fail with undeclared dependencies upstream', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV', 'hash2'], hashProvider)));
-      $.register(provider('hash2', inject(['ENV', 'lol'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV', 'hash2']));
+      $.register(provider(hashProvider, 'hash2', ['ENV', 'lol']));
 
       try {
         await $.run(['time', 'hash']);
@@ -639,9 +630,9 @@ describe('Knifecycle', () => {
     it('should provide a fatal error handler', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
-      $.register(provider('db', inject(['ENV'], dbProvider)));
-      $.register(provider('process', inject(['$fatalError'], processProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
+      $.register(provider(dbProvider, 'db', ['ENV']));
+      $.register(provider(processProvider, 'process', ['$fatalError']));
 
       function processProvider({ $fatalError }) {
         return Promise.resolve({
@@ -706,7 +697,7 @@ describe('Knifecycle', () => {
       );
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV', '?DEBUG'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV', '?DEBUG']));
 
       const dependencies = await $.run(['time', 'hash']);
 
@@ -747,10 +738,10 @@ describe('Knifecycle', () => {
       );
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
-      $.register(provider('hash1', inject(['hash'], hashProvider)));
-      $.register(provider('hash3', inject(['hash2'], hashProvider)));
-      $.register(provider('hash5', inject(['hash4'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
+      $.register(provider(hashProvider, 'hash1', ['hash']));
+      $.register(provider(hashProvider, 'hash3', ['hash2']));
+      $.register(provider(hashProvider, 'hash5', ['hash4']));
 
       const dependencies = await $.run(['hash5', 'time']);
 
@@ -758,8 +749,8 @@ describe('Knifecycle', () => {
     });
 
     it('should work with various dependencies', async () => {
-      $.register(provider('hash', inject(['hash2'], hashProvider)));
-      $.register(provider('hash3', inject(['?ENV'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['hash2']));
+      $.register(provider(hashProvider, 'hash3', ['?ENV']));
       $.register(constant('DEBUG', 1));
       $.register(
         initializer(
@@ -816,13 +807,9 @@ describe('Knifecycle', () => {
       const timeServiceStub = sinon.spy(timeService);
 
       $.register(constant('ENV', ENV));
-      $.register(service('time', timeServiceStub));
-      $.register(
-        provider('hash', inject(['hash1', 'hash2', 'hash3'], hashProvider)),
-      );
-      $.register(
-        provider('hash_', inject(['hash1', 'hash2', 'hash3'], hashProvider)),
-      );
+      $.register(service(timeServiceStub, 'time'));
+      $.register(provider(hashProvider, 'hash', ['hash1', 'hash2', 'hash3']));
+      $.register(provider(hashProvider, 'hash_', ['hash1', 'hash2', 'hash3']));
 
       const dependencies = await $.run(['hash', 'hash_', 'hash3']);
 
@@ -962,7 +949,7 @@ describe('Knifecycle', () => {
     it('should work with no dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
 
       const dependencies = await $.run(['time', 'hash', '$injector']);
       assert.deepEqual(Object.keys(dependencies), [
@@ -979,7 +966,7 @@ describe('Knifecycle', () => {
     it('should work with same dependencies then the running silo', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
 
       const dependencies = await $.run(['time', 'hash', '$injector']);
       assert.deepEqual(Object.keys(dependencies), [
@@ -999,7 +986,7 @@ describe('Knifecycle', () => {
     it('should fail with non instanciated dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
 
       const dependencies = await $.run(['time', '$injector']);
       assert.deepEqual(Object.keys(dependencies), ['time', '$injector']);
@@ -1014,7 +1001,7 @@ describe('Knifecycle', () => {
 
     it('should create dependencies when not declared as singletons', async () => {
       $.register(constant('ENV', ENV));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
 
       const [{ hash }, { hash: sameHash }] = await Promise.all([
         $.run(['hash']),
@@ -1031,23 +1018,14 @@ describe('Knifecycle', () => {
     it('should reuse dependencies when declared as singletons', async () => {
       $.register(constant('ENV', ENV));
       $.register(
-        provider('hash', inject(['ENV'], hashProvider), {
+        provider(hashProvider, 'hash', ['ENV'], {
           singleton: true,
         }),
       );
       $.register(
-        provider(
-          'hash2',
-          inject(
-            ['ENV'],
-            options(
-              {
-                singleton: true,
-              },
-              hashProvider,
-            ),
-          ),
-        ),
+        provider(hashProvider, 'hash2', ['ENV'], {
+          singleton: true,
+        }),
       );
 
       const [
@@ -1080,12 +1058,12 @@ describe('Knifecycle', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(
-        provider('hash', inject(['ENV'], hashProvider), {
+        provider(hashProvider, 'hash', ['ENV'], {
           singleton: true,
         }),
       );
-      $.register(provider('hash1', inject(['ENV'], hashProvider)));
-      $.register(provider('hash2', inject(['ENV'], hashProvider)));
+      $.register(provider(hashProvider, 'hash1', ['ENV']));
+      $.register(provider(hashProvider, 'hash2', ['ENV']));
 
       const [dependencies] = await Promise.all([
         $.run(['$destroy']),
@@ -1101,9 +1079,9 @@ describe('Knifecycle', () => {
     it('should work when trigered from several silos simultaneously', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
-      $.register(provider('hash1', inject(['ENV'], hashProvider)));
-      $.register(provider('hash2', inject(['ENV'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
+      $.register(provider(hashProvider, 'hash1', ['ENV']));
+      $.register(provider(hashProvider, 'hash2', ['ENV']));
 
       const dependenciesBuckets = await Promise.all([
         $.run(['$destroy']),
@@ -1119,9 +1097,9 @@ describe('Knifecycle', () => {
     it('should work when a silo shutdown is in progress', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
-      $.register(provider('hash1', inject(['ENV'], hashProvider)));
-      $.register(provider('hash2', inject(['ENV'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
+      $.register(provider(hashProvider, 'hash1', ['ENV']));
+      $.register(provider(hashProvider, 'hash2', ['ENV']));
 
       const [dependencies1, dependencies2] = await Promise.all([
         $.run(['$destroy']),
@@ -1134,8 +1112,8 @@ describe('Knifecycle', () => {
     it('should disallow new runs', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
-      $.register(provider('hash1', inject(['ENV'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
+      $.register(provider(hashProvider, 'hash1', ['ENV']));
 
       const dependencies = await $.run(['$destroy']);
 
@@ -1173,7 +1151,7 @@ describe('Knifecycle', () => {
     it('should work with simple dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
 
       const dependencies = await $.run(['time', 'hash', '$dispose']);
       assert.deepEqual(Object.keys(dependencies), ['time', 'hash', '$dispose']);
@@ -1196,16 +1174,15 @@ describe('Knifecycle', () => {
 
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
-      $.register(provider('hash1', inject(['hash'], hashProvider)));
-      $.register(provider('hash2', inject(['hash1'], hashProvider)));
-      $.register(provider('hash3', inject(['hash2'], hashProvider)));
-      $.register(provider('hash4', inject(['hash3'], hashProvider)));
-      $.register(provider('hash5', inject(['hash4'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
+      $.register(provider(hashProvider, 'hash1', ['hash']));
+      $.register(provider(hashProvider, 'hash2', ['hash1']));
+      $.register(provider(hashProvider, 'hash3', ['hash2']));
+      $.register(provider(hashProvider, 'hash4', ['hash3']));
+      $.register(provider(hashProvider, 'hash5', ['hash4']));
       $.register(
         provider(
-          'shutdownChecker',
-          inject(['hash4'], () =>
+          () =>
             Promise.resolve({
               service: {
                 shutdownStub,
@@ -1213,7 +1190,8 @@ describe('Knifecycle', () => {
               },
               dispose: shutdownStub,
             }),
-          ),
+          'shutdownChecker',
+          ['hash4'],
         ),
       );
 
@@ -1253,11 +1231,10 @@ describe('Knifecycle', () => {
       });
 
       $.register(constant('ENV', ENV));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
       $.register(
         provider(
-          'shutdownChecker',
-          inject(['hash'], () =>
+          () =>
             Promise.resolve({
               service: {
                 shutdownStub,
@@ -1265,11 +1242,12 @@ describe('Knifecycle', () => {
               },
               dispose: shutdownStub,
             }),
-          ),
+          'shutdownChecker',
+          ['hash'],
         ),
       );
-      $.register(provider('hash1', inject(['shutdownChecker'], hashProvider)));
-      $.register(provider('hash2', inject(['shutdownChecker'], hashProvider)));
+      $.register(provider(hashProvider, 'hash1', ['shutdownChecker']));
+      $.register(provider(hashProvider, 'hash2', ['shutdownChecker']));
 
       const dependencies = await $.run([
         'hash1',
@@ -1297,33 +1275,35 @@ describe('Knifecycle', () => {
       const servicesShutdownCalls = sinon.spy(() => Promise.resolve());
 
       $.register(
-        provider('hash', () =>
-          Promise.resolve({
-            service: {},
-            dispose: servicesShutdownCalls.bind(null, 'hash'),
-          }),
+        provider(
+          () =>
+            Promise.resolve({
+              service: {},
+              dispose: servicesShutdownCalls.bind(null, 'hash'),
+            }),
+          'hash',
         ),
       );
       $.register(
         provider(
-          'hash1',
-          inject(['hash'], () =>
+          () =>
             Promise.resolve({
               service: {},
               dispose: servicesShutdownCalls.bind(null, 'hash1'),
             }),
-          ),
+          'hash1',
+          ['hash'],
         ),
       );
       $.register(
         provider(
-          'hash2',
-          inject(['hash1', 'hash'], () =>
+          () =>
             Promise.resolve({
               service: {},
               dispose: servicesShutdownCalls.bind(null, 'hash2'),
             }),
-          ),
+          'hash2',
+          ['hash1', 'hash'],
         ),
       );
 
@@ -1342,7 +1322,7 @@ describe('Knifecycle', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(
-        provider('hash', inject(['ENV'], hashProvider), {
+        provider(hashProvider, 'hash', ['ENV'], {
           singleton: true,
         }),
       );
@@ -1362,7 +1342,7 @@ describe('Knifecycle', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(
-        provider('hash', inject(['ENV'], hashProvider), {
+        provider(hashProvider, 'hash', ['ENV'], {
           singleton: true,
         }),
       );
@@ -1386,12 +1366,12 @@ describe('Knifecycle', () => {
     it('should print a dependency graph', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
-      $.register(provider('hash1', inject(['hash'], hashProvider)));
-      $.register(provider('hash2', inject(['hash1'], hashProvider)));
-      $.register(provider('hash3', inject(['hash2'], hashProvider)));
-      $.register(provider('hash4', inject(['hash3'], hashProvider)));
-      $.register(provider('hash5', inject(['hash4'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
+      $.register(provider(hashProvider, 'hash1', ['hash']));
+      $.register(provider(hashProvider, 'hash2', ['hash1']));
+      $.register(provider(hashProvider, 'hash3', ['hash2']));
+      $.register(provider(hashProvider, 'hash4', ['hash3']));
+      $.register(provider(hashProvider, 'hash5', ['hash4']));
       assert.equal(
         $.toMermaidGraph(),
         'graph TD\n' +
@@ -1407,12 +1387,12 @@ describe('Knifecycle', () => {
     it('should allow custom shapes', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
-      $.register(provider('hash1', inject(['hash'], hashProvider)));
-      $.register(provider('hash2', inject(['hash1'], hashProvider)));
-      $.register(provider('hash3', inject(['hash2'], hashProvider)));
-      $.register(provider('hash4', inject(['hash3'], hashProvider)));
-      $.register(provider('hash5', inject(['hash4'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
+      $.register(provider(hashProvider, 'hash1', ['hash']));
+      $.register(provider(hashProvider, 'hash2', ['hash1']));
+      $.register(provider(hashProvider, 'hash3', ['hash2']));
+      $.register(provider(hashProvider, 'hash4', ['hash3']));
+      $.register(provider(hashProvider, 'hash5', ['hash4']));
       assert.equal(
         $.toMermaidGraph({
           shapes: [
@@ -1443,12 +1423,12 @@ describe('Knifecycle', () => {
     it('should allow custom styles', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(provider('hash', inject(['ENV'], hashProvider)));
-      $.register(provider('hash1', inject(['hash'], hashProvider)));
-      $.register(provider('hash2', inject(['hash1'], hashProvider)));
-      $.register(provider('hash3', inject(['hash2'], hashProvider)));
-      $.register(provider('hash4', inject(['hash3'], hashProvider)));
-      $.register(provider('hash5', inject(['hash4'], hashProvider)));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
+      $.register(provider(hashProvider, 'hash1', ['hash']));
+      $.register(provider(hashProvider, 'hash2', ['hash1']));
+      $.register(provider(hashProvider, 'hash3', ['hash2']));
+      $.register(provider(hashProvider, 'hash4', ['hash3']));
+      $.register(provider(hashProvider, 'hash5', ['hash4']));
       assert.equal(
         $.toMermaidGraph({
           classes: {
