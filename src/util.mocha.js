@@ -189,6 +189,26 @@ describe('autoInject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
+  it('should allow to decorate an initializer with complex arguments', () => {
+    const noop = () => {};
+    const baseProvider = async (
+      { ENV, log = noop, debug: aDebug = noop },
+      { userId, currentTime = Date.now() },
+    ) => async () => ({
+      ENV,
+      log,
+      aDebug,
+      userId,
+      currentTime,
+    });
+    const dependencies = ['ENV', '?log', '?debug'];
+    const newInitializer = autoInject(baseProvider);
+
+    assert.notEqual(newInitializer, baseProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+  });
+
   it('should fail with non async initializers', () => {
     assert.throws(() => {
       autoInject(({ foo: bar = { bar: 'foo' } }) => {
