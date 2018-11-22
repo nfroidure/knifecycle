@@ -1,3 +1,12 @@
+## [5.0.1](https://github.com/nfroidure/knifecycle/compare/v5.0.0...v5.0.1) (2018-11-22)
+
+
+### Bug Fixes
+
+* **autoInject:** Remove unecessary check in the autoInject regExp ([fff9a6f](https://github.com/nfroidure/knifecycle/commit/fff9a6f))
+
+
+
 # [5.0.0](https://github.com/nfroidure/knifecycle/compare/v4.3.1...v5.0.0) (2018-11-18)
 
 
