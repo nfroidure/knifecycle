@@ -1,3 +1,12 @@
+## [5.0.2](https://github.com/nfroidure/knifecycle/compare/v5.0.1...v5.0.2) (2018-11-29)
+
+
+### Bug Fixes
+
+* **Core:** Fail on syntax error even for optional services ([8cfcabd](https://github.com/nfroidure/knifecycle/commit/8cfcabd))
+
+
+
 ## [5.0.1](https://github.com/nfroidure/knifecycle/compare/v5.0.0...v5.0.1) (2018-11-22)
 
 
