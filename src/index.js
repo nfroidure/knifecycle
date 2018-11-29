@@ -876,7 +876,9 @@ class Knifecycle {
           );
           return serviceDescriptor;
         } catch (err) {
-          if (optional) {
+          // Let pass syntax errors through to avoid running
+          // invalid code
+          if (optional && !(err instanceof SyntaxError)) {
             return;
           }
           throw err;
