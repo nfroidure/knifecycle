@@ -475,7 +475,7 @@ Decorator to set an initializer name from its function name.
 import Knifecycle, { autoName } from 'knifecycle';
 
 new Knifecycle()
-.register(name(async function myService() {}));
+.register(autoName(async function myService() {}));
 ```
 <a name="type"></a>
 

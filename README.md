@@ -339,10 +339,10 @@ autoService(getUser);
 async function getUser({ db, log = noop}) {}
 ```
 
-That said, if your need to build your code with `webpack`/`babel` you may
+That said, if you need to build your code with `webpack`/`babel` you may
  have to convert auto-detections to raw declarations with the
  [babel-plugin-knifecycle](https://github.com/nfroidure/babel-plugin-knifecycle)
- plugin.
+ plugin. You can also do this only for the performance improvements it brings.
 
 Also, keep in mind that the auto-detection is based on a simple regular
  expression so you should care to keep initializer signatures simple to
@@ -387,6 +387,15 @@ contains the services I use the most in my apps.
  services compatible with Knifecycle.
 - [memory-kv-store](https://github.com/nfroidure/memory-kv-store):
  a simple in memory key-value store.
+- [whook](https://github.com/nfroidure/whook):
+ a framework to build REST web services.
+- [postgresql-service](https://github.com/nfroidure/postgresql-service):
+ a simple wrapper around the `pg` module.
+- [jwt-service](https://github.com/nfroidure/jwt-service):
+ a simple wrapper around the `jwt` module to simplify its use.
+ 
+Notice that those modules remains usable without using Knifecycle at
+ all which is maybe the best feature of this library ;).
 
 [//]: # (::contents:end)
 
@@ -867,7 +876,7 @@ Decorator to set an initializer name from its function name.
 import Knifecycle, { autoName } from 'knifecycle';
 
 new Knifecycle()
-.register(name(async function myService() {}));
+.register(autoName(async function myService() {}));
 ```
 <a name="type"></a>
 

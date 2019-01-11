@@ -323,7 +323,7 @@ export function name(name, initializer) {
  * import Knifecycle, { autoName } from 'knifecycle';
  *
  * new Knifecycle()
- * .register(name(async function myService() {}));
+ * .register(autoName(async function myService() {}));
  */
 export function autoName(initializer) {
   const functionName = (initializer.name || '')
