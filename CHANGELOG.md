@@ -1,3 +1,7 @@
+## [5.0.4](https://github.com/nfroidure/knifecycle/compare/v5.0.3...v5.0.4) (2019-01-12)
+
+
+
 ## [5.0.3](https://github.com/nfroidure/knifecycle/compare/v5.0.2...v5.0.3) (2019-01-12)
 
 
