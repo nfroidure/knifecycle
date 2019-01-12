@@ -1,3 +1,12 @@
+## [5.0.3](https://github.com/nfroidure/knifecycle/compare/v5.0.2...v5.0.3) (2019-01-12)
+
+
+### Bug Fixes
+
+* **autoInject:** Ensure auto injection works with trailing commas ([521ab18](https://github.com/nfroidure/knifecycle/commit/521ab18))
+
+
+
 ## [5.0.2](https://github.com/nfroidure/knifecycle/compare/v5.0.1...v5.0.2) (2018-11-29)
 
 
