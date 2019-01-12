@@ -155,6 +155,12 @@ export function inject(dependencies, initializer) {
  */
 export function autoInject(initializer) {
   const source = initializer.toString();
+  const dependencies = parseInjections(source);
+
+  return inject(dependencies, initializer);
+}
+
+export function parseInjections(source) {
   const matches = source.match(
     /^\s*(?:async\s+function(?:\s+\w+)?|async)\s*\(\{\s*([^{}}]+)\s*\}/,
   );
@@ -166,8 +172,9 @@ export function autoInject(initializer) {
     throw new YError('E_AUTO_INJECTION_FAILURE', source);
   }
 
-  const dependencies = matches[1]
+  return matches[1]
     .trim()
+    .replace(/,$/, '')
     .split(/\s*,\s*/)
     .map(
       injection =>
@@ -179,8 +186,6 @@ export function autoInject(initializer) {
           .shift(),
     )
     .filter(injection => !/[)(\][]/.test(injection));
-
-  return inject(dependencies, initializer);
 }
 
 /**

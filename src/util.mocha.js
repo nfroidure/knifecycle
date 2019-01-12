@@ -10,6 +10,7 @@ import {
   inject,
   autoInject,
   alsoInject,
+  parseInjections,
   options,
   extra,
   initializer,
@@ -238,6 +239,30 @@ describe('alsoInject', () => {
 
     assert.notEqual(newInitializer, aProvider);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['TEST', 'ENV']);
+  });
+
+  it('should allow to decorate an initializer with dependencies', () => {
+    const newInitializer = alsoInject(['ENV'], aProvider);
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['ENV']);
+  });
+});
+
+describe('parseInjections', () => {
+  it('should work with TypeScript dependencies', () => {
+    assert.deepEqual(
+      parseInjections(`async function initNexmo({
+      ENV,
+      NEXMO,
+      log = noop,
+    }: {
+      ENV: any;
+      NEXMO: any;
+      log: Function;
+    }): Promise<SMSService> {}`),
+      ['ENV', 'NEXMO', '?log'],
+    );
   });
 
   it('should allow to decorate an initializer with dependencies', () => {
