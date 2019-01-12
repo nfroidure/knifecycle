@@ -331,16 +331,20 @@ export function name(name, initializer) {
  * .register(autoName(async function myService() {}));
  */
 export function autoName(initializer) {
-  const functionName = (initializer.name || '')
-    .split(' ')
-    .pop()
-    .replace(/^init(?:ialize)?([A-Z])/, (_, $1) => $1.toLowerCase());
+  const functionName = parseName(initializer.name || '');
 
   if (!functionName) {
     throw new YError('E_AUTO_NAMING_FAILURE', initializer.name);
   }
 
   return name(functionName, initializer);
+}
+
+export function parseName(functionName) {
+  return functionName
+    .split(' ')
+    .pop()
+    .replace(/^init(?:ialize)?([A-Z])/, (_, $1) => $1.toLowerCase());
 }
 
 /**
