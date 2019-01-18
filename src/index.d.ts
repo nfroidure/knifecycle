@@ -14,7 +14,10 @@ interface HandlerInitializer {
   (services?: Dependencies, ...args: Array<any>): Promise<any>;
 }
 
-type Initializer<T> = T & (HandlerInitializer | ServiceInitializer | ProviderInitializer);
+type Initializer =
+  | HandlerInitializer
+  | ServiceInitializer
+  | ProviderInitializer;
 
 type InitializerType = 'service' | 'provider' | 'constant';
 
@@ -35,75 +38,65 @@ interface InitializerDeclaration {
 export class Knifecycle {
   constructor();
   run(dependencies: DependenciesDeclarations): Promise<Dependencies>;
-  register<T>(initializer: Initializer<T>): void;
+  register<T extends Initializer>(initializer: T): void;
 }
 
-export function initializer<T>(
+export function initializer<T extends Initializer>(
   declaration: InitializerDeclaration,
-  initializer: Initializer<T>,
-): Initializer<T>;
-export function name<T>(
-  name: string,
-  initializer: Initializer<T>,
-): Initializer<T>;
-export function autoName<T>(initializer: Initializer<T>): Initializer<T>;
-export function type<T>(
+  initializer: T,
+): T;
+export function name<T extends Initializer>(name: string, initializer: T): T;
+export function autoName<T extends Initializer>(initializer: T): T;
+export function type<T extends Initializer>(
   type: InitializerType,
-  initializer: Initializer<T>,
-): Initializer<T>;
-export function inject<T>(
+  initializer: T,
+): T;
+export function inject<T extends Initializer>(
   dependencies: DependenciesDeclarations,
-  initializer: Initializer<T>,
-): Initializer<T>;
-export function autoInject<T>(initializer: Initializer<T>): Initializer<T>;
-export function alsoInject<T>(
+  initializer: T,
+): T;
+export function autoInject<T extends Initializer>(initializer: T): T;
+export function alsoInject<T extends Initializer>(
   dependencies: DependenciesDeclarations,
-  initializer: Initializer<T>,
-): Initializer<T>;
-export function options<T>(
+  initializer: T,
+): T;
+export function options<T extends Initializer>(
   options: InitializerOptions,
-  initializer: Initializer<T>,
+  initializer: T,
   merge: boolean,
-): Initializer<T>;
-export function extra<T>(
-  data: any,
-  initializer: Initializer<T>,
-): Initializer<T>;
-export function reuseSpecialProps<T>(
-  from: Initializer<T>,
-  to: Initializer<T>,
+): T;
+export function extra<T extends Initializer>(data: any, initializer: T): T;
+export function reuseSpecialProps<T extends Initializer>(
+  from: T,
+  to: T,
   amend?: InitializerOptions,
-): Initializer<T>;
-export function wrapInitializer<T>(
+): T;
+export function wrapInitializer<T extends Initializer>(
   wrapper: Function,
-  baseInitializer: Initializer<T>,
-): Initializer<T>;
+  baseInitializer: T,
+): T;
 export function constant(name: String, value: any): ServiceInitializer;
-export function service<T>(
-  initializer: T & ServiceInitializer,
+export function service<T extends ServiceInitializer>(
+  initializer: T,
   name?: string,
   dependencies?: DependenciesDeclarations,
   options?: InitializerOptions,
-): T & ServiceInitializer;
-export function autoService<T>(
-  initializer: T & ServiceInitializer,
-): T & ServiceInitializer;
-export function provider<T>(
-  initializer: T & ProviderInitializer,
+): T;
+export function autoService<T extends ServiceInitializer>(initializer: T): T;
+export function provider<T extends ProviderInitializer>(
+  initializer: T,
   name?: string,
   dependencies?: DependenciesDeclarations,
   options?: InitializerOptions,
-): T & ProviderInitializer;
-export function autoProvider<T>(
-  initializer: T & ProviderInitializer,
-): T & ProviderInitializer;
-export function handlerInitializer<T>(
-  handlerInitializer: T & HandlerInitializer,
+): T;
+export function autoProvider<T extends ProviderInitializer>(initializer: T): T;
+export function handler<T extends HandlerInitializer>(
+  handlerInitializer: T,
   name?: string,
   dependencies?: DependenciesDeclarations,
   options?: InitializerOptions,
-): T & HandlerInitializer;
-export function autoHandlerInitializer<T>(initializer: HandlerInitializer): HandlerInitializer;
+): T;
+export function autoHandler<T extends HandlerInitializer>(initializer: T): T;
 
 export const SPECIAL_PROPS: Array<string>;
 export const DECLARATION_SEPARATOR: string;
