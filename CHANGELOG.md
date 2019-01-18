@@ -1,3 +1,12 @@
+# [5.1.0-beta.0](https://github.com/nfroidure/knifecycle/compare/v5.0.4...v5.1.0-beta.0) (2019-01-18)
+
+
+### Features
+
+* **TypeScript:** Add types for TypeScript support ([3683386](https://github.com/nfroidure/knifecycle/commit/3683386))
+
+
+
 ## [5.0.4](https://github.com/nfroidure/knifecycle/compare/v5.0.3...v5.0.4) (2019-01-12)
 
 
