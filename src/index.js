@@ -918,7 +918,6 @@ class Knifecycle {
 }
 
 export default Knifecycle;
-export const getInstance = Knifecycle.getInstance;
 export {
   SPECIAL_PROPS,
   DECLARATION_SEPARATOR,
