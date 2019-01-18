@@ -3,6 +3,7 @@
   "version": "5.0.4",
   "description": "Manage your NodeJS processes's lifecycle.",
   "main": "dist/index.js",
+  "types": "src/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nfroidure/knifecycle.git"
@@ -64,6 +65,7 @@
     "process",
     "lifecycle",
     "shutdown",
+    "dependencies",
     "service"
   ],
   "author": {
