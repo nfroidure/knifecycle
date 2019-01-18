@@ -1,3 +1,17 @@
+# [5.1.0-beta.3](https://github.com/nfroidure/knifecycle/compare/v5.0.4...v5.1.0-beta.3) (2019-01-18)
+
+
+### Bug Fixes
+
+* **Types:** Use extends instead of type intersections ([12253e1](https://github.com/nfroidure/knifecycle/commit/12253e1))
+
+
+### Features
+
+* **TypeScript:** Add types for TypeScript support ([3683386](https://github.com/nfroidure/knifecycle/commit/3683386))
+
+
+
 # [5.1.0-beta.0](https://github.com/nfroidure/knifecycle/compare/v5.0.4...v5.1.0-beta.0) (2019-01-18)
 
 
