@@ -7,12 +7,12 @@
 # knifecycle
 > Manage your NodeJS processes's lifecycle.
 
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nfroidure/knifecycle/blob/master/LICENSE)
 [![Build status](https://secure.travis-ci.org/nfroidure/knifecycle.svg)](https://travis-ci.org/nfroidure/knifecycle)
 [![Coverage Status](https://coveralls.io/repos/nfroidure/knifecycle/badge.svg?branch=master)](https://coveralls.io/r/nfroidure/knifecycle?branch=master)
 [![NPM version](https://badge.fury.io/js/knifecycle.svg)](https://npmjs.org/package/knifecycle)
 [![Dependency Status](https://david-dm.org/nfroidure/knifecycle.svg)](https://david-dm.org/nfroidure/knifecycle)
 [![devDependency Status](https://david-dm.org/nfroidure/knifecycle/dev-status.svg)](https://david-dm.org/nfroidure/knifecycle#info=devDependencies)
-[![Dependency Status](https://dependencyci.com/github/nfroidure/knifecycle/badge)](https://dependencyci.com/github/nfroidure/knifecycle)
 [![Package Quality](http://npm.packagequality.com/shield/knifecycle.svg)](http://packagequality.com/#?package=knifecycle)
 [![Code Climate](https://codeclimate.com/github/nfroidure/knifecycle.svg)](https://codeclimate.com/github/nfroidure/knifecycle)
 

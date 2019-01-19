@@ -1,5 +1,7 @@
 'use strict';
 
+const { execSync } = require('child_process');
+
 const SAUCE_TIMEOUT = 240000;
 
 module.exports = function buildKarmeConf(config) {
@@ -37,7 +39,7 @@ module.exports = function buildKarmeConf(config) {
     logLevel: config.LOG_INFO,
 
     // enable / disable watching file and executing tests whenever any file changes
-    autoWatch: true,
+    autoWatch: !process.env.SAUCE_USERNAME,
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
@@ -50,6 +52,10 @@ module.exports = function buildKarmeConf(config) {
 
   if (
     !process.env.SAUCE_USERNAME ||
+    !execSync('node -v')
+      .toString()
+      .trim()
+      .startsWith('v10') ||
     (process.env.TRAVIS_PULL_REQUEST &&
       'false' !== process.env.TRAVIS_PULL_REQUEST)
   ) {
@@ -74,33 +80,18 @@ module.exports = function buildKarmeConf(config) {
   const customLaunchers = {
     SL_Chrome: {
       base: 'SauceLabs',
-      browserName: 'chrome',
+      browserName: 'Chrome',
+      platform: 'Windows 10',
     },
     SL_Firefox: {
       base: 'SauceLabs',
-      browserName: 'firefox',
-    },
-    SL_Opera: {
-      base: 'SauceLabs',
-      browserName: 'opera',
+      browserName: 'Firefox',
+      platform: 'Windows 10',
     },
     SL_IEEdge: {
       base: 'SauceLabs',
-      browserName: 'microsoftedge',
-      version: null,
+      browserName: 'MicrosoftEdge',
       platform: 'Windows 10',
-    },
-    SL_IE10: {
-      base: 'SauceLabs',
-      browserName: 'internet explorer',
-      version: '10',
-      platform: 'Windows 2012',
-    },
-    SL_IE11: {
-      base: 'SauceLabs',
-      browserName: 'internet explorer',
-      version: '11',
-      platform: 'Windows 8.1',
     },
   };
 
@@ -111,7 +102,7 @@ module.exports = function buildKarmeConf(config) {
 
       // Increase timeouts to prevent the issue with disconnected tests (https://goo.gl/nstA69)
       captureTimeout: SAUCE_TIMEOUT,
-      browserDisconnectTimeout: 10000,
+      browserDisconnectTimeout: SAUCE_TIMEOUT,
       browserDisconnectTolerance: 1,
       browserNoActivityTimeout: SAUCE_TIMEOUT,
 
@@ -123,6 +114,9 @@ module.exports = function buildKarmeConf(config) {
           logfile: 'sauce_connect.log',
         },
         public: 'public',
+        build: `build-${execSync('git rev-parse HEAD')
+          .toString()
+          .trim()}`,
       },
 
       // start these browsers
