@@ -1,3 +1,12 @@
+## [5.1.2](https://github.com/nfroidure/knifecycle/compare/v5.1.1...v5.1.2) (2019-01-20)
+
+
+### Bug Fixes
+
+* **Types:** Fix register method chaining type declaration ([c468a2a](https://github.com/nfroidure/knifecycle/commit/c468a2a))
+
+
+
 ## [5.1.1](https://github.com/nfroidure/knifecycle/compare/v5.1.0...v5.1.1) (2019-01-20)
 
 
