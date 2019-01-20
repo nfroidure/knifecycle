@@ -42,7 +42,7 @@ export class Knifecycle {
   run(dependencies: DependenciesDeclarations): Promise<Dependencies>;
   register<D extends Dependencies, S, T extends Initializer<D, S>>(
     initializer: T,
-  ): void;
+  ): Knifecycle;
 }
 
 export function initializer<
