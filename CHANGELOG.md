@@ -1,3 +1,13 @@
+## [5.1.1](https://github.com/nfroidure/knifecycle/compare/v5.1.0...v5.1.1) (2019-01-20)
+
+
+### Bug Fixes
+
+* **Tests:** Fix Saucelabs tests ([b77dcaa](https://github.com/nfroidure/knifecycle/commit/b77dcaa))
+* **Types:** Fix handlers and constant types ([a42a209](https://github.com/nfroidure/knifecycle/commit/a42a209))
+
+
+
 # [5.1.0](https://github.com/nfroidure/knifecycle/compare/v5.0.4...v5.1.0) (2019-01-19)
 
 
