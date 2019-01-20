@@ -5,7 +5,7 @@
 [//]: # (be overridden.)
 [//]: # ( )
 # knifecycle
-> Manage your NodeJS processes's lifecycle.
+> Manage your NodeJS processes's lifecycle automatically with an unobtrusive dependency injection implementation.
 
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nfroidure/knifecycle/blob/master/LICENSE)
 [![Build status](https://secure.travis-ci.org/nfroidure/knifecycle.svg)](https://travis-ci.org/nfroidure/knifecycle)

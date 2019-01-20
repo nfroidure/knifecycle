@@ -1,23 +1,25 @@
 type Dependencies = { [name: string]: any };
 
-interface ProviderInitializer {
-  (services?: Dependencies): Promise<{
-    service: any;
+interface ProviderInitializer<D extends Dependencies, S> {
+  (services?: D): Promise<{
+    service: S;
     shutdown: () => Promise<void>;
     fatalErrorPromise: Promise<void>;
   }>;
 }
-interface ServiceInitializer {
-  (services?: Dependencies): Promise<any>;
+interface ServiceInitializer<D extends Dependencies, S> {
+  (services?: D): Promise<S>;
 }
-interface HandlerInitializer {
-  (services?: Dependencies, ...args: Array<any>): Promise<any>;
+interface HandlerInitializer<D extends Dependencies, U extends any[], V> {
+  (services?: D, ...args: U): Promise<V>;
+}
+interface Handler<U extends any[], V> {
+  (...args: U): Promise<V>;
 }
 
-type Initializer =
-  | HandlerInitializer
-  | ServiceInitializer
-  | ProviderInitializer;
+type Initializer<D extends Dependencies, S> =
+  | ServiceInitializer<D, S>
+  | ProviderInitializer<D, S>;
 
 type InitializerType = 'service' | 'provider' | 'constant';
 
@@ -38,65 +40,102 @@ interface InitializerDeclaration {
 export class Knifecycle {
   constructor();
   run(dependencies: DependenciesDeclarations): Promise<Dependencies>;
-  register<T extends Initializer>(initializer: T): void;
+  register<D extends Dependencies, S, T extends Initializer<D, S>>(
+    initializer: T,
+  ): void;
 }
 
-export function initializer<T extends Initializer>(
-  declaration: InitializerDeclaration,
+export function initializer<
+  D extends Dependencies,
+  S,
+  T extends Initializer<D, S>
+>(declaration: InitializerDeclaration, initializer: T): T;
+export function name<D extends Dependencies, S, T extends Initializer<D, S>>(
+  name: string,
   initializer: T,
 ): T;
-export function name<T extends Initializer>(name: string, initializer: T): T;
-export function autoName<T extends Initializer>(initializer: T): T;
-export function type<T extends Initializer>(
+export function autoName<
+  D extends Dependencies,
+  S,
+  T extends Initializer<D, S>
+>(initializer: T): T;
+export function type<D extends Dependencies, S, T extends Initializer<D, S>>(
   type: InitializerType,
   initializer: T,
 ): T;
-export function inject<T extends Initializer>(
+export function inject<D extends Dependencies, S, T extends Initializer<D, S>>(
   dependencies: DependenciesDeclarations,
   initializer: T,
 ): T;
-export function autoInject<T extends Initializer>(initializer: T): T;
-export function alsoInject<T extends Initializer>(
-  dependencies: DependenciesDeclarations,
-  initializer: T,
-): T;
-export function options<T extends Initializer>(
+export function autoInject<
+  D extends Dependencies,
+  S,
+  T extends Initializer<D, S>
+>(initializer: T): T;
+export function alsoInject<
+  D extends Dependencies,
+  S,
+  T extends Initializer<D, S>
+>(dependencies: DependenciesDeclarations, initializer: T): T;
+export function options<D extends Dependencies, S, T extends Initializer<D, S>>(
   options: InitializerOptions,
   initializer: T,
   merge: boolean,
 ): T;
-export function extra<T extends Initializer>(data: any, initializer: T): T;
-export function reuseSpecialProps<T extends Initializer>(
-  from: T,
-  to: T,
-  amend?: InitializerOptions,
+export function extra<D extends Dependencies, S, T extends Initializer<D, S>>(
+  data: any,
+  initializer: T,
 ): T;
-export function wrapInitializer<T extends Initializer>(
-  wrapper: Function,
-  baseInitializer: T,
-): T;
-export function constant(name: String, value: any): ServiceInitializer;
-export function service<T extends ServiceInitializer>(
+export function reuseSpecialProps<
+  D extends Dependencies,
+  S,
+  T extends Initializer<D, S>
+>(from: T, to: T, amend?: InitializerOptions): T;
+export function wrapInitializer<
+  D extends Dependencies,
+  S,
+  T extends Initializer<D, S>
+>(wrapper: Function, baseInitializer: T): T;
+export function constant<S>(name: String, value: S): ServiceInitializer<any, S>;
+export function service<
+  D extends Dependencies,
+  S,
+  T extends ServiceInitializer<D, S>
+>(
   initializer: T,
   name?: string,
   dependencies?: DependenciesDeclarations,
   options?: InitializerOptions,
 ): T;
-export function autoService<T extends ServiceInitializer>(initializer: T): T;
-export function provider<T extends ProviderInitializer>(
+export function autoService<
+  D extends Dependencies,
+  S,
+  T extends ServiceInitializer<D, S>
+>(initializer: T): T;
+export function provider<
+  D extends Dependencies,
+  S,
+  T extends ProviderInitializer<D, S>
+>(
   initializer: T,
   name?: string,
   dependencies?: DependenciesDeclarations,
   options?: InitializerOptions,
 ): T;
-export function autoProvider<T extends ProviderInitializer>(initializer: T): T;
-export function handler<T extends HandlerInitializer>(
-  handlerInitializer: T,
+export function autoProvider<
+  D extends Dependencies,
+  S,
+  T extends ProviderInitializer<D, S>
+>(initializer: T): T;
+export function handler<D extends Dependencies, U extends any[], V>(
+  handlerInitializer: HandlerInitializer<D, U, V>,
   name?: string,
   dependencies?: DependenciesDeclarations,
   options?: InitializerOptions,
-): T;
-export function autoHandler<T extends HandlerInitializer>(initializer: T): T;
+): ServiceInitializer<D, Handler<U, V>>;
+export function autoHandler<D extends Dependencies, U extends any[], V>(
+  handlerInitializer: HandlerInitializer<D, U, V>,
+): ServiceInitializer<D, Handler<U, V>>;
 
 export const SPECIAL_PROPS: Array<string>;
 export const DECLARATION_SEPARATOR: string;
