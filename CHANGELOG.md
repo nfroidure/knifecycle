@@ -1,3 +1,12 @@
+## [5.1.3](https://github.com/nfroidure/knifecycle/compare/v5.1.2...v5.1.3) (2019-01-24)
+
+
+### Bug Fixes
+
+* **Types:** Set tup the good method name for service descriptors ([e77f6af](https://github.com/nfroidure/knifecycle/commit/e77f6af))
+
+
+
 ## [5.1.2](https://github.com/nfroidure/knifecycle/compare/v5.1.1...v5.1.2) (2019-01-20)
 
 
