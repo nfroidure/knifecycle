@@ -3,7 +3,7 @@ type Dependencies = { [name: string]: any };
 interface ProviderInitializer<D extends Dependencies, S> {
   (services?: D): Promise<{
     service: S;
-    shutdown: () => Promise<void>;
+    dispose: () => Promise<void>;
     fatalErrorPromise: Promise<void>;
   }>;
 }
