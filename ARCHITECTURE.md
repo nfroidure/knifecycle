@@ -79,7 +79,7 @@ The `?` flag indicates an optional dependency.
 It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.js#L693-L702)
+[See in context](./src/util.js#L722-L731)
 
 
 

@@ -160,7 +160,10 @@ export function autoInject(initializer) {
   return inject(dependencies, initializer);
 }
 
-export function parseInjections(source) {
+export function parseInjections(
+  source,
+  { allowEmpty = false } = { allowEmpty: false },
+) {
   const matches = source.match(
     /^\s*(?:async\s+function(?:\s+\w+)?|async)\s*\(\{\s*([^{}}]+)\s*\}/,
   );
@@ -168,6 +171,12 @@ export function parseInjections(source) {
   if (!matches) {
     if (!source.match(/^\s*async/)) {
       throw new YError('E_NON_ASYNC_INITIALIZER', source);
+    }
+    if (
+      allowEmpty &&
+      source.match(/^\s*(?:async\s+function(?:\s+\w+)?|async)\s*\(\s*\)/)
+    ) {
+      return [];
     }
     throw new YError('E_AUTO_INJECTION_FAILURE', source);
   }
@@ -331,13 +340,21 @@ export function name(name, initializer) {
  * .register(autoName(async function myService() {}));
  */
 export function autoName(initializer) {
-  const functionName = parseName(initializer.name || '');
+  return name(readFunctionName(initializer), initializer);
+}
 
-  if (!functionName) {
-    throw new YError('E_AUTO_NAMING_FAILURE', initializer.name);
+function readFunctionName(aFunction) {
+  if (typeof aFunction !== 'function') {
+    throw new YError('E_AUTO_NAMING_FAILURE', typeof aFunction);
   }
 
-  return name(functionName, initializer);
+  const functionName = parseName(aFunction.name || '');
+
+  if (!functionName) {
+    throw new YError('E_AUTO_NAMING_FAILURE', aFunction.name);
+  }
+
+  return functionName;
 }
 
 export function parseName(functionName) {
@@ -521,11 +538,15 @@ export function service(builder, name, dependencies, options) {
  * Returns a new initializer
  */
 export function autoService(serviceBuilder) {
+  const name = readFunctionName(serviceBuilder);
+  const source = serviceBuilder.toString();
+  const dependencies = parseInjections(source, { allowEmpty: true });
+
   return initializer(
     {
-      name: autoName(serviceBuilder)[SPECIAL_PROPS.NAME],
+      name,
       type: 'service',
-      inject: autoInject(serviceBuilder)[SPECIAL_PROPS.INJECT],
+      inject: dependencies,
     },
     serviceBuilder,
   );
@@ -602,14 +623,18 @@ export function provider(builder, name, dependencies, options) {
  * @return {Function}
  * Returns a new initializer
  */
-export function autoProvider(baseInitializer) {
+export function autoProvider(providerBuilder) {
+  const name = readFunctionName(providerBuilder);
+  const source = providerBuilder.toString();
+  const dependencies = parseInjections(source, { allowEmpty: true });
+
   return initializer(
     {
-      name: autoName(baseInitializer)[SPECIAL_PROPS.NAME],
+      name,
       type: 'provider',
-      inject: autoInject(baseInitializer)[SPECIAL_PROPS.INJECT],
+      inject: dependencies,
     },
-    baseInitializer,
+    providerBuilder,
   );
 }
 
@@ -680,11 +705,15 @@ export function handler(handlerFunction, name, dependencies, options) {
  * }
  */
 export function autoHandler(handlerFunction) {
+  const name = readFunctionName(handlerFunction);
+  const source = handlerFunction.toString();
+  const dependencies = parseInjections(source);
+
   return initializer(
     {
-      name: autoName(handlerFunction)[SPECIAL_PROPS.NAME],
+      name,
       type: 'service',
-      inject: autoInject(handlerFunction)[SPECIAL_PROPS.INJECT],
+      inject: dependencies,
     },
     async (...args) => handlerFunction.bind(null, ...args),
   );

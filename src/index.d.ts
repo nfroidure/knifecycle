@@ -102,7 +102,7 @@ export function service<
   S,
   T extends ServiceInitializer<D, S>
 >(
-  initializer: T,
+  serviceBuilder: T,
   name?: string,
   dependencies?: DependenciesDeclarations,
   options?: InitializerOptions,
@@ -111,13 +111,13 @@ export function autoService<
   D extends Dependencies,
   S,
   T extends ServiceInitializer<D, S>
->(initializer: T): T;
+>(serviceBuilder: T): T;
 export function provider<
   D extends Dependencies,
   S,
   T extends ProviderInitializer<D, S>
 >(
-  initializer: T,
+  providerBuilder: T,
   name?: string,
   dependencies?: DependenciesDeclarations,
   options?: InitializerOptions,
@@ -126,7 +126,7 @@ export function autoProvider<
   D extends Dependencies,
   S,
   T extends ProviderInitializer<D, S>
->(initializer: T): T;
+>(providerBuilder: T): T;
 export function handler<D extends Dependencies, U extends any[], V>(
   handlerInitializer: HandlerInitializer<D, U, V>,
   name?: string,

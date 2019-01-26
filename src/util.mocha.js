@@ -581,7 +581,7 @@ describe('service', () => {
 });
 
 describe('autoService', () => {
-  it('should detect the provider details', () => {
+  it('should detect the service details', () => {
     const baseServiceBuilder = async function initializeMySQL({ ENV }) {
       return ENV;
     };
@@ -589,6 +589,18 @@ describe('autoService', () => {
 
     assert.notEqual(newInitializer, baseServiceBuilder);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['ENV']);
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], 'mySQL');
+    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'service');
+  });
+
+  it('should detect the service details even with no dependencies', () => {
+    const baseServiceBuilder = async function initializeMySQL() {
+      return;
+    };
+    const newInitializer = autoService(baseServiceBuilder);
+
+    assert.notEqual(newInitializer, baseServiceBuilder);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], []);
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], 'mySQL');
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'service');
   });
@@ -655,6 +667,18 @@ describe('autoProvider', () => {
 
     assert.notEqual(newInitializer, baseInitializer);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['ENV']);
+    assert.equal(newInitializer[SPECIAL_PROPS.NAME], 'mySQL');
+    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'provider');
+  });
+
+  it('should detect the provider details even with no dependencies', () => {
+    const baseInitializer = async function initializeMySQL() {
+      return;
+    };
+    const newInitializer = autoProvider(baseInitializer);
+
+    assert.notEqual(newInitializer, baseInitializer);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], []);
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], 'mySQL');
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'provider');
   });
