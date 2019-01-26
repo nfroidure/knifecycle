@@ -1,3 +1,13 @@
+## [5.1.4](https://github.com/nfroidure/knifecycle/compare/v5.1.3...v5.1.4) (2019-01-26)
+
+
+### Bug Fixes
+
+* **autoService/Provider:** Fix auto detection for services and providers with no deps ([761921e](https://github.com/nfroidure/knifecycle/commit/761921e))
+* **Types:** Fix the provider declaration for optional properties ([cf2abcc](https://github.com/nfroidure/knifecycle/commit/cf2abcc))
+
+
+
 ## [5.1.3](https://github.com/nfroidure/knifecycle/compare/v5.1.2...v5.1.3) (2019-01-24)
 
 
