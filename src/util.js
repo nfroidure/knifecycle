@@ -165,7 +165,7 @@ export function parseInjections(
   { allowEmpty = false } = { allowEmpty: false },
 ) {
   const matches = source.match(
-    /^\s*(?:async\s+function(?:\s+\w+)?|async)\s*\(\{\s*([^{}}]+)\s*\}/,
+    /^\s*(?:async\s+function(?:\s+\w+)?|async)\s*\(\s*\{\s*([^{}}]+)\s*\}/,
   );
 
   if (!matches) {
