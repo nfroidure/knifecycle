@@ -1,3 +1,12 @@
+## [5.1.5](https://github.com/nfroidure/knifecycle/compare/v5.1.4...v5.1.5) (2019-01-27)
+
+
+### Bug Fixes
+
+* **autoInject:** Improve the injection detection ([82d3391](https://github.com/nfroidure/knifecycle/commit/82d3391))
+
+
+
 ## [5.1.4](https://github.com/nfroidure/knifecycle/compare/v5.1.3...v5.1.4) (2019-01-26)
 
 
