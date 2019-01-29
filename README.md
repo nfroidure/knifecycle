@@ -258,8 +258,8 @@ $.register(
 $.run(['command', '$destroy', 'exit', 'log'])
   // Here, command contains the initializer eventually
   // found by automatically loading a NodeJS module
-  // in the above `$autoload service`. The db connections
-  // we only be instanciated if that command needs it
+  // in the above `$autoload` service. The db connection
+  // will only be instanciated if that command needs it
   .then(async ({ command, $destroy, exit, log }) => {
     try {
       command();
@@ -315,7 +315,7 @@ DEBUG=knifecycle CONFIG_PATH=./config.json node -r @babel/register bin.js mycomm
 ```
 
 This is a very simple example but you can find a complexer CLI usage
- with (`metapak`)[https://github.com/nfroidure/metapak/blob/master/bin/metapak.js].
+ with `(metapak)[https://github.com/nfroidure/metapak/blob/master/bin/metapak.js]`.
 
 ## Auto detection
 
