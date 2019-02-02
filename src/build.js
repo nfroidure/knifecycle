@@ -143,11 +143,11 @@ export async function initialize(services = {}) {${batches
     .map(key => batch${index}[key])
   );
 ${batch
-          .map(name => {
-            return `
+  .map(name => {
+    return `
   services['${name}'] = await batch${index}['${name}'];`;
-          })
-          .join('')}
+  })
+  .join('')}
 `,
       )
       .join('')}
