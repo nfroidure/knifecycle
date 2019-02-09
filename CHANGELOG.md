@@ -1,3 +1,17 @@
+# [5.2.0](https://github.com/nfroidure/knifecycle/compare/v5.1.6...v5.2.0) (2019-02-09)
+
+
+### Bug Fixes
+
+* **$injector:** Fix services mapping in the $injector ([ee2a2bd](https://github.com/nfroidure/knifecycle/commit/ee2a2bd))
+
+
+### Features
+
+* **$injector:** Allow new instantiations within $injector calls ([b66e10e](https://github.com/nfroidure/knifecycle/commit/b66e10e))
+
+
+
 ## [5.1.6](https://github.com/nfroidure/knifecycle/compare/v5.1.5...v5.1.6) (2019-02-02)
 
 
