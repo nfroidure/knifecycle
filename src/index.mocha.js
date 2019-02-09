@@ -945,7 +945,7 @@ describe('Knifecycle', () => {
     });
   });
 
-  describe('inject', () => {
+  describe('$injector', () => {
     it('should work with no dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
@@ -980,6 +980,29 @@ describe('Knifecycle', () => {
       assert.deepEqual(injectDependencies, {
         hash: { ENV },
         time,
+      });
+    });
+
+    it('should work with name mapping', async () => {
+      $.register(constant('ENV', ENV));
+      $.register(constant('time', time));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
+
+      const dependencies = await $.run(['time', 'hash', '$injector']);
+      assert.deepEqual(Object.keys(dependencies), [
+        'time',
+        'hash',
+        '$injector',
+      ]);
+
+      const injectDependencies = await dependencies.$injector([
+        'aTime>time',
+        'aHash>hash',
+      ]);
+      assert.deepEqual(Object.keys(injectDependencies), ['aTime', 'aHash']);
+      assert.deepEqual(injectDependencies, {
+        aHash: { ENV },
+        aTime: time,
       });
     });
 

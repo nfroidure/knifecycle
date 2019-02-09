@@ -111,12 +111,15 @@ class Knifecycle {
           inject: [SILO_CONTEXT],
         },
         async ({ $siloContext }) => ({
-          service: dependenciesDeclarations =>
-            this._initializeDependencies(
-              $siloContext,
-              $siloContext.name,
+          service: async dependenciesDeclarations =>
+            _buildFinalHash(
+              await this._initializeDependencies(
+                $siloContext,
+                $siloContext.name,
+                dependenciesDeclarations,
+                { injectorContext: true },
+              ),
               dependenciesDeclarations,
-              { injectorContext: true },
             ),
         }),
       ),
@@ -569,17 +572,7 @@ class Knifecycle {
     debug('Handling fatal errors:', siloContext.errorsPromises);
     Promise.all(siloContext.errorsPromises).catch(siloContext.throwFatalError);
 
-    return dependenciesDeclarations.reduce(
-      (finalHash, dependencyDeclaration) => {
-        const { serviceName, mappedName } = parseDependencyDeclaration(
-          dependencyDeclaration,
-        );
-
-        finalHash[serviceName] = servicesHash[mappedName];
-        return finalHash;
-      },
-      {},
-    );
+    return _buildFinalHash(servicesHash, dependenciesDeclarations);
   }
 
   /**
@@ -1017,4 +1010,15 @@ function serviceAdapter(serviceName, initializer, dependenciesHash) {
       service: _service_,
     }),
   );
+}
+
+function _buildFinalHash(servicesHash, dependenciesDeclarations) {
+  return dependenciesDeclarations.reduce((finalHash, dependencyDeclaration) => {
+    const { serviceName, mappedName } = parseDependencyDeclaration(
+      dependencyDeclaration,
+    );
+
+    finalHash[serviceName] = servicesHash[mappedName];
+    return finalHash;
+  }, {});
 }
