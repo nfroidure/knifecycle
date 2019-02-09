@@ -109,6 +109,12 @@ class Knifecycle {
           name: INJECTOR,
           type: 'provider',
           inject: [SILO_CONTEXT],
+          options: {
+            // Despite its global definition, the injector
+            // depends on the silo context and then needs
+            // to be instanciated once per silo.
+            singleton: false,
+          },
         },
         async ({ $siloContext }) => ({
           service: async dependenciesDeclarations =>
