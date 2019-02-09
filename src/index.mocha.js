@@ -945,7 +945,7 @@ describe('Knifecycle', () => {
     });
   });
 
-  describe('inject', () => {
+  describe('$injector', () => {
     it('should work with no dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
@@ -983,7 +983,30 @@ describe('Knifecycle', () => {
       });
     });
 
-    it('should fail with non instanciated dependencies', async () => {
+    it('should work with name mapping', async () => {
+      $.register(constant('ENV', ENV));
+      $.register(constant('time', time));
+      $.register(provider(hashProvider, 'hash', ['ENV']));
+
+      const dependencies = await $.run(['time', 'hash', '$injector']);
+      assert.deepEqual(Object.keys(dependencies), [
+        'time',
+        'hash',
+        '$injector',
+      ]);
+
+      const injectDependencies = await dependencies.$injector([
+        'aTime>time',
+        'aHash>hash',
+      ]);
+      assert.deepEqual(Object.keys(injectDependencies), ['aTime', 'aHash']);
+      assert.deepEqual(injectDependencies, {
+        aHash: { ENV },
+        aTime: time,
+      });
+    });
+
+    it('should work with non instanciated dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -991,12 +1014,12 @@ describe('Knifecycle', () => {
       const dependencies = await $.run(['time', '$injector']);
       assert.deepEqual(Object.keys(dependencies), ['time', '$injector']);
 
-      try {
-        await dependencies.$injector(['time', 'hash']);
-        throw new YError('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.equal(err.code, 'E_BAD_INJECTION');
-      }
+      const injectDependencies = await dependencies.$injector(['time', 'hash']);
+      assert.deepEqual(Object.keys(injectDependencies), ['time', 'hash']);
+      assert.deepEqual(injectDependencies, {
+        hash: { ENV },
+        time,
+      });
     });
 
     it('should create dependencies when not declared as singletons', async () => {

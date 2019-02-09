@@ -47,7 +47,6 @@ const E_BAD_INITIALIZER = 'E_BAD_INITIALIZER';
 const E_ANONYMOUS_ANALYZER = 'E_ANONYMOUS_ANALYZER';
 const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
 const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
-const E_BAD_INJECTION = 'E_BAD_INJECTION';
 const E_INSTANCE_DESTROYED = 'E_INSTANCE_DESTROYED';
 const E_AUTOLOADER_DYNAMIC_DEPENDENCY = 'E_AUTOLOADER_DYNAMIC_DEPENDENCY';
 const E_BAD_CLASS = 'E_BAD_CLASS';
@@ -112,12 +111,15 @@ class Knifecycle {
           inject: [SILO_CONTEXT],
         },
         async ({ $siloContext }) => ({
-          service: dependenciesDeclarations =>
-            this._initializeDependencies(
-              $siloContext,
-              $siloContext.name,
+          service: async dependenciesDeclarations =>
+            _buildFinalHash(
+              await this._initializeDependencies(
+                $siloContext,
+                $siloContext.name,
+                dependenciesDeclarations,
+                { injectorContext: true },
+              ),
               dependenciesDeclarations,
-              { injectOnly: true },
             ),
         }),
       ),
@@ -564,23 +566,13 @@ class Knifecycle {
       siloContext,
       siloContext.name,
       internalDependencies,
-      { injectOnly: false, autoloading: false },
+      { injectorContext: false, autoloading: false },
     );
 
     debug('Handling fatal errors:', siloContext.errorsPromises);
     Promise.all(siloContext.errorsPromises).catch(siloContext.throwFatalError);
 
-    return dependenciesDeclarations.reduce(
-      (finalHash, dependencyDeclaration) => {
-        const { serviceName, mappedName } = parseDependencyDeclaration(
-          dependencyDeclaration,
-        );
-
-        finalHash[serviceName] = servicesHash[mappedName];
-        return finalHash;
-      },
-      {},
-    );
+    return _buildFinalHash(servicesHash, dependenciesDeclarations);
   }
 
   /**
@@ -591,8 +583,8 @@ class Knifecycle {
    * Service name.
    * @param  {Object}     options
    * Options for service retrieval
-   * @param  {Boolean}    options.injectOnly
-   * Flag indicating if existing services only should be used
+   * @param  {Boolean}    options.injectorContext
+   * Flag indicating the injection were initiated by the $injector
    * @param  {Boolean}    options.autoloading
    * Flag to indicating $autoload dependencies on the fly loading
    * @param  {String}     serviceProvider   Service provider.
@@ -601,7 +593,7 @@ class Knifecycle {
   async _getServiceDescriptor(
     siloContext,
     serviceName,
-    { injectOnly, autoloading },
+    { injectorContext, autoloading },
   ) {
     // Try to get service descriptior early from the silo context
     let serviceDescriptorPromise = siloContext.servicesDescriptors.get(
@@ -611,7 +603,7 @@ class Knifecycle {
       return serviceDescriptorPromise;
     }
     let initializer = await this._findInitializer(siloContext, serviceName, {
-      injectOnly,
+      injectorContext,
       autoloading,
     });
 
@@ -631,11 +623,16 @@ class Knifecycle {
       return serviceDescriptorPromise;
     }
 
-    // The inject service is intended to be used as a workaround for unavoidable
-    // circular dependencies. It wouldn't make sense to instanciate new services
-    // at this level so throwing an error
-    if (injectOnly) {
-      return Promise.reject(new YError(E_BAD_INJECTION, serviceName));
+    // The $injector service is mainly intended to be used as a workaround
+    // for unavoidable circular dependencies. It rarely make sense to
+    // instanciate new services at this level so printing a warning for
+    // debug purposes
+    if (injectorContext) {
+      debug([
+        'Warning: Instantiating a new service via the $injector. It may' +
+          ' mean that you no longer need it if your worked around a circular' +
+          ' dependency.',
+      ]);
     }
 
     serviceDescriptorPromise = this._initializeServiceDescriptor(
@@ -644,7 +641,7 @@ class Knifecycle {
       initializer,
       {
         autoloading: autoloading || AUTOLOAD === serviceName,
-        injectOnly,
+        injectorContext,
       },
     );
 
@@ -673,7 +670,7 @@ class Knifecycle {
   async _findInitializer(
     siloContext,
     serviceName,
-    { injectOnly, autoloading },
+    { injectorContext, autoloading },
   ) {
     let initializer = this._initializers.get(serviceName);
 
@@ -706,7 +703,7 @@ class Knifecycle {
         const autoloadingDescriptor = await this._getServiceDescriptor(
           siloContext,
           AUTOLOAD,
-          { injectOnly, autoloading: true },
+          { injectorContext, autoloading: true },
         );
         const { initializer, path } = await autoloadingDescriptor.service(
           serviceName,
@@ -765,8 +762,8 @@ class Knifecycle {
    * @param  {String}     serviceName       Service name.
    * @param  {Object}     options
    * Options for service retrieval
-   * @param  {Boolean}    options.injectOnly
-   * Flag indicating if existing services only should be used
+   * @param  {Boolean}    options.injectorContext
+   * Flag indicating the injection were initiated by the $injector
    * @param  {Boolean}    options.autoloading
    * Flag to indicating $autoload dependendencies on the fly loading.
    * @return {Promise}                      Service dependencies hash promise.
@@ -775,7 +772,7 @@ class Knifecycle {
     siloContext,
     serviceName,
     initializer,
-    { autoloading, injectOnly },
+    { autoloading, injectorContext },
   ) {
     let serviceDescriptor;
 
@@ -798,7 +795,7 @@ class Knifecycle {
         siloContext,
         serviceName,
         initializer[SPECIAL_PROPS.INJECT],
-        { injectOnly, autoloading },
+        { injectorContext, autoloading },
       );
 
       debug('Successfully gathered service dependencies:', serviceName);
@@ -846,8 +843,8 @@ class Knifecycle {
    * @param  {String}     servicesDeclarations     Dependencies declarations.
    * @param  {Object}     options
    * Options for service retrieval
-   * @param  {Boolean}    options.injectOnly
-   * Flag indicating if existing services only should be used
+   * @param  {Boolean}    options.injectorContext
+   * Flag indicating the injection were initiated by the $injector
    * @param  {Boolean}    options.autoloading
    * Flag to indicating $autoload dependendencies on the fly loading.
    * @return {Promise}                      Service dependencies hash promise.
@@ -856,7 +853,7 @@ class Knifecycle {
     siloContext,
     serviceName,
     servicesDeclarations,
-    { injectOnly = false, autoloading = false },
+    { injectorContext = false, autoloading = false },
   ) {
     debug('Initializing dependencies:', serviceName, servicesDeclarations);
     const servicesDescriptors = await Promise.all(
@@ -870,7 +867,7 @@ class Knifecycle {
             siloContext,
             mappedName,
             {
-              injectOnly,
+              injectorContext,
               autoloading,
             },
           );
@@ -1013,4 +1010,15 @@ function serviceAdapter(serviceName, initializer, dependenciesHash) {
       service: _service_,
     }),
   );
+}
+
+function _buildFinalHash(servicesHash, dependenciesDeclarations) {
+  return dependenciesDeclarations.reduce((finalHash, dependencyDeclaration) => {
+    const { serviceName, mappedName } = parseDependencyDeclaration(
+      dependencyDeclaration,
+    );
+
+    finalHash[serviceName] = servicesHash[mappedName];
+    return finalHash;
+  }, {});
 }
