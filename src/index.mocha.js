@@ -983,7 +983,7 @@ describe('Knifecycle', () => {
       });
     });
 
-    it('should fail with non instanciated dependencies', async () => {
+    it('should work with non instanciated dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -991,12 +991,12 @@ describe('Knifecycle', () => {
       const dependencies = await $.run(['time', '$injector']);
       assert.deepEqual(Object.keys(dependencies), ['time', '$injector']);
 
-      try {
-        await dependencies.$injector(['time', 'hash']);
-        throw new YError('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.equal(err.code, 'E_BAD_INJECTION');
-      }
+      const injectDependencies = await dependencies.$injector(['time', 'hash']);
+      assert.deepEqual(Object.keys(injectDependencies), ['time', 'hash']);
+      assert.deepEqual(injectDependencies, {
+        hash: { ENV },
+        time,
+      });
     });
 
     it('should create dependencies when not declared as singletons', async () => {

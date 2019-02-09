@@ -588,7 +588,7 @@ Initialize or return a service descriptor
 | siloContext | <code>Object</code> | Current execution silo context |
 | serviceName | <code>String</code> | Service name. |
 | options | <code>Object</code> | Options for service retrieval |
-| options.injectOnly | <code>Boolean</code> | Flag indicating if existing services only should be used |
+| options.injectorContext | <code>Boolean</code> | Flag indicating the injection were initiated by the $injector |
 | options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependencies on the fly loading |
 | serviceProvider | <code>String</code> | Service provider. |
 
@@ -605,7 +605,7 @@ Initialize a service descriptor
 | siloContext | <code>Object</code> | Current execution silo context |
 | serviceName | <code>String</code> | Service name. |
 | options | <code>Object</code> | Options for service retrieval |
-| options.injectOnly | <code>Boolean</code> | Flag indicating if existing services only should be used |
+| options.injectorContext | <code>Boolean</code> | Flag indicating the injection were initiated by the $injector |
 | options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependendencies on the fly loading. |
 
 <a name="Knifecycle+_initializeDependencies"></a>
@@ -622,7 +622,7 @@ Initialize a service dependencies
 | serviceName | <code>String</code> | Service name. |
 | servicesDeclarations | <code>String</code> | Dependencies declarations. |
 | options | <code>Object</code> | Options for service retrieval |
-| options.injectOnly | <code>Boolean</code> | Flag indicating if existing services only should be used |
+| options.injectorContext | <code>Boolean</code> | Flag indicating the injection were initiated by the $injector |
 | options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependendencies on the fly loading. |
 
 <a name="initInitializerBuilder"></a>
