@@ -1,3 +1,18 @@
+# [5.3.0](https://github.com/nfroidure/knifecycle/compare/v5.2.0...v5.3.0) (2019-03-03)
+
+
+### Bug Fixes
+
+* **Debug:** Fix the `$injector` debug message format ([ae8510d](https://github.com/nfroidure/knifecycle/commit/ae8510d))
+* **Knifecycle:** Take in count more errors for optional failures ([6b5fab3](https://github.com/nfroidure/knifecycle/commit/6b5fab3)), closes [#83](https://github.com/nfroidure/knifecycle/issues/83)
+
+
+### Features
+
+* **alsoInject:** Dedupe injections when adding some ([10e9d4f](https://github.com/nfroidure/knifecycle/commit/10e9d4f))
+
+
+
 # [5.2.0](https://github.com/nfroidure/knifecycle/compare/v5.1.6...v5.2.0) (2019-02-09)
 
 
