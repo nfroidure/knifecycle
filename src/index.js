@@ -634,11 +634,11 @@ class Knifecycle {
     // instanciate new services at this level so printing a warning for
     // debug purposes
     if (injectorContext) {
-      debug([
+      debug(
         'Warning: Instantiating a new service via the $injector. It may' +
           ' mean that you no longer need it if your worked around a circular' +
           ' dependency.',
-      ]);
+      );
     }
 
     serviceDescriptorPromise = this._initializeServiceDescriptor(
