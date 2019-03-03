@@ -880,9 +880,16 @@ class Knifecycle {
           );
           return serviceDescriptor;
         } catch (err) {
-          // Let pass syntax errors through to avoid running
-          // invalid code
-          if (optional && !(err instanceof SyntaxError)) {
+          // Let pass code errors through to avoid casting
+          // invalid code to an optional service
+          if (
+            optional &&
+            !(err instanceof SyntaxError) &&
+            !(err instanceof TypeError) &&
+            !(err instanceof ReferenceError) &&
+            !(err instanceof EvalError) &&
+            !(err instanceof RangeError)
+          ) {
             return;
           }
           throw err;
