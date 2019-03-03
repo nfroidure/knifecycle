@@ -218,10 +218,37 @@ export function parseInjections(
  * ));
  */
 export function alsoInject(dependencies, initializer) {
-  return inject(
-    (initializer[SPECIAL_PROPS.INJECT] || []).concat(dependencies),
-    initializer,
-  );
+  const dedupedDependencies = (initializer[SPECIAL_PROPS.INJECT] || [])
+    .concat(dependencies)
+    .map(parseDependencyDeclaration)
+    .reduce((currentDedupedDepencencies, dependencyDeclaration) => {
+      const sameDependencyDeclaration = currentDedupedDepencencies.find(
+        maybeSameDependencyDeclaration =>
+          maybeSameDependencyDeclaration.serviceName ===
+          dependencyDeclaration.serviceName,
+      );
+
+      if (!sameDependencyDeclaration) {
+        return currentDedupedDepencencies.concat(dependencyDeclaration);
+      }
+
+      if (
+        sameDependencyDeclaration.mappedName !==
+        dependencyDeclaration.mappedName
+      ) {
+        return currentDedupedDepencencies.concat(dependencyDeclaration);
+      }
+
+      sameDependencyDeclaration.optional =
+        dependencyDeclaration.optional && sameDependencyDeclaration.optional
+          ? true
+          : false;
+
+      return currentDedupedDepencencies;
+    }, [])
+    .map(stringifyDependencyDeclaration);
+  // dedupe
+  return inject(dedupedDependencies, initializer);
 }
 
 /**
@@ -757,4 +784,31 @@ export function parseDependencyDeclaration(dependencyDeclaration) {
     mappedName: mappedName || serviceName,
     optional,
   };
+}
+
+/**
+ * Stringify a dependency declaration from its parts.
+ * @param  {Object}  dependencyDeclarationParts
+ * A dependency declaration string
+ * @return {String}
+ * The various parts of it
+ * @example
+ * stringifyDependencyDeclaration({
+ *   serviceName: 'pgsql',
+ *   mappedName: 'db',
+ *   optional: false,
+ * });
+ *
+ * // Returns
+ * 'pgsql>db'
+ */
+export function stringifyDependencyDeclaration(dependencyDeclarationParts) {
+  return `${dependencyDeclarationParts.optional ? '?' : ''}${
+    dependencyDeclarationParts.serviceName
+  }${
+    dependencyDeclarationParts.mappedName !==
+    dependencyDeclarationParts.serviceName
+      ? '>' + dependencyDeclarationParts.mappedName
+      : ''
+  }`;
 }

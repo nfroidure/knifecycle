@@ -23,6 +23,7 @@ import {
   autoHandler,
   wrapInitializer,
   parseDependencyDeclaration,
+  stringifyDependencyDeclaration,
 } from './util';
 import YError from 'yerror';
 import initDebug from 'debug';
@@ -944,6 +945,8 @@ export {
   autoProvider,
   handler,
   autoHandler,
+  parseDependencyDeclaration,
+  stringifyDependencyDeclaration,
 };
 
 function _pickServiceNameFromDeclaration(dependencyDeclaration) {

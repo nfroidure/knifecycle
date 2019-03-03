@@ -478,6 +478,9 @@ Notice that those modules remains usable without using Knifecycle at
 <dt><a href="#parseDependencyDeclaration">parseDependencyDeclaration(dependencyDeclaration)</a> ⇒ <code>Object</code></dt>
 <dd><p>Explode a dependency declaration an returns its parts.</p>
 </dd>
+<dt><a href="#stringifyDependencyDeclaration">stringifyDependencyDeclaration(dependencyDeclarationParts)</a> ⇒ <code>String</code></dt>
+<dd><p>Stringify a dependency declaration from its parts.</p>
+</dd>
 </dl>
 
 <a name="Knifecycle"></a>
@@ -1140,6 +1143,29 @@ parseDependencyDeclaration('pgsql>db');
   mappedName: 'db',
   optional: false,
 }
+```
+<a name="stringifyDependencyDeclaration"></a>
+
+## stringifyDependencyDeclaration(dependencyDeclarationParts) ⇒ <code>String</code>
+Stringify a dependency declaration from its parts.
+
+**Kind**: global function  
+**Returns**: <code>String</code> - The various parts of it  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| dependencyDeclarationParts | <code>Object</code> | A dependency declaration string |
+
+**Example**  
+```js
+stringifyDependencyDeclaration({
+  serviceName: 'pgsql',
+  mappedName: 'db',
+  optional: false,
+});
+
+// Returns
+'pgsql>db'
 ```
 
 # Authors

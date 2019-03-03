@@ -247,6 +247,22 @@ describe('alsoInject', () => {
     assert.notEqual(newInitializer, aProvider);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['ENV']);
   });
+
+  it('should dedupe dependencies', () => {
+    const newInitializer = alsoInject(
+      ['ENV', '?NODE_ENV', '?TEST', 'mysql>db'],
+      alsoInject(['ENV', 'NODE_ENV', '?TEST', 'mysql'], aProvider),
+    );
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+      'ENV',
+      'NODE_ENV',
+      '?TEST',
+      'mysql',
+      'mysql>db',
+    ]);
+  });
 });
 
 describe('parseInjections', () => {
