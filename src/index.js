@@ -880,16 +880,18 @@ class Knifecycle {
           );
           return serviceDescriptor;
         } catch (err) {
-          // Let pass code errors through to avoid casting
-          // invalid code to an optional service
           if (
             optional &&
-            !(err instanceof SyntaxError) &&
-            !(err instanceof TypeError) &&
-            !(err instanceof ReferenceError) &&
-            !(err instanceof EvalError) &&
-            !(err instanceof RangeError)
+            [
+              'E_UNMATCHED_DEPENDENCY',
+              E_AUTOLOADER_DYNAMIC_DEPENDENCY,
+            ].includes(err.code)
           ) {
+            debug(
+              'Optional dependency not found:',
+              serviceDeclaration,
+              err.stack,
+            );
             return;
           }
           throw err;

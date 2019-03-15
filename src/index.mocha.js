@@ -762,17 +762,23 @@ describe('Knifecycle', () => {
               singleton: true,
             },
           },
-          async () => async serviceName => ({
-            path: '/path/of/debug',
-            initializer: initializer(
-              {
-                type: 'service',
-                name: 'hash2',
-                inject: ['hash3'],
-              },
-              async () => 'THE_HASH:' + serviceName,
-            ),
-          }),
+          async () => async serviceName => {
+            if ('ENV' === serviceName) {
+              throw new YError('E_UNMATCHED_DEPENDENCY');
+            }
+
+            return {
+              path: '/path/of/debug',
+              initializer: initializer(
+                {
+                  type: 'service',
+                  name: 'hash2',
+                  inject: ['hash3'],
+                },
+                async () => 'THE_HASH:' + serviceName,
+              ),
+            };
+          },
         ),
       );
 

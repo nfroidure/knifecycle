@@ -86,6 +86,7 @@ First, we need to handle a configuration file so we are
 ```js
 // bin.js
 import fs from 'fs';
+import YError from 'YError';
 import Knifecycle, { initializer, constant, inject, name } from 'knifecycle';
 
 // First of all we create a new Knifecycle instance
@@ -237,7 +238,10 @@ $.register(
     },
     async ({ CONFIG, ARGS }) => async serviceName => {
       if ('command' !== serviceName) {
-        throw new Error(`${serviceName} not supported!`);
+        // Allows to signal that the dependency is not found
+        // so that optional dependencies doesn't impeach the
+        // injector to resolve the dependency tree
+        throw new YError('E_UNMATCHED_DEPENDENCY', serviceName);
       }
       try {
         const path = CONFIG.commands + '/' + ARGS[2];
