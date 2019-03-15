@@ -1,3 +1,18 @@
+# [6.0.0](https://github.com/nfroidure/knifecycle/compare/v5.3.0...v6.0.0) (2019-03-15)
+
+
+### Code Refactoring
+
+* **Chore:** Better handling of optional dependencies ([539eb47](https://github.com/nfroidure/knifecycle/commit/539eb47))
+
+
+### BREAKING CHANGES
+
+* **Chore:** Autoloaders needs to throw a E_UNMATCHED_DEPENDENCY error to still work with
+optional dependencies
+
+
+
 # [5.3.0](https://github.com/nfroidure/knifecycle/compare/v5.2.0...v5.3.0) (2019-03-03)
 
 
