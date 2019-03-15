@@ -196,7 +196,8 @@ const initDB = initializer(
 // Here we are registering our initializer apart to
 // be able to reuse it, we also declare the required
 // DB_URI constant it needs
-$.register(constant('DB_URI', 'posgresql://xxxx').register(initDB));
+$.register(constant('DB_URI', 'posgresql://xxxx'));
+$.register(initDB);
 
 // Say we need to use two different DB server
 // We can reuse our initializer by tweaking
