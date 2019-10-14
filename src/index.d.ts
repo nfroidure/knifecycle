@@ -80,7 +80,7 @@ export function alsoInject<
 export function options<D extends Dependencies, S, T extends Initializer<D, S>>(
   options: InitializerOptions,
   initializer: T,
-  merge: boolean,
+  merge?: boolean,
 ): T;
 export function extra<D extends Dependencies, S, T extends Initializer<D, S>>(
   data: any,
@@ -137,7 +137,14 @@ export function autoHandler<D extends Dependencies, U extends any[], V>(
   handlerInitializer: HandlerInitializer<D, U, V>,
 ): ServiceInitializer<D, Handler<U, V>>;
 
-export const SPECIAL_PROPS: Array<string>;
+export const SPECIAL_PROPS: {
+  INJECT: String,
+  OPTIONS: String,
+  NAME: String,
+  TYPE: String,
+  EXTRA: String,
+  VALUE: String,
+};
 export const DECLARATION_SEPARATOR: string;
 export const OPTIONAL_FLAG: string;
 
