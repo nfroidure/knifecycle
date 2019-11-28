@@ -92,6 +92,7 @@
     * [.register(initializer)](#Knifecycle+register) ⇒ [<code>Knifecycle</code>](#Knifecycle)
     * [.toMermaidGraph(options)](#Knifecycle+toMermaidGraph) ⇒ <code>String</code>
     * [.run(dependenciesDeclarations)](#Knifecycle+run) ⇒ <code>Promise</code>
+    * [.destroy()](#Knifecycle+destroy) ⇒ <code>Promise</code>
     * [._getServiceDescriptor(siloContext, serviceName, options, serviceProvider)](#Knifecycle+_getServiceDescriptor) ⇒ <code>Promise</code>
     * [._initializeServiceDescriptor(siloContext, serviceName, options)](#Knifecycle+_initializeServiceDescriptor) ⇒ <code>Promise</code>
     * [._initializeDependencies(siloContext, serviceName, servicesDeclarations, options)](#Knifecycle+_initializeDependencies) ⇒ <code>Promise</code>
@@ -175,6 +176,28 @@ $.register(constant('ENV', process.env));
 $.run(['ENV'])
 .then(({ ENV }) => {
  // Here goes your code
+})
+```
+<a name="Knifecycle+destroy"></a>
+
+### knifecycle.destroy() ⇒ <code>Promise</code>
+Destroy the Knifecycle instance
+
+**Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
+**Returns**: <code>Promise</code> - Full destruction promise  
+**Example**  
+```js
+import Knifecycle, { constant } from 'knifecycle'
+
+const $ = new Knifecycle();
+
+$.register(constant('ENV', process.env));
+$.run(['ENV'])
+.then(({ ENV }) => {
+   // Here goes your code
+
+   // Finally destroy the instance
+   $.destroy()
 })
 ```
 <a name="Knifecycle+_getServiceDescriptor"></a>

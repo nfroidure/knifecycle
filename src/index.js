@@ -31,7 +31,6 @@ import initDebug from 'debug';
 const debug = initDebug('knifecycle');
 
 const DISPOSE = '$dispose';
-const DESTROY = '$destroy';
 const AUTOLOAD = '$autoload';
 const INJECTOR = '$injector';
 const INSTANCE = '$instance';
@@ -88,7 +87,8 @@ A service provider is full of state since its concern is
 class Knifecycle {
   /**
    * Create a new Knifecycle instance
-   * @return {Knifecycle}     The Knifecycle instance
+   * @return {Knifecycle}
+   * The Knifecycle instance
    * @example
    *
    * import Knifecycle from 'knifecycle'
@@ -131,36 +131,6 @@ class Knifecycle {
         }),
       ),
     );
-    this.register(
-      initializer(
-        {
-          name: DESTROY,
-          type: 'provider',
-          inject: [],
-          options: {
-            singleton: true,
-          },
-        },
-        async () => ({
-          service: () => {
-            this.shutdownPromise =
-              this.shutdownPromise ||
-              Promise.all(
-                [...this._silosContexts].map(siloContext => {
-                  const $dispose = siloContext.servicesDescriptors.get(DISPOSE)
-                    .service;
-
-                  return $dispose();
-                }),
-              );
-
-            debug('Shutting down Knifecycle instance.');
-
-            return this.shutdownPromise;
-          },
-        }),
-      ),
-    );
   }
 
   /* Architecture Note #1.3: Registering initializers
@@ -196,6 +166,9 @@ class Knifecycle {
    * The Knifecycle instance (for chaining)
    */
   register(initializer) {
+    if (this.shutdownPromise) {
+      throw new YError(E_INSTANCE_DESTROYED);
+    }
     if (typeof initializer !== 'function') {
       throw new YError(E_BAD_INITIALIZER, initializer);
     }
@@ -276,11 +249,12 @@ class Knifecycle {
         !this._singletonsServicesDescriptors.get(
           initializer[SPECIAL_PROPS.NAME],
         ).preloaded;
-      const initializedAsInstance = [...this._silosContexts.values()].some(
-        siloContext =>
-          siloContext.servicesSequence.some(sequence =>
-            sequence.includes(initializer[SPECIAL_PROPS.NAME]),
-          ),
+      const initializedAsInstance = [
+        ...this._silosContexts.values(),
+      ].some(siloContext =>
+        siloContext.servicesSequence.some(sequence =>
+          sequence.includes(initializer[SPECIAL_PROPS.NAME]),
+        ),
       );
       if (initializedAsSingleton || initializedAsInstance) {
         throw new YError(
@@ -355,11 +329,16 @@ class Knifecycle {
   /**
    * Outputs a Mermaid compatible dependency graph of the declared services.
    * See [Mermaid docs](https://github.com/knsv/mermaid)
-   * @param {Object} options    Options for generating the graph (destructured)
-   * @param {Array<Object>} options.shapes    Various shapes to apply
-   * @param {Array<Object>} options.styles    Various styles to apply
-   * @param {Object} options.classes    A hash of various classes contents
-   * @return {String}   Returns a string containing the Mermaid dependency graph
+   * @param {Object} options
+   * Options for generating the graph (destructured)
+   * @param {Array<Object>} options.shapes
+   * Various shapes to apply
+   * @param {Array<Object>} options.styles
+   * Various styles to apply
+   * @param {Object} options.classes
+   * A hash of various classes contents
+   * @return {String}
+   * Returns a string containing the Mermaid dependency graph
    * @example
    *
    * import Knifecycle, { inject, constant, service } from 'knifecycle';
@@ -440,8 +419,10 @@ class Knifecycle {
 
   /**
    * Creates a new execution silo
-   * @param  {String[]}   dependenciesDeclarations    Service name.
-   * @return {Promise}                         Service descriptor promise
+   * @param  {String[]}   dependenciesDeclarations
+   * Service name.
+   * @return {Promise}
+   * Service descriptor promise
    * @example
    *
    * import Knifecycle, { constant } from 'knifecycle'
@@ -583,6 +564,41 @@ class Knifecycle {
   }
 
   /**
+   * Destroy the Knifecycle instance
+   * @return {Promise}
+   * Full destruction promise
+   * @example
+   *
+   * import Knifecycle, { constant } from 'knifecycle'
+   *
+   * const $ = new Knifecycle();
+   *
+   * $.register(constant('ENV', process.env));
+   * $.run(['ENV'])
+   * .then(({ ENV }) => {
+   *    // Here goes your code
+   *
+   *    // Finally destroy the instance
+   *    $.destroy()
+   * })
+   */
+  async destroy() {
+    this.shutdownPromise =
+      this.shutdownPromise ||
+      Promise.all(
+        [...this._silosContexts].map(siloContext => {
+          const $dispose = siloContext.servicesDescriptors.get(DISPOSE).service;
+
+          return $dispose();
+        }),
+      );
+
+    debug('Shutting down Knifecycle instance.');
+
+    return this.shutdownPromise;
+  }
+
+  /**
    * Initialize or return a service descriptor
    * @param  {Object}     siloContext
    * Current execution silo context
@@ -594,8 +610,10 @@ class Knifecycle {
    * Flag indicating the injection were initiated by the $injector
    * @param  {Boolean}    options.autoloading
    * Flag to indicating $autoload dependencies on the fly loading
-   * @param  {String}     serviceProvider   Service provider.
-   * @return {Promise}                      Service dependencies hash promise.
+   * @param  {String}     serviceProvider
+   * Service provider.
+   * @return {Promise}
+   * Service dependencies hash promise.
    */
   async _getServiceDescriptor(
     siloContext,
@@ -765,15 +783,18 @@ class Knifecycle {
 
   /**
    * Initialize a service descriptor
-   * @param  {Object}     siloContext       Current execution silo context
-   * @param  {String}     serviceName       Service name.
+   * @param  {Object}     siloContext
+   * Current execution silo context
+   * @param  {String}     serviceName
+   * Service name.
    * @param  {Object}     options
    * Options for service retrieval
    * @param  {Boolean}    options.injectorContext
    * Flag indicating the injection were initiated by the $injector
    * @param  {Boolean}    options.autoloading
    * Flag to indicating $autoload dependendencies on the fly loading.
-   * @return {Promise}                      Service dependencies hash promise.
+   * @return {Promise}
+   * Service dependencies hash promise.
    */
   async _initializeServiceDescriptor(
     siloContext,
@@ -845,16 +866,20 @@ class Knifecycle {
 
   /**
    * Initialize a service dependencies
-   * @param  {Object}     siloContext       Current execution silo siloContext
-   * @param  {String}     serviceName       Service name.
-   * @param  {String}     servicesDeclarations     Dependencies declarations.
+   * @param  {Object}     siloContext
+   * Current execution silo siloContext
+   * @param  {String}     serviceName
+   * Service name.
+   * @param  {String}     servicesDeclarations
+   * Dependencies declarations.
    * @param  {Object}     options
    * Options for service retrieval
    * @param  {Boolean}    options.injectorContext
    * Flag indicating the injection were initiated by the $injector
    * @param  {Boolean}    options.autoloading
    * Flag to indicating $autoload dependendencies on the fly loading.
-   * @return {Promise}                      Service dependencies hash promise.
+   * @return {Promise}
+   * Service dependencies hash promise.
    */
   async _initializeDependencies(
     siloContext,

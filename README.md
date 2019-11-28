@@ -258,14 +258,14 @@ $.register(
 
 // At this point, nothing is running. To instanciate the
 // services, we have to create an execution silo using
-// them. Note that we required the `$destroy` service
+// them. Note that we required the `$instance` service
 // implicitly created by `knifecycle`
-$.run(['command', '$destroy', 'exit', 'log'])
+$.run(['command', '$instance', 'exit', 'log'])
   // Here, command contains the initializer eventually
   // found by automatically loading a NodeJS module
   // in the above `$autoload` service. The db connection
   // will only be instanciated if that command needs it
-  .then(async ({ command, $destroy, exit, log }) => {
+  .then(async ({ command, $instance, exit, log }) => {
     try {
       command();
 
@@ -274,8 +274,11 @@ $.run(['command', '$destroy', 'exit', 'log'])
       log('It failed!', err);
     } finally {
       // Here we ensure every db connections are closed
-      // properly
-      await $destroy().catch(err => {
+      // properly. We could have use `$.destroy()` the same
+      // way but this is to illustrate that the Knifecycle
+      // instance can be injected in services contexts
+      // (rarely done but good to know it exists)
+      await $instance.destroy().catch(err => {
         console.error('Could not exit gracefully:', err);
         exit(1);
       });
@@ -498,6 +501,7 @@ Notice that those modules remains usable without using Knifecycle at
     * [.register(initializer)](#Knifecycle+register) ⇒ [<code>Knifecycle</code>](#Knifecycle)
     * [.toMermaidGraph(options)](#Knifecycle+toMermaidGraph) ⇒ <code>String</code>
     * [.run(dependenciesDeclarations)](#Knifecycle+run) ⇒ <code>Promise</code>
+    * [.destroy()](#Knifecycle+destroy) ⇒ <code>Promise</code>
     * [._getServiceDescriptor(siloContext, serviceName, options, serviceProvider)](#Knifecycle+_getServiceDescriptor) ⇒ <code>Promise</code>
     * [._initializeServiceDescriptor(siloContext, serviceName, options)](#Knifecycle+_initializeServiceDescriptor) ⇒ <code>Promise</code>
     * [._initializeDependencies(siloContext, serviceName, servicesDeclarations, options)](#Knifecycle+_initializeDependencies) ⇒ <code>Promise</code>
@@ -581,6 +585,28 @@ $.register(constant('ENV', process.env));
 $.run(['ENV'])
 .then(({ ENV }) => {
  // Here goes your code
+})
+```
+<a name="Knifecycle+destroy"></a>
+
+### knifecycle.destroy() ⇒ <code>Promise</code>
+Destroy the Knifecycle instance
+
+**Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
+**Returns**: <code>Promise</code> - Full destruction promise  
+**Example**  
+```js
+import Knifecycle, { constant } from 'knifecycle'
+
+const $ = new Knifecycle();
+
+$.register(constant('ENV', process.env));
+$.run(['ENV'])
+.then(({ ENV }) => {
+   // Here goes your code
+
+   // Finally destroy the instance
+   $.destroy()
 })
 ```
 <a name="Knifecycle+_getServiceDescriptor"></a>
