@@ -352,7 +352,10 @@ describe('autoName', () => {
     const baseName = 'hash';
     const newInitializer = inject(
       dependencies,
-      options(baseOptions, autoName(async function hash() {})),
+      options(
+        baseOptions,
+        autoName(async function hash() {}),
+      ),
     );
 
     assert.notEqual(newInitializer, aProvider);
@@ -369,7 +372,10 @@ describe('autoName', () => {
     const baseName = 'hash';
     const newInitializer = inject(
       dependencies,
-      options(baseOptions, autoName(async function initHash() {})),
+      options(
+        baseOptions,
+        autoName(async function initHash() {}),
+      ),
     );
 
     assert.notEqual(newInitializer, aProvider);
@@ -386,7 +392,10 @@ describe('autoName', () => {
     const baseName = 'hash';
     const newInitializer = inject(
       dependencies,
-      options(baseOptions, autoName(async function initializeHash() {})),
+      options(
+        baseOptions,
+        autoName(async function initializeHash() {}),
+      ),
     );
 
     assert.notEqual(newInitializer, aProvider);
@@ -539,7 +548,10 @@ describe('constant', () => {
 
   it('should fail with dependencies since it makes no sense', () => {
     assert.throws(() => {
-      constant('time', inject(['hash3'], async () => {}));
+      constant(
+        'time',
+        inject(['hash3'], async () => {}),
+      );
     }, /E_CONSTANT_INJECTION/);
   });
 });

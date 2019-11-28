@@ -95,9 +95,7 @@ const ${name} = ${JSON.stringify(
             }
 
             return `
-import ${dependenciesHash[name].__initializerName} from '${
-              dependenciesHash[name].__path
-            }';`;
+import ${dependenciesHash[name].__initializerName} from '${dependenciesHash[name].__path}';`;
           })
           .join('')}`,
       )

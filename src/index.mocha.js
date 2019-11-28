@@ -1075,12 +1075,12 @@ describe('Knifecycle', () => {
     });
   });
 
-  describe('$destroy', () => {
+  describe('destroy', () => {
     it('should work even with one silo and no dependencies', async () => {
-      const dependencies = await $.run(['$destroy']);
-      assert.equal(typeof dependencies.$destroy, 'function');
+      assert.equal(typeof $.destroy, 'function');
+      const dependencies = await $.run(['$instance']);
 
-      await dependencies.$destroy();
+      await dependencies.$instance.destroy();
     });
 
     it('should work with several silos and dependencies', async () => {
@@ -1095,14 +1095,14 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash2', ['ENV']));
 
       const [dependencies] = await Promise.all([
-        $.run(['$destroy']),
+        $.run(['$instance']),
         $.run(['ENV', 'hash', 'hash1', 'time']),
         $.run(['ENV', 'hash', 'hash2']),
       ]);
 
-      assert.equal(typeof dependencies.$destroy, 'function');
+      assert.equal(typeof dependencies.$instance.destroy, 'function');
 
-      await dependencies.$destroy();
+      await $.destroy();
     });
 
     it('should work when trigered from several silos simultaneously', async () => {
@@ -1113,13 +1113,15 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash2', ['ENV']));
 
       const dependenciesBuckets = await Promise.all([
-        $.run(['$destroy']),
-        $.run(['$destroy', 'ENV', 'hash', 'hash1', 'time']),
-        $.run(['$destroy', 'ENV', 'hash', 'hash2']),
+        $.run(['$instance']),
+        $.run(['$instance', 'ENV', 'hash', 'hash1', 'time']),
+        $.run(['$instance', 'ENV', 'hash', 'hash2']),
       ]);
 
       await Promise.all(
-        dependenciesBuckets.map(dependencies => dependencies.$destroy()),
+        dependenciesBuckets.map(dependencies =>
+          dependencies.$instance.destroy(),
+        ),
       );
     });
 
@@ -1131,11 +1133,14 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash2', ['ENV']));
 
       const [dependencies1, dependencies2] = await Promise.all([
-        $.run(['$destroy']),
+        $.run(['$instance']),
         $.run(['$dispose', 'ENV', 'hash', 'hash1', 'time']),
         $.run(['ENV', 'hash', 'hash2']),
       ]);
-      await Promise.all([dependencies2.$dispose(), dependencies1.$destroy()]);
+      await Promise.all([
+        dependencies2.$dispose(),
+        dependencies1.$instance.destroy(),
+      ]);
     });
 
     it('should disallow new runs', async () => {
@@ -1144,11 +1149,11 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash', ['ENV']));
       $.register(provider(hashProvider, 'hash1', ['ENV']));
 
-      const dependencies = await $.run(['$destroy']);
+      const dependencies = await $.run(['$instance']);
 
-      assert.equal(typeof dependencies.$destroy, 'function');
+      assert.equal(typeof dependencies.$instance.destroy, 'function');
 
-      await dependencies.$destroy();
+      await dependencies.$instance.destroy();
 
       try {
         await $.run(['ENV', 'hash', 'hash1']);
