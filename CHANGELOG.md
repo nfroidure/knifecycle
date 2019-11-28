@@ -1,3 +1,12 @@
+# [7.0.0](https://github.com/nfroidure/knifecycle/compare/v6.0.0...v7.0.0) (2019-11-28)
+
+
+### Bug Fixes
+
+* **types:** Fix types and optional parameters ([e49c4e7](https://github.com/nfroidure/knifecycle/commit/e49c4e70a7bd0f9c199501292327f2ddfe344156)), closes [#104](https://github.com/nfroidure/knifecycle/issues/104)
+
+
+
 # [6.0.0](https://github.com/nfroidure/knifecycle/compare/v5.3.0...v6.0.0) (2019-03-15)
 
 
