@@ -916,7 +916,7 @@ describe('Knifecycle', () => {
       }
     });
 
-    it('should fail when autoload depends on autoloaded/unexisting dependencies', async () => {
+    it('should fail when autoload depends on existing autoloaded dependencies', async () => {
       $.register(
         initializer(
           {
@@ -948,6 +948,80 @@ describe('Knifecycle', () => {
         assert.equal(err.code, 'E_AUTOLOADER_DYNAMIC_DEPENDENCY');
         assert.deepEqual(err.params, ['ENV']);
       }
+    });
+
+    it('should work when autoload depends on optional and unexisting autoloaded dependencies', async () => {
+      $.register(
+        initializer(
+          {
+            type: 'service',
+            name: '$autoload',
+            inject: ['?ENV'],
+            options: {
+              singleton: true,
+            },
+          },
+          async () => async serviceName => ({
+            path: `/path/of/${serviceName}`,
+            initializer: initializer(
+              {
+                type: 'service',
+                name: serviceName,
+                inject: [],
+              },
+              async () => `THE_${serviceName.toUpperCase()}:` + serviceName,
+            ),
+          }),
+        ),
+      );
+
+      const dependencies = await $.run(['test']);
+
+      assert.deepEqual(Object.keys(dependencies), ['test']);
+    });
+
+    it.skip('should work when autoload depends on deeper optional and unexisting autoloaded dependencies', async () => {
+      $.register(
+        initializer(
+          {
+            type: 'service',
+            name: 'log',
+            inject: ['?LOG_ROUTING', '?LOGGER', '?debug'],
+          },
+          async () => {
+            return function log() {};
+          },
+        ),
+      );
+      $.register(constant('LOGGER', 'LOGGER_CONSTANT'));
+      $.register(constant('debug', 'debug_value'));
+      $.register(
+        initializer(
+          {
+            type: 'service',
+            name: '$autoload',
+            inject: ['?ENV', '?log'],
+            options: {
+              singleton: true,
+            },
+          },
+          async () => async serviceName => ({
+            path: `/path/of/${serviceName}`,
+            initializer: initializer(
+              {
+                type: 'service',
+                name: serviceName,
+                inject: [],
+              },
+              async () => `THE_${serviceName.toUpperCase()}:` + serviceName,
+            ),
+          }),
+        ),
+      );
+
+      const dependencies = await $.run(['test', 'log']);
+
+      assert.deepEqual(Object.keys(dependencies), ['test', 'log']);
     });
   });
 

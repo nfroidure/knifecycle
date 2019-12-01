@@ -625,6 +625,11 @@ class Knifecycle {
       serviceName,
     );
     if (serviceDescriptorPromise) {
+      if (autoloading) {
+        debug(
+          `⚠️ - Possible dead lock due to reusing "${serviceName}" from the silo context while autoloading.`,
+        );
+      }
       return serviceDescriptorPromise;
     }
     let initializer = await this._findInitializer(siloContext, serviceName, {
@@ -637,6 +642,11 @@ class Knifecycle {
     );
 
     if (serviceDescriptorPromise) {
+      if (autoloading) {
+        debug(
+          `⚠️ - Possible dead lock due to reusing the singleton "${serviceName}" while autoloading.`,
+        );
+      }
       this._singletonsServicesHandles.get(serviceName).add(siloContext.name);
     } else {
       serviceDescriptorPromise = siloContext.servicesDescriptors.get(
