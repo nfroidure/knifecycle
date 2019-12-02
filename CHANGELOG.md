@@ -1,3 +1,12 @@
+## [7.0.3](https://github.com/nfroidure/knifecycle/compare/v7.0.2...v7.0.3) (2019-12-02)
+
+
+### Bug Fixes
+
+* **types:** use literals instead of onjects for strings ([89a22f9](https://github.com/nfroidure/knifecycle/commit/89a22f9f83766de4423585cabd3526c015d423ef))
+
+
+
 ## [7.0.2](https://github.com/nfroidure/knifecycle/compare/v7.0.1...v7.0.2) (2019-12-01)
 
 
