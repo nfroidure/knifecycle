@@ -118,7 +118,7 @@ export function wrapInitializer<
   S,
   T extends Initializer<D, S>
 >(wrapper: Function, baseInitializer: T): T;
-export function constant<S>(name: String, value: S): ServiceInitializer<any, S>;
+export function constant<S>(name: string, value: S): ServiceInitializer<any, S>;
 export function service<
   D extends Dependencies,
   S,
@@ -160,12 +160,12 @@ export function autoHandler<D extends Dependencies, U extends any[], V>(
 ): ServiceInitializer<D, Handler<U, V>>;
 
 export const SPECIAL_PROPS: {
-  INJECT: String,
-  OPTIONS: String,
-  NAME: String,
-  TYPE: String,
-  EXTRA: String,
-  VALUE: String,
+  INJECT: string,
+  OPTIONS: string,
+  NAME: string,
+  TYPE: string,
+  EXTRA: string,
+  VALUE: string,
 };
 export const DECLARATION_SEPARATOR: string;
 export const OPTIONAL_FLAG: string;
