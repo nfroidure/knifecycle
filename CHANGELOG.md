@@ -1,3 +1,12 @@
+# [8.0.0](https://github.com/nfroidure/knifecycle/compare/v7.0.3...v8.0.0) (2019-12-07)
+
+
+### Bug Fixes
+
+* **types:** fix handler types ([4d975df](https://github.com/nfroidure/knifecycle/commit/4d975dfefa77127ca9d7056cccd56d129238e9fb))
+
+
+
 ## [7.0.3](https://github.com/nfroidure/knifecycle/compare/v7.0.2...v7.0.3) (2019-12-02)
 
 
