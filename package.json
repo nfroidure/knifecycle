@@ -1,6 +1,6 @@
 {
   "name": "knifecycle",
-  "version": "8.0.0",
+  "version": "8.0.1",
   "description": "Manage your NodeJS processes's lifecycle automatically with an unobtrusive dependency injection implementation.",
   "main": "dist/index.js",
   "types": "src/index.d.ts",
