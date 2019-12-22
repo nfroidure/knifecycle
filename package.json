@@ -103,7 +103,7 @@
     "mocha": "^6.2.0",
     "nyc": "^14.1.1",
     "prettier": "^1.19.1",
-    "sinon": "^7.2.6"
+    "sinon": "^8.0.0"
   },
   "dependencies": {
     "debug": "^4.1.1",
