@@ -9,7 +9,7 @@ export type Provider<S = Service> = {
 };
 export type Dependencies<S = Service> = { [name: string]: S };
 export type Services<S = Service> = { [name: string]: S };
-export type Parameters = { [name: string]: any };
+export type Parameters<V = any> = { [name: string]: V };
 
 export interface HandlerFunction<D, P extends Parameters, U extends any[], R> {
   (dependencies: D, parameters?: P, ...args: U): Promise<R>;
