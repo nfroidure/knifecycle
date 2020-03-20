@@ -1,3 +1,7 @@
+# [9.0.0](https://github.com/nfroidure/knifecycle/compare/v8.1.0...v9.0.0) (2020-03-20)
+
+
+
 # [8.1.0](https://github.com/nfroidure/knifecycle/compare/v8.0.1...v8.1.0) (2020-01-19)
 
 
