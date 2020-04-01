@@ -1,3 +1,12 @@
+# [9.1.0](https://github.com/nfroidure/knifecycle/compare/v9.0.0...v9.1.0) (2020-04-01)
+
+
+### Features
+
+* **core:** add support for esm ([bbb3491](https://github.com/nfroidure/knifecycle/commit/bbb3491961eafe0b0d6fca22b57f295d02fdb43b))
+
+
+
 # [9.0.0](https://github.com/nfroidure/knifecycle/compare/v8.1.0...v9.0.0) (2020-03-20)
 
 
