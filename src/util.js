@@ -35,7 +35,7 @@ export const SPECIAL_PROPS = {
   VALUE: `${SPECIAL_PROPS_PREFIX}value`,
 };
 export const ALLOWED_SPECIAL_PROPS = Object.keys(SPECIAL_PROPS).map(
-  key => SPECIAL_PROPS[key],
+  (key) => SPECIAL_PROPS[key],
 );
 export const DECLARATION_SEPARATOR = '>';
 export const OPTIONAL_FLAG = '?';
@@ -53,7 +53,7 @@ const E_CONSTANT_INJECTION = 'E_CONSTANT_INJECTION';
  */
 export function reuseSpecialProps(from, to, amend = {}) {
   return [...new Set(Object.keys(from).concat(Object.keys(amend)))]
-    .filter(prop => prop.startsWith(SPECIAL_PROPS_PREFIX))
+    .filter((prop) => prop.startsWith(SPECIAL_PROPS_PREFIX))
     .reduce((fn, prop) => {
       const value =
         'undefined' !== typeof amend[prop] ? amend[prop] : from[prop];
@@ -79,7 +79,7 @@ export function reuseSpecialProps(from, to, amend = {}) {
  * The new initializer
  */
 export function wrapInitializer(wrapper, baseInitializer) {
-  return reuseSpecialProps(baseInitializer, async services => {
+  return reuseSpecialProps(baseInitializer, async (services) => {
     const baseInstance = await baseInitializer(services);
 
     return wrapper(services, baseInstance);
@@ -186,7 +186,7 @@ export function parseInjections(
     .replace(/,$/, '')
     .split(/\s*,\s*/)
     .map(
-      injection =>
+      (injection) =>
         (injection.includes('=') ? '?' : '') +
         injection
           .split(/\s*=\s*/)
@@ -194,7 +194,7 @@ export function parseInjections(
           .split(/\s*:\s*/)
           .shift(),
     )
-    .filter(injection => !/[)(\][]/.test(injection));
+    .filter((injection) => !/[)(\][]/.test(injection));
 }
 
 /**
@@ -223,7 +223,7 @@ export function alsoInject(dependencies, initializer) {
     .map(parseDependencyDeclaration)
     .reduce((currentDedupedDepencencies, dependencyDeclaration) => {
       const sameDependencyDeclaration = currentDedupedDepencencies.find(
-        maybeSameDependencyDeclaration =>
+        (maybeSameDependencyDeclaration) =>
           maybeSameDependencyDeclaration.serviceName ===
           dependencyDeclaration.serviceName,
       );

@@ -46,5 +46,5 @@ function recursivelyGetNextSequenceBatch(node, batches, batch = []) {
 }
 
 function nodeIsInBatches(batches, node) {
-  return batches.some(batch => batch.includes(node.__name));
+  return batches.some((batch) => batch.includes(node.__name));
 }

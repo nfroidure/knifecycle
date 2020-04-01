@@ -64,7 +64,7 @@ async function initInitializerBuilder({ $autoload }) {
    */
   async function buildInitializer(dependencies) {
     const dependencyTrees = await Promise.all(
-      dependencies.map(dependency =>
+      dependencies.map((dependency) =>
         buildDependencyTree({ $autoload }, dependency),
       ),
     );
@@ -81,7 +81,7 @@ async function initInitializerBuilder({ $autoload }) {
       .map(
         (batch, index) => `
 // Definition batch #${index}${batch
-          .map(name => {
+          .map((name) => {
             if (
               'constant' ===
               dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE]
@@ -106,7 +106,7 @@ export async function initialize(services = {}) {${batches
         (batch, index) => `
   // Initialization batch #${index}
   const batch${index} = {${batch
-          .map(name => {
+          .map((name) => {
             if (
               'constant' ===
               dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE]
@@ -141,7 +141,7 @@ export async function initialize(services = {}) {${batches
     .map(key => batch${index}[key])
   );
 ${batch
-  .map(name => {
+  .map((name) => {
     return `
   services['${name}'] = await batch${index}['${name}'];`;
   })
@@ -191,7 +191,7 @@ async function buildDependencyTree({ $autoload }, dependencyDeclaration) {
       initializer[SPECIAL_PROPS.INJECT].length
     ) {
       const childNodes = await Promise.all(
-        initializer[SPECIAL_PROPS.INJECT].map(childDependencyDeclaration =>
+        initializer[SPECIAL_PROPS.INJECT].map((childDependencyDeclaration) =>
           buildDependencyTree({ $autoload }, childDependencyDeclaration),
         ),
       );
@@ -224,7 +224,7 @@ function buildHashFromNode(node, hash = {}) {
     return hash;
   }
 
-  node.__childNodes.forEach(childNode => {
+  node.__childNodes.forEach((childNode) => {
     hash = buildHashFromNode(childNode, hash);
   });
 

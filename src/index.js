@@ -118,7 +118,7 @@ class Knifecycle {
           },
         },
         async ({ $siloContext }) => ({
-          service: async dependenciesDeclarations =>
+          service: async (dependenciesDeclarations) =>
             _buildFinalHash(
               await this._initializeDependencies(
                 $siloContext,
@@ -233,7 +233,7 @@ class Knifecycle {
       throw new YError(E_CIRCULAR_DEPENDENCY, initializer[SPECIAL_PROPS.NAME]);
     }
 
-    initializer[SPECIAL_PROPS.INJECT].forEach(dependencyDeclaration => {
+    initializer[SPECIAL_PROPS.INJECT].forEach((dependencyDeclaration) => {
       this._lookupCircularDependencies(
         initializer[SPECIAL_PROPS.NAME],
         dependencyDeclaration,
@@ -251,8 +251,8 @@ class Knifecycle {
         ).preloaded;
       const initializedAsInstance = [
         ...this._silosContexts.values(),
-      ].some(siloContext =>
-        siloContext.servicesSequence.some(sequence =>
+      ].some((siloContext) =>
+        siloContext.servicesSequence.some((sequence) =>
           sequence.includes(initializer[SPECIAL_PROPS.NAME]),
         ),
       );
@@ -304,7 +304,7 @@ class Knifecycle {
     }
     declarationsStacks = declarationsStacks.concat(dependencyDeclaration);
     dependencyProvider[SPECIAL_PROPS.INJECT].forEach(
-      childDependencyDeclaration => {
+      (childDependencyDeclaration) => {
         const childServiceName = _pickServiceNameFromDeclaration(
           childDependencyDeclaration,
         );
@@ -359,7 +359,7 @@ class Knifecycle {
   toMermaidGraph({ shapes = [], styles = [], classes = {} } = {}) {
     const servicesProviders = this._initializers;
     const links = Array.from(servicesProviders.keys())
-      .filter(provider => !provider.startsWith('$'))
+      .filter((provider) => !provider.startsWith('$'))
       .reduce((links, serviceName) => {
         const serviceProvider = servicesProviders.get(serviceName);
 
@@ -367,7 +367,7 @@ class Knifecycle {
           return links;
         }
         return links.concat(
-          serviceProvider[SPECIAL_PROPS.INJECT].map(dependencyDeclaration => {
+          serviceProvider[SPECIAL_PROPS.INJECT].map((dependencyDeclaration) => {
             const dependedServiceName = _pickServiceNameFromDeclaration(
               dependencyDeclaration,
             );
@@ -386,19 +386,19 @@ class Knifecycle {
       .concat(
         links.map(
           ({ serviceName, dependedServiceName }) =>
-            `  ${_applyShapes(shapes, serviceName) ||
-              serviceName}-->${_applyShapes(shapes, dependedServiceName) ||
-              dependedServiceName}`,
+            `  ${_applyShapes(shapes, serviceName) || serviceName}-->${
+              _applyShapes(shapes, dependedServiceName) || dependedServiceName
+            }`,
         ),
       )
       .concat(
         Object.keys(classes).map(
-          className => `  classDef ${className} ${classes[className]}`,
+          (className) => `  classDef ${className} ${classes[className]}`,
         ),
       )
       .concat(
         Object.keys(classesApplications).map(
-          serviceName =>
+          (serviceName) =>
             `  class ${serviceName} ${classesApplications[serviceName]};`,
         ),
       )
@@ -456,7 +456,7 @@ class Knifecycle {
     siloContext.servicesDescriptors.set(FATAL_ERROR, {
       service: {
         promise: new Promise((resolve, reject) => {
-          siloContext.throwFatalError = err => {
+          siloContext.throwFatalError = (err) => {
             debug('Handled a fatal error', err);
             reject(err);
           };
@@ -488,7 +488,7 @@ class Knifecycle {
           }
 
           await Promise.all(
-            reversedServiceSequence.pop().map(async serviceName => {
+            reversedServiceSequence.pop().map(async (serviceName) => {
               const singletonServiceDescriptor = await _this._pickupSingletonServiceDescriptorPromise(
                 serviceName,
               );
@@ -505,7 +505,7 @@ class Knifecycle {
               }
 
               if (
-                reversedServiceSequence.some(servicesDeclarations =>
+                reversedServiceSequence.some((servicesDeclarations) =>
                   servicesDeclarations.includes(serviceName),
                 )
               ) {
@@ -586,7 +586,7 @@ class Knifecycle {
     this.shutdownPromise =
       this.shutdownPromise ||
       Promise.all(
-        [...this._silosContexts].map(siloContext => {
+        [...this._silosContexts].map((siloContext) => {
           const $dispose = siloContext.servicesDescriptors.get(DISPOSE).service;
 
           return $dispose();
@@ -899,7 +899,7 @@ class Knifecycle {
   ) {
     debug('Initializing dependencies:', serviceName, servicesDeclarations);
     const servicesDescriptors = await Promise.all(
-      servicesDeclarations.map(async serviceDeclaration => {
+      servicesDeclarations.map(async (serviceDeclaration) => {
         const { mappedName, optional } = parseDependencyDeclaration(
           serviceDeclaration,
         );
@@ -946,7 +946,7 @@ class Knifecycle {
     );
 
     const services = await Promise.all(
-      servicesDescriptors.map(async serviceDescriptor => {
+      servicesDescriptors.map(async (serviceDescriptor) => {
         if (!serviceDescriptor) {
           return {}.undef;
         }
@@ -1058,7 +1058,7 @@ function serviceAdapter(serviceName, initializer, dependenciesHash) {
   if (!servicePromise || !servicePromise.then) {
     throw new YError(E_BAD_SERVICE_PROMISE, serviceName);
   }
-  return servicePromise.then(_service_ =>
+  return servicePromise.then((_service_) =>
     Promise.resolve({
       service: _service_,
     }),

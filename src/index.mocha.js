@@ -201,7 +201,7 @@ describe('Knifecycle', () => {
         () => {
           $.register('not_a_function');
         },
-        err => {
+        (err) => {
           assert.deepEqual(err.code, 'E_BAD_INITIALIZER');
           assert.deepEqual(err.params, ['not_a_function']);
           return true;
@@ -214,7 +214,7 @@ describe('Knifecycle', () => {
         () => {
           $.register(() => {});
         },
-        err => {
+        (err) => {
           assert.deepEqual(err.code, 'E_ANONYMOUS_ANALYZER');
           assert.deepEqual(err.params, []);
           return true;
@@ -230,7 +230,7 @@ describe('Knifecycle', () => {
           fn[SPECIAL_PROPS.TYPE] = 'not_allowed_type';
           $.register(fn);
         },
-        err => {
+        (err) => {
           assert.deepEqual(err.code, 'E_BAD_INITIALIZER_TYPE');
           assert.deepEqual(err.params, [
             'test',
@@ -252,7 +252,7 @@ describe('Knifecycle', () => {
           fn[SPECIAL_PROPS.OPTIONS] = { singleton: true };
           $.register(fn);
         },
-        err => {
+        (err) => {
           assert.deepEqual(err.code, 'E_UNDEFINED_CONSTANT_INITIALIZER');
           assert.deepEqual(err.params, ['THE_NUMBER']);
           return true;
@@ -270,7 +270,7 @@ describe('Knifecycle', () => {
           fn[SPECIAL_PROPS.OPTIONS] = { singleton: false };
           $.register(fn);
         },
-        err => {
+        (err) => {
           assert.deepEqual(err.code, 'E_NON_SINGLETON_CONSTANT_INITIALIZER');
           assert.deepEqual(err.params, ['THE_NUMBER']);
           return true;
@@ -287,7 +287,7 @@ describe('Knifecycle', () => {
           fn[SPECIAL_PROPS.VALUE] = 42;
           $.register(fn);
         },
-        err => {
+        (err) => {
           assert.deepEqual(err.code, 'E_BAD_VALUED_NON_CONSTANT_INITIALIZER');
           assert.deepEqual(err.params, ['myService']);
           return true;
@@ -308,7 +308,7 @@ describe('Knifecycle', () => {
             ),
           );
         },
-        err => {
+        (err) => {
           assert.deepEqual(err.code, 'E_BAD_AUTOLOADER');
           assert.deepEqual(err.params, [{}]);
           return true;
@@ -327,7 +327,7 @@ describe('Knifecycle', () => {
         () => {
           $.register(provider(hashProvider, 'hash', ['hash']));
         },
-        err => {
+        (err) => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
           assert.deepEqual(err.params, ['hash']);
           return true;
@@ -340,7 +340,7 @@ describe('Knifecycle', () => {
         () => {
           $.register(provider(hashProvider, 'hash', ['hash>lol']));
         },
-        err => {
+        (err) => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
           assert.deepEqual(err.params, ['hash']);
           return true;
@@ -356,7 +356,7 @@ describe('Knifecycle', () => {
           $.register(provider(inject(['hash1'], hashProvider), 'hash2'));
           $.register(provider(inject(['hash'], hashProvider), 'hash3'));
         },
-        err => {
+        (err) => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
           assert.deepEqual(err.params, ['hash3', 'hash', 'hash3']);
           return true;
@@ -372,7 +372,7 @@ describe('Knifecycle', () => {
           $.register(provider(inject(['hash3'], hashProvider), 'hash2'));
           $.register(provider(inject(['hash'], hashProvider), 'hash3'));
         },
-        err => {
+        (err) => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
           assert.deepEqual(err.params, [
             'hash3',
@@ -394,7 +394,7 @@ describe('Knifecycle', () => {
           $.register(provider(inject(['hash1>aHash1'], hashProvider), 'hash2'));
           $.register(provider(inject(['hash>aHash'], hashProvider), 'hash3'));
         },
-        err => {
+        (err) => {
           assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
           assert.deepEqual(err.params, ['hash3', 'hash>aHash', 'hash3>aHash3']);
           return true;
@@ -682,7 +682,7 @@ describe('Knifecycle', () => {
               singleton: true,
             },
           },
-          async () => async serviceName => ({
+          async () => async (serviceName) => ({
             path: '/path/of/debug',
             initializer: initializer(
               {
@@ -718,7 +718,7 @@ describe('Knifecycle', () => {
               singleton: true,
             },
           },
-          async () => async serviceName => ({
+          async () => async (serviceName) => ({
             path: `/path/to/${serviceName}`,
             initializer: initializer(
               {
@@ -762,7 +762,7 @@ describe('Knifecycle', () => {
               singleton: true,
             },
           },
-          async () => async serviceName => {
+          async () => async (serviceName) => {
             if ('ENV' === serviceName) {
               throw new YError('E_UNMATCHED_DEPENDENCY');
             }
@@ -797,7 +797,7 @@ describe('Knifecycle', () => {
               singleton: true,
             },
           },
-          async () => async serviceName => ({
+          async () => async (serviceName) => ({
             path: `/path/to/${serviceName}`,
             initializer: initializer(
               {
@@ -843,7 +843,7 @@ describe('Knifecycle', () => {
               singleton: true,
             },
           },
-          async () => async serviceName => {
+          async () => async (serviceName) => {
             throw new YError('E_CANNOT_AUTOLOAD', serviceName);
           },
         ),
@@ -893,7 +893,7 @@ describe('Knifecycle', () => {
               singleton: true,
             },
           },
-          async () => async serviceName => ({
+          async () => async (serviceName) => ({
             path: '/path/of/debug',
             initializer: initializer(
               {
@@ -927,7 +927,7 @@ describe('Knifecycle', () => {
               singleton: true,
             },
           },
-          async () => async serviceName => ({
+          async () => async (serviceName) => ({
             path: '/path/of/debug',
             initializer: initializer(
               {
@@ -961,7 +961,7 @@ describe('Knifecycle', () => {
               singleton: true,
             },
           },
-          async () => async serviceName => ({
+          async () => async (serviceName) => ({
             path: `/path/of/${serviceName}`,
             initializer: initializer(
               {
@@ -1005,7 +1005,7 @@ describe('Knifecycle', () => {
               singleton: true,
             },
           },
-          async () => async serviceName => ({
+          async () => async (serviceName) => ({
             path: `/path/of/${serviceName}`,
             initializer: initializer(
               {
@@ -1193,7 +1193,7 @@ describe('Knifecycle', () => {
       ]);
 
       await Promise.all(
-        dependenciesBuckets.map(dependencies =>
+        dependenciesBuckets.map((dependencies) =>
           dependencies.$instance.destroy(),
         ),
       );
@@ -1270,12 +1270,12 @@ describe('Knifecycle', () => {
     it('should work with deeper dependencies', async () => {
       let shutdownCallResolve;
       let shutdownResolve;
-      const shutdownCallPromise = new Promise(resolve => {
+      const shutdownCallPromise = new Promise((resolve) => {
         shutdownCallResolve = resolve;
       });
       const shutdownStub = sinon.spy(() => {
         shutdownCallResolve();
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
           shutdownResolve = resolve;
         });
       });
@@ -1328,12 +1328,12 @@ describe('Knifecycle', () => {
     it('should work with deeper multi used dependencies', async () => {
       let shutdownCallResolve;
       let shutdownResolve;
-      const shutdownCallPromise = new Promise(resolve => {
+      const shutdownCallPromise = new Promise((resolve) => {
         shutdownCallResolve = resolve;
       });
       const shutdownStub = sinon.spy(() => {
         shutdownCallResolve();
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
           shutdownResolve = resolve;
         });
       });
