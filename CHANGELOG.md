@@ -1,3 +1,12 @@
+## [9.1.1](https://github.com/nfroidure/knifecycle/compare/v9.1.0...v9.1.1) (2020-04-02)
+
+
+### Bug Fixes
+
+* **types:** fix bad type declaration ([21b3c7f](https://github.com/nfroidure/knifecycle/commit/21b3c7fb5fa998594b8b5906baba9d3cd6461939))
+
+
+
 # [9.1.0](https://github.com/nfroidure/knifecycle/compare/v9.0.0...v9.1.0) (2020-04-01)
 
 
