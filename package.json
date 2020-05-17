@@ -101,7 +101,7 @@
     "karma-firefox-launcher": "^1.3.0",
     "karma-mocha": "^1.3.0",
     "karma-sauce-launcher": "^4.1.2",
-    "metapak": "^3.1.8",
+    "metapak": "^3.1.9",
     "metapak-nfroidure": "10.1.2",
     "mocha": "^7.1.1",
     "nyc": "^15.0.0",
