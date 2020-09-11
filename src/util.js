@@ -128,6 +128,27 @@ export function inject(dependencies, initializer) {
 
   return uniqueInitializer;
 }
+
+/**
+ * Apply injected dependencies from the given initializer to another one
+ * @param  {Function} from The initialization function in which to pick the dependencies
+ * @param  {Function} to   The destination initialization function
+ * @return {Function}      The newly built initialization function
+ */
+export function useInject(from, to) {
+  return inject(from[SPECIAL_PROPS.INJECT] || [], to);
+}
+
+/**
+ * Merge injected dependencies of the given initializer with another one
+ * @param  {Function} from The initialization function in which to pick the dependencies
+ * @param  {Function} to   The destination initialization function
+ * @return {Function}      The newly built initialization function
+ */
+export function mergeInject(from, to) {
+  return alsoInject(from[SPECIAL_PROPS.INJECT] || [], to);
+}
+
 /**
  * Decorator creating a new initializer with different
  *  dependencies declarations set to it according to the
@@ -218,36 +239,36 @@ export function parseInjections(
  * ));
  */
 export function alsoInject(dependencies, initializer) {
-  const dedupedDependencies = (initializer[SPECIAL_PROPS.INJECT] || [])
-    .concat(dependencies)
-    .map(parseDependencyDeclaration)
-    .reduce((currentDedupedDepencencies, dependencyDeclaration) => {
-      const sameDependencyDeclaration = currentDedupedDepencencies.find(
-        (maybeSameDependencyDeclaration) =>
-          maybeSameDependencyDeclaration.serviceName ===
-          dependencyDeclaration.serviceName,
+  const currentDependencies = (initializer[SPECIAL_PROPS.INJECT] || []).map(
+    parseDependencyDeclaration,
+  );
+  const addedDependencies = dependencies.map(parseDependencyDeclaration);
+  const dedupedDependencies = currentDependencies
+    .filter(({ mappedName }) => {
+      const declarationIsOverridden = addedDependencies.some(
+        ({ mappedName: addedMappedName }) => {
+          return addedMappedName === mappedName;
+        },
       );
 
-      if (!sameDependencyDeclaration) {
-        return currentDedupedDepencencies.concat(dependencyDeclaration);
-      }
-
-      if (
-        sameDependencyDeclaration.mappedName !==
-        dependencyDeclaration.mappedName
-      ) {
-        return currentDedupedDepencencies.concat(dependencyDeclaration);
-      }
-
-      sameDependencyDeclaration.optional =
-        dependencyDeclaration.optional && sameDependencyDeclaration.optional
-          ? true
-          : false;
-
-      return currentDedupedDepencencies;
-    }, [])
+      return !declarationIsOverridden;
+    })
+    .concat(
+      addedDependencies.map(({ serviceName, mappedName, optional }) => {
+        const isOptionalDependency = currentDependencies.some(
+          ({ optional, mappedName: addedMappedName }) => {
+            return addedMappedName === mappedName && optional;
+          },
+        );
+        return {
+          serviceName,
+          mappedName,
+          optional: isOptionalDependency && optional,
+        };
+      }),
+    )
     .map(stringifyDependencyDeclaration);
-  // dedupe
+
   return inject(dedupedDependencies, initializer);
 }
 

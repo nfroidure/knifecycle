@@ -22,6 +22,12 @@
 <dd><p>Decorator creating a new initializer with different
  dependencies declarations set to it.</p>
 </dd>
+<dt><a href="#useInject">useInject(from, to)</a> ⇒ <code>function</code></dt>
+<dd><p>Apply injected dependencies from the given initializer to another one</p>
+</dd>
+<dt><a href="#mergeInject">mergeInject(from, to)</a> ⇒ <code>function</code></dt>
+<dd><p>Merge injected dependencies of the given initializer with another one</p>
+</dd>
 <dt><a href="#autoInject">autoInject(initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator creating a new initializer with different
  dependencies declarations set to it according to the
@@ -350,6 +356,32 @@ new Knifecycle()
   )
 );
 ```
+<a name="useInject"></a>
+
+## useInject(from, to) ⇒ <code>function</code>
+Apply injected dependencies from the given initializer to another one
+
+**Kind**: global function  
+**Returns**: <code>function</code> - The newly built initialization function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| from | <code>function</code> | The initialization function in which to pick the dependencies |
+| to | <code>function</code> | The destination initialization function |
+
+<a name="mergeInject"></a>
+
+## mergeInject(from, to) ⇒ <code>function</code>
+Merge injected dependencies of the given initializer with another one
+
+**Kind**: global function  
+**Returns**: <code>function</code> - The newly built initialization function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| from | <code>function</code> | The initialization function in which to pick the dependencies |
+| to | <code>function</code> | The destination initialization function |
+
 <a name="autoInject"></a>
 
 ## autoInject(initializer) ⇒ <code>function</code>

@@ -25,7 +25,13 @@ export interface ProviderInitializer<D extends Dependencies, S = Service> {
 export interface ServiceInitializer<D extends Dependencies, S = Service> {
   (dependencies?: D): Promise<S>;
 }
-export interface HandlerInitializer<D extends Dependencies, U extends any[], R, P = Parameters, S = Handler<P, U, R>> {
+export interface HandlerInitializer<
+  D extends Dependencies,
+  U extends any[],
+  R,
+  P = Parameters,
+  S = Handler<P, U, R>
+> {
   (dependencies?: D): Promise<S>;
 }
 
@@ -61,11 +67,11 @@ export interface FatalErrorProvider {
   promise: Promise<void>;
 }
 export interface SiloContext<S extends Service> {
-  name: string,
-  servicesDescriptors: Map<DependencyDeclaration, S>,
-  servicesSequence: DependencyDeclaration[],
-  servicesShutdownsPromises: Map<DependencyDeclaration, Promise<void>>,
-  errorsPromises: Promise<void>[],
+  name: string;
+  servicesDescriptors: Map<DependencyDeclaration, S>;
+  servicesSequence: DependencyDeclaration[];
+  servicesShutdownsPromises: Map<DependencyDeclaration, Promise<void>>;
+  errorsPromises: Promise<void>[];
 }
 
 export class Knifecycle<S = Services> {
@@ -75,25 +81,30 @@ export class Knifecycle<S = Services> {
   register<D extends Dependencies, S, T extends Initializer<D, S>>(
     initializer: T,
   ): Knifecycle;
-  toMermaidGraph({ shapes, styles, classes } : {
-    shapes: ({
-      pattern: RegExp,
-      template: string,
-    })[],
-    styles: ({
-      pattern: RegExp,
-      className: string,
-    })[],
+  toMermaidGraph({
+    shapes,
+    styles,
+    classes,
+  }: {
+    shapes: {
+      pattern: RegExp;
+      template: string;
+    }[];
+    styles: {
+      pattern: RegExp;
+      className: string;
+    }[];
     classes: {
-      [name : string]: string,
-    },
-  }): string
+      [name: string]: string;
+    };
+  }): string;
 }
 
-export function initializer<D extends Dependencies, S, T extends Initializer<D, S>>(
-  declaration: InitializerDeclaration,
-  initializer: T
-): T;
+export function initializer<
+  D extends Dependencies,
+  S,
+  T extends Initializer<D, S>
+>(declaration: InitializerDeclaration, initializer: T): T;
 
 export function name<D extends Dependencies, S, T extends Initializer<D, S>>(
   name: DependencyDeclaration,
@@ -104,38 +115,82 @@ export function autoName<
   S,
   T extends Initializer<D, S>
 >(initializer: T): T;
+
 export function type<D extends Dependencies, S, T extends Initializer<D, S>>(
   type: InitializerType,
   initializer: T,
 ): T;
+
 export function inject<D extends Dependencies, S, T extends Initializer<D, S>>(
   dependencies: DependenciesDeclarations,
   initializer: T,
 ): T;
+
+export function mergeInject<FD extends Dependencies, T>(
+  from: Initializer<FD, unknown>,
+  to: T,
+): T extends HandlerInitializer<infer D, infer U, infer R, infer P, infer TS> ?
+  HandlerInitializer<FD & D, U, R, P, TS> :
+  T extends ProviderInitializer<infer D, infer S> ?
+  ProviderInitializer<FD & D, S> :
+  T extends ServiceInitializer<infer D, infer S> ?
+  ServiceInitializer<FD & D, S> :
+  never;
+export function useInject<FD extends Dependencies, T>(
+  from: Initializer<FD, unknown>,
+  to: T,
+): T extends HandlerInitializer<any, infer U, infer R, infer P, infer TS> ?
+  HandlerInitializer<FD, U, R, P, TS> :
+  T extends ProviderInitializer<any, infer S> ?
+  ProviderInitializer<FD, S> :
+  T extends ServiceInitializer<any, infer S> ?
+  ServiceInitializer<FD, S> :
+  never;
 export function autoInject<
   D extends Dependencies,
   S,
   T extends Initializer<D, S>
 >(initializer: T): T;
 export function alsoInject<
-  D extends Dependencies,
-  S,
-  T extends Initializer<D, S>
->(dependencies: DependenciesDeclarations, initializer: T): T;
+  ND extends Dependencies,
+  T,
+>(
+  dependencies: DependenciesDeclarations,
+  initializer: T,
+): T extends HandlerInitializer<infer D, infer U, infer R, infer P, infer TS> ?
+  HandlerInitializer<ND & D, U, R, P, TS> :
+  T extends ProviderInitializer<infer D, infer S> ?
+  ProviderInitializer<ND & D, S> :
+  T extends ServiceInitializer<infer D, infer S> ?
+  ServiceInitializer<ND & D, S> :
+  never;
+
 export function options<D extends Dependencies, S, T extends Initializer<D, S>>(
   options: InitializerOptions,
   initializer: T,
   merge?: boolean,
 ): T;
+
 export function extra<D extends Dependencies, S, T extends Initializer<D, S>>(
   data: any,
   initializer: T,
 ): T;
+
 export function reuseSpecialProps<
-  D extends Dependencies,
-  S,
-  T extends Initializer<D, S>
->(from: T, to: T, amend?: InitializerOptions): T;
+  FD extends Dependencies,
+  T,
+>(
+  from: Initializer<FD, unknown>,
+  to: T,
+  amend?: InitializerOptions,
+): T extends HandlerInitializer<infer D, infer U, infer R, infer P, infer TS> ?
+  HandlerInitializer<FD & D, U, R, P, TS> :
+  T extends ProviderInitializer<infer D, infer S> ?
+  ProviderInitializer<FD & D, S> :
+  T extends ServiceInitializer<infer D, infer S> ?
+  ServiceInitializer<FD & D, S> :
+  never;
+
 export function wrapInitializer<
   D extends Dependencies,
   S,
@@ -192,17 +247,15 @@ export function autoHandler<
   P extends Parameters,
   U extends any[],
   R
->(
-  handlerFunction: HandlerFunction<D, P, U, R>,
-): HandlerInitializer<D, U, R, P>;
+>(handlerFunction: HandlerFunction<D, P, U, R>): HandlerInitializer<D, U, R, P>;
 
 export const SPECIAL_PROPS: {
-  INJECT: string,
-  OPTIONS: string,
-  NAME: string,
-  TYPE: string,
-  EXTRA: string,
-  VALUE: string,
+  INJECT: string;
+  OPTIONS: string;
+  NAME: string;
+  TYPE: string;
+  EXTRA: string;
+  VALUE: string;
 };
 export const DECLARATION_SEPARATOR: string;
 export const OPTIONAL_FLAG: string;

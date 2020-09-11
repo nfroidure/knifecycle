@@ -10,6 +10,8 @@ import {
   inject,
   autoInject,
   alsoInject,
+  useInject,
+  mergeInject,
   parseInjections,
   options,
   extra,
@@ -120,6 +122,40 @@ describe('inject', () => {
     assert.throws(() => {
       inject(['test'], constant('test', 'test'));
     }, /E_BAD_INJECT_IN_CONSTANT/);
+  });
+});
+describe('useInject', () => {
+  it('should set the right dependencies', () => {
+    const fromDependencies = ['ENV', 'CORS'];
+    const fromInitializer = inject(fromDependencies, aProvider);
+    const toDependencies = ['db', 'log'];
+    const toInitializer = inject(toDependencies, aProvider);
+    const newInitializer = useInject(fromInitializer, toInitializer);
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], fromDependencies);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], toDependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+      ...fromDependencies,
+    ]);
+  });
+});
+
+describe('mergeInject', () => {
+  it('should amend dependencies', () => {
+    const fromDependencies = ['ENV', 'CORS'];
+    const fromInitializer = inject(fromDependencies, aProvider);
+    const toDependencies = ['db', 'log'];
+    const toInitializer = inject(toDependencies, aProvider);
+    const newInitializer = mergeInject(fromInitializer, toInitializer);
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], fromDependencies);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], toDependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+      ...toDependencies,
+      ...fromDependencies,
+    ]);
   });
 });
 
@@ -249,9 +285,31 @@ describe('alsoInject', () => {
   });
 
   it('should dedupe dependencies', () => {
+    const baseProvider = inject(['?TEST'], aProvider);
     const newInitializer = alsoInject(
-      ['ENV', '?NODE_ENV', '?TEST', 'mysql>db'],
-      alsoInject(['ENV', 'NODE_ENV', '?TEST', 'mysql'], aProvider),
+      ['ENV', '?NODE_ENV', '?TEST', 'TEST2', 'mysql>db'],
+      alsoInject(['ENV', 'NODE_ENV', '?TEST', '?TEST2', 'mysql'], baseProvider),
+    );
+
+    assert.notEqual(newInitializer, baseProvider);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+      'mysql',
+      'ENV',
+      'NODE_ENV',
+      '?TEST',
+      'TEST2',
+      'mysql>db',
+    ]);
+  });
+
+  it('should solve final dependencies name clash', () => {
+    const baseProvider = inject(['?TEST'], aProvider);
+    const newInitializer = alsoInject(
+      ['ENV', '?NODE_ENV', '?TEST', 'mysql>db', 'log'],
+      alsoInject(
+        ['ENV', 'NODE_ENV', '?TEST', 'db', 'logger>log'],
+        baseProvider,
+      ),
     );
 
     assert.notEqual(newInitializer, aProvider);
@@ -259,8 +317,8 @@ describe('alsoInject', () => {
       'ENV',
       'NODE_ENV',
       '?TEST',
-      'mysql',
       'mysql>db',
+      'log',
     ]);
   });
 });
