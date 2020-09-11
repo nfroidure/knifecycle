@@ -186,7 +186,7 @@ export function parseInjections(
   { allowEmpty = false } = { allowEmpty: false },
 ) {
   const matches = source.match(
-    /^\s*(?:async\s+function(?:\s+\w+)?|async)\s*\(\s*\{\s*([^{}}]+)\s*\}/,
+    /^\s*(?:async\s+function(?:\s+\w+)?|async)\s*\(\s*\{\s*([^{}]+)(\s*\.\.\.[^{}]+|)\s*\}/,
   );
 
   if (!matches) {
@@ -206,6 +206,8 @@ export function parseInjections(
     .trim()
     .replace(/,$/, '')
     .split(/\s*,\s*/)
+    .map((s) => s.trim())
+    .filter((s) => !s.startsWith('...'))
     .map(
       (injection) =>
         (injection.includes('=') ? '?' : '') +

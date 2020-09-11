@@ -825,6 +825,28 @@ describe('autoHandler', () => {
     }
   });
 
+  it('should work with spread services', async () => {
+    const services = {
+      kikooo: 'kikooo',
+      lol: 'lol',
+    };
+    const theInitializer = autoHandler(sampleHandler);
+
+    assert.deepEqual(theInitializer.$name, sampleHandler.name);
+    assert.deepEqual(theInitializer.$inject, ['kikooo', 'lol']);
+
+    const theHandler = await theInitializer(services);
+    const result = await theHandler('test');
+    assert.deepEqual(result, {
+      deps: services,
+      args: ['test'],
+    });
+
+    async function sampleHandler({ kikooo, lol, ...services }, ...args) {
+      return Promise.resolve({ deps: { kikooo, lol, ...services }, args });
+    }
+  });
+
   it('should fail for anonymous functions', () => {
     assert.throws(() => {
       autoHandler(() => {});

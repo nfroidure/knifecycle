@@ -182,9 +182,7 @@
   },
   "homepage": "https://github.com/nfroidure/knifecycle#readme",
   "babel": {
-    "plugins": [
-      "@babel/plugin-proposal-object-rest-spread"
-    ],
+    "plugins": [],
     "presets": [
       [
         "@babel/env",
