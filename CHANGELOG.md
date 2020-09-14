@@ -1,3 +1,12 @@
+## [10.0.1](https://github.com/nfroidure/knifecycle/compare/v10.0.0...v10.0.1) (2020-09-14)
+
+
+### Bug Fixes
+
+* **utils:** reexport injections utils ([a94b734](https://github.com/nfroidure/knifecycle/commit/a94b734f62c3f0a8307d8e07627fcba8c928335c))
+
+
+
 # [10.0.0](https://github.com/nfroidure/knifecycle/compare/v9.1.1...v10.0.0) (2020-09-14)
 
 
