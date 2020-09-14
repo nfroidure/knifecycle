@@ -1,3 +1,13 @@
+# [10.0.0](https://github.com/nfroidure/knifecycle/compare/v9.1.1...v10.0.0) (2020-09-14)
+
+
+### Features
+
+* **utils:** allow object rest spread in autodected injections ([846fde9](https://github.com/nfroidure/knifecycle/commit/846fde91977d9a19c9a91d3b869e81866e870631))
+* **utils:** allow to reuse initializers injections ([bc6873f](https://github.com/nfroidure/knifecycle/commit/bc6873f68db1edeebe1c5015cd4f1128a5a508a8))
+
+
+
 ## [9.1.1](https://github.com/nfroidure/knifecycle/compare/v9.1.0...v9.1.1) (2020-04-02)
 
 
