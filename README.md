@@ -8,12 +8,12 @@
 > Manage your NodeJS processes's lifecycle automatically with an unobtrusive dependency injection implementation.
 
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nfroidure/knifecycle/blob/master/LICENSE)
-[![Build status](https://secure.travis-ci.org/nfroidure/knifecycle.svg)](https://travis-ci.org/nfroidure/knifecycle)
-[![Coverage Status](https://coveralls.io/repos/nfroidure/knifecycle/badge.svg?branch=master)](https://coveralls.io/r/nfroidure/knifecycle?branch=master)
+[![Build status](https://travis-ci.com/nfroidure/knifecycle.svg?branch=master)](https://travis-ci.com/github/nfroidure/knifecycle)
+[![Coverage Status](https://coveralls.io/repos/github/nfroidure/knifecycle/badge.svg?branch=master)](https://coveralls.io/github/nfroidure/knifecycle?branch=master)
 [![NPM version](https://badge.fury.io/js/knifecycle.svg)](https://npmjs.org/package/knifecycle)
 [![Dependency Status](https://david-dm.org/nfroidure/knifecycle.svg)](https://david-dm.org/nfroidure/knifecycle)
 [![devDependency Status](https://david-dm.org/nfroidure/knifecycle/dev-status.svg)](https://david-dm.org/nfroidure/knifecycle#info=devDependencies)
-[![Package Quality](http://npm.packagequality.com/shield/knifecycle.svg)](http://packagequality.com/#?package=knifecycle)
+[![Package Quality](https://npm.packagequality.com/shield/knifecycle.svg)](https://packagequality.com/#?package=knifecycle)
 [![Code Climate](https://codeclimate.com/github/nfroidure/knifecycle.svg)](https://codeclimate.com/github/nfroidure/knifecycle)
 
 
@@ -23,66 +23,60 @@
 
 Most (maybe all) applications rely on two kinds of dependencies.
 
-**The code dependencies** are fully covered by JavaScript
- modules in a testable manner (with `mockery` or `System`
- directly). There is no need for another dependency management
- system if those libraries are pure functions (involve no
- global states at all).
+**The code dependencies** are fully covered by JavaScript modules in a testable
+manner (with `mockery` or `System` directly). There is no need for another
+dependency management system if those libraries are pure functions (involve no
+global states at all).
 
-Unfortunately, applications often rely on **global states**
- where the JavaScript module system shows its limits. This
- is where `knifecycle` enters the game.
+Unfortunately, applications often rely on **global states** where the JavaScript
+module system shows its limits. This is where `knifecycle` enters the game.
 
-It is largely inspired by the Angular service system except
- it should not provide code but access to global states
- (time, filesystem, db). It also have an important additional
- feature to shutdown processes which is really useful for
- back-end servers and doesn't exists in Angular.
+It is largely inspired by the Angular service system except it should not
+provide code but access to global states (time, filesystem, db). It also have an
+important additional feature to shutdown processes which is really useful for
+back-end servers and doesn't exists in Angular.
 
-You may want to look at the
- [architecture notes](./ARCHITECTURE.md) to better handle the
- reasonning behind `knifecycle` and its implementation.
+You may want to look at the [architecture notes](./ARCHITECTURE.md) to better
+handle the reasonning behind `knifecycle` and its implementation.
 
-At this point you may think that a DI system is useless. My
- advice is that it depends. But at least, you should not
- make a definitive choice and allow both approaches. See
- [this StackOverflow answer](http://stackoverflow.com/questions/9250851/do-i-need-dependency-injection-in-nodejs-or-how-to-deal-with/44084729#44084729)
- for more context about this statement.
+At this point you may think that a DI system is useless. My advice is that it
+depends. But at least, you should not make a definitive choice and allow both
+approaches. See
+[this StackOverflow answer](http://stackoverflow.com/questions/9250851/do-i-need-dependency-injection-in-nodejs-or-how-to-deal-with/44084729#44084729)
+for more context about this statement.
 
 ## Features
-- services management: start services taking their dependencies
- in count and shut them down the same way for graceful exits
- (namely dependency injection with inverted control);
-- singleton: maintain singleton services across several running
- execution silos.
-- easy end to end testing: just replace your services per your
- own mocks and stubs while ensuring your application integrity
- between testing and production;
+
+- services management: start services taking their dependencies in count and
+  shut them down the same way for graceful exits (namely dependency injection
+  with inverted control);
+- singleton: maintain singleton services across several running execution silos.
+- easy end to end testing: just replace your services per your own mocks and
+  stubs while ensuring your application integrity between testing and
+  production;
 - isolation: isolate processing in a clean manner, per concerns;
-- functional programming ready: encapsulate global states
- allowing the rest of your application to be purely functional;
-- no circular dependencies for services: while circular
- dependencies are not a problem within purely functional
- libraries (require allows it), it may be harmful for your
- services, `knifecycle` impeach that while providing an
- `$injector` service à la Angular to allow accessing existing
- services references if you really need to;
+- functional programming ready: encapsulate global states allowing the rest of
+  your application to be purely functional;
+- no circular dependencies for services: while circular dependencies are not a
+  problem within purely functional libraries (require allows it), it may be
+  harmful for your services, `knifecycle` impeach that while providing an
+  `$injector` service à la Angular to allow accessing existing services
+  references if you really need to;
 - generate Mermaid graphs of the dependency tree;
-- build raw initialization modules to avoid
- embedding Knifecycle in your builds;
-- optionally autoload services dependencies with custom
- logic.
+- build raw initialization modules to avoid embedding Knifecycle in your builds;
+- optionally autoload services dependencies with custom logic.
 
 ## Usage
 
-Using `knifecycle` is all about declaring the services our
- application needs and running your application over it.
+Using `knifecycle` is all about declaring the services our application needs and
+running your application over it.
 
-Let's say we are building a CLI script. Here is how we would
- proceed with Knifecycle:
-  
-First, we need to handle a configuration file so we are
- creating an initializer to instanciate our `CONFIG` service:
+Let's say we are building a CLI script. Here is how we would proceed with
+Knifecycle:
+
+First, we need to handle a configuration file so we are creating an initializer
+to instanciate our `CONFIG` service:
+
 ```js
 // bin.js
 import fs from 'fs';
@@ -175,10 +169,7 @@ const initDB = initializer(
     options: { singleton: true },
   },
   async ({ CONFIG, DB_URI, log }) => {
-    const db = await MongoClient.connect(
-      DB_URI,
-      CONFIG.databaseOptions,
-    );
+    const db = await MongoClient.connect(DB_URI, CONFIG.databaseOptions);
     let fatalErrorPromise = new Promise((resolve, reject) => {
       db.once('error', reject);
     });
@@ -234,9 +225,9 @@ $.register(
       type: 'service',
       inject: ['CONFIG', 'ARGS'],
       // Note that the auto loader must be a singleton
-      options: { singleton: true }
+      options: { singleton: true },
     },
-    async ({ CONFIG, ARGS }) => async serviceName => {
+    async ({ CONFIG, ARGS }) => async (serviceName) => {
       if ('command' !== serviceName) {
         // Allows to signal that the dependency is not found
         // so that optional dependencies doesn't impeach the
@@ -278,25 +269,29 @@ $.run(['command', '$instance', 'exit', 'log'])
       // way but this is to illustrate that the Knifecycle
       // instance can be injected in services contexts
       // (rarely done but good to know it exists)
-      await $instance.destroy().catch(err => {
+      await $instance.destroy().catch((err) => {
         console.error('Could not exit gracefully:', err);
         exit(1);
       });
     }
   })
-  .catch(err => {
+  .catch((err) => {
     console.error('Could not launch the app:', err);
     process.exit(1);
   });
 ```
+
 Running the following should make the magic happen:
+
 ```sh
 cat "{ commands: './commands'}" > config.json
 DEBUG=knifecycle CONFIG_PATH=./config.json node -r @babel/register bin.js mycommand test
 // Prints: Could not launch the app: Error: Cannot load command: mycommand!
 // (...stack trace)
 ```
+
 Or at least, we still have to create commands, let's create the `mycommand` one:
+
 ```js
 // commands/mycommand.js
 import { initializer } from './dist';
@@ -315,21 +310,24 @@ export default initializer(
   },
 );
 ```
+
 So now, it works:
+
 ```sh
 DEBUG=knifecycle CONFIG_PATH=./config.json node -r @babel/register bin.js mycommand test
 // Prints: Command args: [ 'mycommand', 'test' ]
 // It worked!
 ```
 
-This is a very simple example but you can find a complexer CLI usage
- with `(metapak)[https://github.com/nfroidure/metapak/blob/master/bin/metapak.js]`.
+This is a very simple example but you can find a complexer CLI usage with
+`(metapak)[https://github.com/nfroidure/metapak/blob/master/bin/metapak.js]`.
 
 ## Auto detection
 
-Knifecycle also provide some utility function to automatically assign
- the initializer property declarations, the following 3 ways to declare
- the `getUser` service are equivalent:
+Knifecycle also provide some utility function to automatically assign the
+initializer property declarations, the following 3 ways to declare the `getUser`
+service are equivalent:
+
 ```js
 import noop from 'noop';
 import { autoInject, inject, initializer, autoService } from 'knifecycle';
@@ -347,15 +345,15 @@ autoService(getUser);
 async function getUser({ db, log = noop}) {}
 ```
 
-That said, if you need to build your code with `webpack`/`babel` you may
- have to convert auto-detections to raw declarations with the
- [babel-plugin-knifecycle](https://github.com/nfroidure/babel-plugin-knifecycle)
- plugin. You can also do this only for the performance improvements it brings.
+That said, if you need to build your code with `webpack`/`babel` you may have to
+convert auto-detections to raw declarations with the
+[babel-plugin-knifecycle](https://github.com/nfroidure/babel-plugin-knifecycle)
+plugin. You can also do this only for the performance improvements it brings.
 
 Also, keep in mind that the auto-detection is based on a simple regular
- expression so you should care to keep initializer signatures simple to
- avoid having a `E_AUTO_INJECTION_FAILURE` error. As a rule of thumb,
- avoid setting complex default values.
+expression so you should care to keep initializer signatures simple to avoid
+having a `E_AUTO_INJECTION_FAILURE` error. As a rule of thumb, avoid setting
+complex default values.
 
 ```js
 // Won't work
@@ -368,42 +366,43 @@ autoInject(async ({ log = noop }) => {});
 
 ## Debugging
 
-Simply use the DEBUG environment variable by setting it to
- 'knifecycle':
+Simply use the DEBUG environment variable by setting it to 'knifecycle':
+
 ```sh
 DEBUG=knifecycle npm t
 ```
-The output is very verbose but lead to a deep understanding of
- mechanisms that take place under the hood.
+
+The output is very verbose but lead to a deep understanding of mechanisms that
+take place under the hood.
 
 ## Plans
 
 The scope of this library won't change. However the plan is:
+
 - improve performances;
-- evolve with Node: I may not need to transpile this library at
- some point.
+- evolve with Node: I may not need to transpile this library at some point.
 - track bugs ;).
 
-I'll also share most of my own initializers and their
- stubs/mocks in order to let you reuse it through
- your projects easily. Here are the current projects
- that use this DI lib:
-- [common-services](https://github.com/nfroidure/common-services):
-contains the services I use the most in my apps.
-- [swagger-http-router](https://github.com/nfroidure/swagger-http-router):
- a complete HTTP router based on OpenAPI definitions with a few useful
- services compatible with Knifecycle.
-- [memory-kv-store](https://github.com/nfroidure/memory-kv-store):
- a simple in memory key-value store.
-- [whook](https://github.com/nfroidure/whook):
- a framework to build REST web services.
-- [postgresql-service](https://github.com/nfroidure/postgresql-service):
- a simple wrapper around the `pg` module.
-- [jwt-service](https://github.com/nfroidure/jwt-service):
- a simple wrapper around the `jwt` module to simplify its use.
- 
-Notice that those modules remains usable without using Knifecycle at
- all which is maybe the best feature of this library ;).
+I'll also share most of my own initializers and their stubs/mocks in order to
+let you reuse it through your projects easily. Here are the current projects
+that use this DI lib:
+
+- [common-services](https://github.com/nfroidure/common-services): contains the
+  services I use the most in my apps.
+- [swagger-http-router](https://github.com/nfroidure/swagger-http-router): a
+  complete HTTP router based on OpenAPI definitions with a few useful services
+  compatible with Knifecycle.
+- [memory-kv-store](https://github.com/nfroidure/memory-kv-store): a simple in
+  memory key-value store.
+- [whook](https://github.com/nfroidure/whook): a framework to build REST web
+  services.
+- [postgresql-service](https://github.com/nfroidure/postgresql-service): a
+  simple wrapper around the `pg` module.
+- [jwt-service](https://github.com/nfroidure/jwt-service): a simple wrapper
+  around the `jwt` module to simplify its use.
+
+Notice that those modules remains usable without using Knifecycle at all which
+is maybe the best feature of this library ;).
 
 [//]: # (::contents:end)
 
