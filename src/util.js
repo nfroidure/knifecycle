@@ -257,15 +257,17 @@ export function alsoInject(dependencies, initializer) {
     })
     .concat(
       addedDependencies.map(({ serviceName, mappedName, optional }) => {
-        const isOptionalDependency = currentDependencies.some(
-          ({ optional, mappedName: addedMappedName }) => {
-            return addedMappedName === mappedName && optional;
-          },
-        );
+        const isOptionalEverywhere =
+          optional &&
+          currentDependencies.every(
+            ({ optional, mappedName: addedMappedName }) => {
+              return addedMappedName !== mappedName || optional;
+            },
+          );
         return {
           serviceName,
           mappedName,
-          optional: isOptionalDependency && optional,
+          optional: isOptionalEverywhere,
         };
       }),
     )

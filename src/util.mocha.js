@@ -83,7 +83,7 @@ describe('wrapInitializer', () => {
 
     baseInitializer.$name = 'baseInitializer';
     baseInitializer.$type = 'service';
-    baseInitializer.$inject = ['log'];
+    baseInitializer.$inject = ['log', '?test'];
     baseInitializer.$options = { singleton: false };
     baseInitializer.$extra = { httpHandler: false };
 
@@ -96,6 +96,7 @@ describe('wrapInitializer', () => {
     const service = await newInitializer({ log });
     assert.equal(service(), 'test-wrapped');
     assert.deepEqual(log.args, [['Wrapping...']]);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['log', '?test']);
   });
 });
 
@@ -300,6 +301,22 @@ describe('alsoInject', () => {
       'TEST2',
       'mysql>db',
     ]);
+
+    it('should preserve single optional dependencies', () => {
+      const baseProvider = inject(['ENV', '?TEST'], aProvider);
+      const newInitializer = alsoInject(
+        ['ENV', '?TEST2'],
+        alsoInject(['ENV', '?TEST3'], baseProvider),
+      );
+
+      assert.notEqual(newInitializer, baseProvider);
+      assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+        'ENV',
+        '?TEST',
+        '?TEST2',
+        '?TEST3',
+      ]);
+    });
   });
 
   it('should solve final dependencies name clash', () => {
