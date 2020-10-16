@@ -288,7 +288,7 @@ describe('alsoInject', () => {
   it('should dedupe dependencies', () => {
     const baseProvider = inject(['?TEST'], aProvider);
     const newInitializer = alsoInject(
-      ['ENV', '?NODE_ENV', '?TEST', 'TEST2', 'mysql>db'],
+      ['ENV', '?NODE_ENV', '?TEST', 'TEST2', 'db>mysql'],
       alsoInject(['ENV', 'NODE_ENV', '?TEST', '?TEST2', 'mysql'], baseProvider),
     );
 
@@ -299,32 +299,45 @@ describe('alsoInject', () => {
       'NODE_ENV',
       '?TEST',
       'TEST2',
-      'mysql>db',
+      'db>mysql',
     ]);
-
-    it('should preserve single optional dependencies', () => {
-      const baseProvider = inject(['ENV', '?TEST'], aProvider);
-      const newInitializer = alsoInject(
-        ['ENV', '?TEST2'],
-        alsoInject(['ENV', '?TEST3'], baseProvider),
-      );
-
-      assert.notEqual(newInitializer, baseProvider);
-      assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
-        'ENV',
-        '?TEST',
-        '?TEST2',
-        '?TEST3',
-      ]);
-    });
   });
 
-  it('should solve final dependencies name clash', () => {
+  it('should preserve single optional dependencies', () => {
+    const baseProvider = inject(['ENV', '?TEST'], aProvider);
+    const newInitializer = alsoInject(
+      ['ENV', '?TEST2'],
+      alsoInject(['ENV', '?TEST3'], baseProvider),
+    );
+
+    assert.notEqual(newInitializer, baseProvider);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+      '?TEST',
+      '?TEST3',
+      'ENV',
+      '?TEST2',
+    ]);
+  });
+
+  it('should preserve mapped dependencies', () => {
+    const baseProvider = inject(['mysql', '?sftp'], aProvider);
+    const newInitializer = alsoInject(['db>mysql', '?ftp>sftp'], baseProvider);
+    console.log(newInitializer[SPECIAL_PROPS.INJECT]);
+    assert.notEqual(newInitializer, baseProvider);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+      'mysql',
+      '?sftp',
+      'db>mysql',
+      '?ftp>sftp',
+    ]);
+  });
+
+  it('should solve dependencies alias name clash', () => {
     const baseProvider = inject(['?TEST'], aProvider);
     const newInitializer = alsoInject(
-      ['ENV', '?NODE_ENV', '?TEST', 'mysql>db', 'log'],
+      ['ENV', '?NODE_ENV', '?TEST', 'db>mysql', '?log>logly'],
       alsoInject(
-        ['ENV', 'NODE_ENV', '?TEST', 'db', 'logger>log'],
+        ['ENV', 'NODE_ENV', '?TEST', 'db>pg', '?log>logger'],
         baseProvider,
       ),
     );
@@ -334,8 +347,28 @@ describe('alsoInject', () => {
       'ENV',
       'NODE_ENV',
       '?TEST',
-      'mysql>db',
-      'log',
+      'db>mysql',
+      '?log>logly',
+    ]);
+  });
+
+  it('should solve dependencies alias name clash', () => {
+    const baseProvider = inject(['?TEST'], aProvider);
+    const newInitializer = alsoInject(
+      ['ENV', '?NODE_ENV', '?TEST', 'db>mysql', '?log>logly'],
+      alsoInject(
+        ['ENV', 'NODE_ENV', '?TEST', 'db>pg', '?log>logger'],
+        baseProvider,
+      ),
+    );
+
+    assert.notEqual(newInitializer, aProvider);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+      'ENV',
+      'NODE_ENV',
+      '?TEST',
+      'db>mysql',
+      '?log>logly',
     ]);
   });
 });
@@ -873,10 +906,18 @@ describe('autoHandler', () => {
 
 describe('parseDependencyDeclaration', () => {
   it('should work', () => {
-    assert.deepEqual(parseDependencyDeclaration('pgsql>db'), {
-      serviceName: 'pgsql',
-      mappedName: 'db',
+    assert.deepEqual(parseDependencyDeclaration('db>pgsql'), {
+      serviceName: 'db',
+      mappedName: 'pgsql',
       optional: false,
+    });
+  });
+
+  it('should work with unmapped names', () => {
+    assert.deepEqual(parseDependencyDeclaration('?pgsql'), {
+      serviceName: 'pgsql',
+      mappedName: 'pgsql',
+      optional: true,
     });
   });
 });
