@@ -246,10 +246,10 @@ export function alsoInject(dependencies, initializer) {
   );
   const addedDependencies = dependencies.map(parseDependencyDeclaration);
   const dedupedDependencies = currentDependencies
-    .filter(({ mappedName }) => {
+    .filter(({ serviceName }) => {
       const declarationIsOverridden = addedDependencies.some(
-        ({ mappedName: addedMappedName }) => {
-          return addedMappedName === mappedName;
+        ({ serviceName: addedServiceName }) => {
+          return addedServiceName === serviceName;
         },
       );
 
