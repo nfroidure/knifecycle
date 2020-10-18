@@ -1,3 +1,12 @@
+## [10.0.3](https://github.com/nfroidure/knifecycle/compare/v10.0.2...v10.0.3) (2020-10-18)
+
+
+### Bug Fixes
+
+* **utils:** fix services mappings ([#118](https://github.com/nfroidure/knifecycle/issues/118)) ([5ce4cd4](https://github.com/nfroidure/knifecycle/commit/5ce4cd4ea50b6ec63d19a1e585adc140a6b47adf))
+
+
+
 ## [10.0.2](https://github.com/nfroidure/knifecycle/compare/v10.0.1...v10.0.2) (2020-09-15)
 
 
