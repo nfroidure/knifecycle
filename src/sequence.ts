@@ -1,9 +1,14 @@
 import YError from 'yerror';
 
+export type Node = {
+  __name: string;
+  __childNodes?: Node[];
+};
+
 const MAX_ITERATIONS = 99;
 
-export function buildInitializationSequence(rootNode) {
-  const batches = [];
+export function buildInitializationSequence(rootNode: Node): string[][] {
+  const batches: string[][] = [];
   let i = 0;
 
   while (i < MAX_ITERATIONS) {
@@ -23,7 +28,11 @@ export function buildInitializationSequence(rootNode) {
   return batches;
 }
 
-function recursivelyGetNextSequenceBatch(node, batches, batch = []) {
+function recursivelyGetNextSequenceBatch(
+  node: Node,
+  batches: string[][],
+  batch: string[] = [],
+): string[] {
   const nodeIsALeaf = !(node.__childNodes && node.__childNodes.length);
 
   if (nodeIsInBatches(batches, node)) {
@@ -32,7 +41,9 @@ function recursivelyGetNextSequenceBatch(node, batches, batch = []) {
 
   if (
     nodeIsALeaf ||
-    node.__childNodes.every(nodeIsInBatches.bind(null, batches))
+    node.__childNodes.every((childNode: Node) =>
+      nodeIsInBatches(batches, childNode),
+    )
   ) {
     return batch.concat(node.__name);
   }
@@ -45,6 +56,6 @@ function recursivelyGetNextSequenceBatch(node, batches, batch = []) {
   );
 }
 
-function nodeIsInBatches(batches, node) {
+function nodeIsInBatches(batches: string[][], node: Node): boolean {
   return batches.some((batch) => batch.includes(node.__name));
 }
