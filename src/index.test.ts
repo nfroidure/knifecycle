@@ -22,14 +22,14 @@ describe('Knifecycle', () => {
   };
   const time = Date.now.bind(Date);
 
-  function timeService() {
-    return Promise.resolve(time);
+  async function timeService() {
+    return time;
   }
 
-  function hashProvider(hash) {
-    return Promise.resolve({
+  async function hashProvider(hash) {
+    return {
       service: hash,
-    });
+    };
   }
 
   beforeEach(() => {
@@ -134,7 +134,7 @@ describe('Knifecycle', () => {
               type: 'provider',
               name: 'test',
               inject: [],
-              options: { singleton: true },
+              singleton: true,
             },
             async () => ({
               service: 1,
@@ -165,7 +165,7 @@ describe('Knifecycle', () => {
               type: 'provider',
               name: 'test',
               inject: [],
-              options: { singleton: true },
+              singleton: true,
             },
             async () => ({
               service: 1,
@@ -212,7 +212,7 @@ describe('Knifecycle', () => {
     it('should fail with no service name', () => {
       assert.throws(
         () => {
-          $.register(() => {});
+          $.register(() => undefined);
         },
         (err) => {
           assert.deepEqual(err.code, 'E_ANONYMOUS_ANALYZER');
@@ -225,7 +225,7 @@ describe('Knifecycle', () => {
     it('should fail with a bad service type', () => {
       assert.throws(
         () => {
-          const fn = () => {};
+          const fn = () => undefined;
           fn[SPECIAL_PROPS.NAME] = 'test';
           fn[SPECIAL_PROPS.TYPE] = 'not_allowed_type';
           $.register(fn);
@@ -245,11 +245,10 @@ describe('Knifecycle', () => {
     it('should fail with an undefined constant', () => {
       assert.throws(
         () => {
-          const fn = () => {};
+          const fn = () => undefined;
           fn[SPECIAL_PROPS.NAME] = 'THE_NUMBER';
           fn[SPECIAL_PROPS.TYPE] = 'constant';
-          fn[SPECIAL_PROPS.VALUE] = {}.undef;
-          fn[SPECIAL_PROPS.OPTIONS] = { singleton: true };
+          fn[SPECIAL_PROPS.VALUE] = undefined;
           $.register(fn);
         },
         (err) => {
@@ -260,28 +259,10 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should fail with a constant that is not a singleton', () => {
-      assert.throws(
-        () => {
-          const fn = () => {};
-          fn[SPECIAL_PROPS.NAME] = 'THE_NUMBER';
-          fn[SPECIAL_PROPS.TYPE] = 'constant';
-          fn[SPECIAL_PROPS.VALUE] = NaN;
-          fn[SPECIAL_PROPS.OPTIONS] = { singleton: false };
-          $.register(fn);
-        },
-        (err) => {
-          assert.deepEqual(err.code, 'E_NON_SINGLETON_CONSTANT_INITIALIZER');
-          assert.deepEqual(err.params, ['THE_NUMBER']);
-          return true;
-        },
-      );
-    });
-
     it('should fail with a non constant that has a value', () => {
       assert.throws(
         () => {
-          const fn = () => {};
+          const fn = () => undefined;
           fn[SPECIAL_PROPS.NAME] = 'myService';
           fn[SPECIAL_PROPS.TYPE] = 'service';
           fn[SPECIAL_PROPS.VALUE] = 42;
@@ -304,13 +285,13 @@ describe('Knifecycle', () => {
                 name: '$autoload',
                 type: 'provider',
               },
-              () => {},
+              async () => ({ service: () => undefined }),
             ),
           );
         },
         (err) => {
           assert.deepEqual(err.code, 'E_BAD_AUTOLOADER');
-          assert.deepEqual(err.params, [{}]);
+          assert.deepEqual(err.params, [false]);
           return true;
         },
       );
@@ -480,7 +461,7 @@ describe('Knifecycle', () => {
 
       assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
       assert.deepEqual(dependencies, {
-        hash: { ENV, DEBUG: {}.undef },
+        hash: { ENV, DEBUG: undefined },
         time,
       });
     });
@@ -569,7 +550,7 @@ describe('Knifecycle', () => {
     });
 
     it('should fail with bad service', async () => {
-      $.register(service(() => {}, 'lol'));
+      $.register(service((() => undefined) as any, 'lol'));
 
       try {
         await $.run(['lol']);
@@ -581,7 +562,7 @@ describe('Knifecycle', () => {
     });
 
     it('should fail with bad provider', async () => {
-      $.register(provider(() => {}, 'lol'));
+      $.register(provider((() => undefined) as any, 'lol'));
       try {
         await $.run(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
@@ -592,7 +573,7 @@ describe('Knifecycle', () => {
     });
 
     it('should fail with bad service in a provider', async () => {
-      $.register(provider(() => Promise.resolve(), 'lol'));
+      $.register(provider(() => Promise.resolve() as any, 'lol'));
       try {
         await $.run(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
@@ -644,7 +625,7 @@ describe('Knifecycle', () => {
 
       async function dbProvider({ ENV }) {
         let service;
-        const fatalErrorPromise = new Promise((resolve, reject) => {
+        const fatalErrorPromise = new Promise<void>((resolve, reject) => {
           service = Promise.resolve({
             resolve,
             reject,
@@ -678,9 +659,7 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: [],
-            options: {
-              singleton: true,
-            },
+            singleton: true,
           },
           async () => async (serviceName) => ({
             path: '/path/of/debug',
@@ -714,9 +693,7 @@ describe('Knifecycle', () => {
           {
             name: '$autoload',
             type: 'service',
-            options: {
-              singleton: true,
-            },
+            singleton: true,
           },
           async () => async (serviceName) => ({
             path: `/path/to/${serviceName}`,
@@ -758,9 +735,7 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: ['?ENV', 'DEBUG'],
-            options: {
-              singleton: true,
-            },
+            singleton: true,
           },
           async () => async (serviceName) => {
             if ('ENV' === serviceName) {
@@ -793,9 +768,7 @@ describe('Knifecycle', () => {
           {
             name: '$autoload',
             type: 'service',
-            options: {
-              singleton: true,
-            },
+            singleton: true,
           },
           async () => async (serviceName) => ({
             path: `/path/to/${serviceName}`,
@@ -839,9 +812,7 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: [],
-            options: {
-              singleton: true,
-            },
+            singleton: true,
           },
           async () => async (serviceName) => {
             throw new YError('E_CANNOT_AUTOLOAD', serviceName);
@@ -865,9 +836,7 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: [],
-            options: {
-              singleton: true,
-            },
+            singleton: true,
           },
           async () => async () => 'not_an_initializer',
         ),
@@ -878,7 +847,7 @@ describe('Knifecycle', () => {
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.equal(err.code, 'E_BAD_AUTOLOADED_INITIALIZER');
-        assert.deepEqual(err.params, ['test', {}.undef]);
+        assert.deepEqual(err.params, ['test', undefined]);
       }
     });
 
@@ -889,9 +858,7 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: [],
-            options: {
-              singleton: true,
-            },
+            singleton: true,
           },
           async () => async (serviceName) => ({
             path: '/path/of/debug',
@@ -923,9 +890,7 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: ['ENV'],
-            options: {
-              singleton: true,
-            },
+            singleton: true,
           },
           async () => async (serviceName) => ({
             path: '/path/of/debug',
@@ -957,9 +922,7 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: ['?ENV'],
-            options: {
-              singleton: true,
-            },
+            singleton: true,
           },
           async () => async (serviceName) => ({
             path: `/path/of/${serviceName}`,
@@ -989,7 +952,7 @@ describe('Knifecycle', () => {
             inject: ['?LOG_ROUTING', '?LOGGER', '?debug'],
           },
           async () => {
-            return function log() {};
+            return () => undefined;
           },
         ),
       );
@@ -1001,9 +964,7 @@ describe('Knifecycle', () => {
             type: 'service',
             name: '$autoload',
             inject: ['?ENV', '?log'],
-            options: {
-              singleton: true,
-            },
+            singleton: true,
           },
           async () => async (serviceName) => ({
             path: `/path/of/${serviceName}`,
@@ -1120,16 +1081,8 @@ describe('Knifecycle', () => {
 
     it('should reuse dependencies when declared as singletons', async () => {
       $.register(constant('ENV', ENV));
-      $.register(
-        provider(hashProvider, 'hash', ['ENV'], {
-          singleton: true,
-        }),
-      );
-      $.register(
-        provider(hashProvider, 'hash2', ['ENV'], {
-          singleton: true,
-        }),
-      );
+      $.register(provider(hashProvider, 'hash', ['ENV'], true));
+      $.register(provider(hashProvider, 'hash2', ['ENV'], true));
 
       const [
         { hash, hash2 },
@@ -1160,11 +1113,7 @@ describe('Knifecycle', () => {
     it('should work with several silos and dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(
-        provider(hashProvider, 'hash', ['ENV'], {
-          singleton: true,
-        }),
-      );
+      $.register(provider(hashProvider, 'hash', ['ENV'], true));
       $.register(provider(hashProvider, 'hash1', ['ENV']));
       $.register(provider(hashProvider, 'hash2', ['ENV']));
 
@@ -1429,11 +1378,7 @@ describe('Knifecycle', () => {
     it('should not shutdown singleton dependencies if used elsewhere', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(
-        provider(hashProvider, 'hash', ['ENV'], {
-          singleton: true,
-        }),
-      );
+      $.register(provider(hashProvider, 'hash', ['ENV'], true));
 
       const { hash } = await $.run(['time', 'hash']);
       const dependencies = await $.run(['time', 'hash', '$dispose']);
@@ -1449,11 +1394,7 @@ describe('Knifecycle', () => {
     it('should shutdown singleton dependencies if not used elsewhere', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      $.register(
-        provider(hashProvider, 'hash', ['ENV'], {
-          singleton: true,
-        }),
-      );
+      $.register(provider(hashProvider, 'hash', ['ENV'], true));
 
       const { hash, $dispose } = await $.run(['time', 'hash', '$dispose']);
 

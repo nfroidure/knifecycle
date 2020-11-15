@@ -4,30 +4,32 @@
   "description": "Manage your NodeJS processes's lifecycle automatically with an unobtrusive dependency injection implementation.",
   "main": "dist/index",
   "module": "dist/index.mjs",
-  "types": "src/index.d.ts",
+  "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nfroidure/knifecycle.git"
   },
   "engines": {
-    "node": ">=10.19.0"
+    "node": ">=12.19.0"
   },
   "metapak": {
     "configs": [
       "main",
       "readme",
       "eslint",
-      "codeclimate",
       "babel",
-      "mocha",
+      "typescript",
+      "jest",
       "travis",
       "karma",
       "jsdocs",
-      "jsarch"
+      "jsarch",
+      "codeclimate"
     ],
     "data": {
-      "testsFiles": "src/*.mocha.js",
-      "files": "src/*.js",
+      "files": "'src/**/*.ts'",
+      "testsFiles": "'src/**/*.test.ts'",
+      "distFiles": "'dist/**/*.js'",
       "ignore": [
         "dist"
       ],
@@ -45,25 +47,26 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "architecture": "jsarch src/*.js > ARCHITECTURE.md && git add ARCHITECTURE.md",
+    "architecture": "jsarch 'src/**/*.ts' > ARCHITECTURE.md && git add ARCHITECTURE.md",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
     "cli": "env NODE_ENV=${NODE_ENV:-cli}",
     "compile": "rimraf -f 'dist' && npm run compile:cjs && npm run compile:mjs",
-    "compile:cjs": "babel --env-name=cjs --out-dir=dist --source-maps=true src",
-    "compile:mjs": "babel --env-name=mjs --out-file-extension=.mjs --out-dir=dist --source-maps=true src",
-    "cover": "nyc npm test && nyc report --reporter=html --reporter=text",
-    "coveralls": "nyc npm test && nyc report --reporter=text-lcov | coveralls && rm -rf ./coverage",
+    "compile:cjs": "babel --env-name=cjs --out-dir=dist --extensions '.ts,.js' --source-maps=true src",
+    "compile:mjs": "babel --env-name=mjs --out-file-extension=.mjs --out-dir=dist --extensions '.ts,.js' --source-maps=true src",
+    "cover": "npm run jest -- --coverage",
+    "coveralls": "npm run cover && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage",
     "cz": "env NODE_ENV=${NODE_ENV:-cli} git cz",
-    "doc": "echo \"# API\" > API.md; jsdoc2md src/*.js >> API.md && git add API.md",
+    "doc": "echo \"# API\" > API.md; jsdoc2md 'dist/**/*.js' >> API.md && git add API.md",
+    "jest": "NODE_ENV=test jest",
     "karma": "karma start karma.conf.js",
-    "lint": "eslint src/*.js",
+    "lint": "eslint 'src/**/*.ts'",
     "metapak": "metapak",
-    "mocha": "mocha --require '@babel/register' src/*.mocha.js",
-    "precz": "npm run lint && npm t && npm run compile && npm run doc && npm run architecture && npm run metapak -- -s",
-    "prepublish": "npm run compile",
-    "prettier": "prettier --write src/*.js",
-    "preversion": "npm run compile && npm t && npm run lint && npm run doc && npm run architecture && npm run metapak -- -s",
-    "test": "npm run mocha && npm run karma",
+    "precz": "npm run compile && npm run types && npm run lint && npm t && npm run doc && npm run architecture && npm run metapak -- -s",
+    "prepublish": "npm run compile && npm run types",
+    "prettier": "prettier --write 'src/**/*.ts'",
+    "preversion": "npm run compile && npm run types && npm run lint && npm t && npm run doc && npm run architecture && npm run metapak -- -s",
+    "test": "npm run jest && npm run karma",
+    "types": "rimraf -f 'dist/**/*.d.ts' && tsc --project . --declaration --emitDeclarationOnly --outDir dist",
     "version": "npm run changelog"
   },
   "keywords": [
@@ -80,36 +83,44 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@babel/cli": "^7.10.5",
-    "@babel/core": "^7.11.1",
-    "@babel/plugin-proposal-object-rest-spread": "^7.11.0",
-    "@babel/preset-env": "^7.11.0",
-    "@babel/register": "^7.10.5",
+    "@babel/cli": "^7.12.1",
+    "@babel/core": "^7.12.3",
+    "@babel/plugin-proposal-class-properties": "^7.12.1",
+    "@babel/plugin-proposal-object-rest-spread": "^7.12.1",
+    "@babel/preset-env": "^7.12.1",
+    "@babel/preset-typescript": "^7.12.1",
+    "@babel/register": "^7.12.1",
+    "@types/jest": "^26.0.15",
+    "@typescript-eslint/eslint-plugin": "^4.8.1",
+    "@typescript-eslint/parser": "^4.8.1",
     "babel-eslint": "^10.1.0",
-    "browserify": "^16.5.1",
+    "browserify": "^17.0.0",
     "commitizen": "^4.1.2",
-    "conventional-changelog-cli": "^2.1.0",
+    "conventional-changelog-cli": "^2.1.1",
     "coveralls": "^3.1.0",
-    "cz-conventional-changelog": "^3.2.0",
-    "eslint": "^7.7.0",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^7.13.0",
     "eslint-plugin-prettier": "^3.1.4",
+    "jest": "^26.6.3",
     "jsarch": "^3.0.0",
     "jsdoc-to-markdown": "^6.0.1",
-    "karma": "^5.1.0",
+    "karma": "^5.2.3",
     "karma-browserify": "^7.0.0",
     "karma-chrome-launcher": "^3.1.0",
-    "karma-firefox-launcher": "^1.3.0",
+    "karma-firefox-launcher": "^2.1.0",
     "karma-mocha": "^2.0.1",
-    "karma-sauce-launcher": "^4.1.2",
+    "karma-sauce-launcher": "^4.3.3",
     "metapak": "^3.1.10",
-    "metapak-nfroidure": "10.2.5",
-    "mocha": "^8.1.1",
-    "nyc": "^15.1.0",
-    "prettier": "^2.0.5",
-    "sinon": "^9.0.1"
+    "metapak-nfroidure": "11.0.3",
+    "mocha": "8.2.1",
+    "prettier": "^2.1.2",
+    "rimraf": "^3.0.2",
+    "sinon": "^9.2.1",
+    "typescript": "^4.0.5"
   },
   "dependencies": {
     "debug": "^4.2.0",
+    "type-fest": "^0.19.0",
     "yerror": "^5.0.0"
   },
   "config": {
@@ -125,33 +136,37 @@
       "eslint",
       "eslint-config-prettier",
       "prettier",
+      "@typescript-eslint/parser",
       "@babel/cli",
       "@babel/core",
       "@babel/register",
       "@babel/preset-env",
       "@babel/plugin-proposal-object-rest-spread",
+      "@babel/preset-typescript",
+      "@babel/plugin-proposal-class-properties",
       "babel-eslint",
-      "mocha",
+      "babel-core",
+      "typescript",
+      "jest",
       "coveralls",
-      "nyc",
       "karma",
       "karma-chrome-launcher",
       "karma-firefox-launcher",
-      "karma-mocha",
       "jsdoc-to-markdown",
       "jsarch"
     ]
   },
-  "nyc": {
-    "exclude": [
-      "**/*.mocha.js",
-      "**/*.conf.js",
-      "dist"
-    ]
-  },
   "contributors": [],
+  "bugs": {
+    "url": "https://github.com/nfroidure/knifecycle/issues"
+  },
+  "homepage": "https://github.com/nfroidure/knifecycle#readme",
   "eslintConfig": {
-    "extends": "eslint:recommended",
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/eslint-recommended",
+      "plugin:@typescript-eslint/recommended"
+    ],
     "parserOptions": {
       "ecmaVersion": 2018,
       "sourceType": "module",
@@ -168,7 +183,11 @@
     ],
     "rules": {
       "prettier/prettier": "error"
-    }
+    },
+    "parser": "@typescript-eslint/parser",
+    "ignorePatterns": [
+      "*.d.ts"
+    ]
   },
   "prettier": {
     "semi": true,
@@ -177,18 +196,17 @@
     "trailingComma": "all",
     "proseWrap": "always"
   },
-  "bugs": {
-    "url": "https://github.com/nfroidure/knifecycle/issues"
-  },
-  "homepage": "https://github.com/nfroidure/knifecycle#readme",
   "babel": {
-    "plugins": [],
+    "plugins": [
+      "@babel/proposal-class-properties"
+    ],
     "presets": [
+      "@babel/typescript",
       [
         "@babel/env",
         {
           "targets": {
-            "node": "10.19.0"
+            "node": "12.19.0"
           }
         }
       ]
@@ -224,5 +242,23 @@
       }
     },
     "sourceMaps": true
+  },
+  "jest": {
+    "coverageReporters": [
+      "lcov"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "roots": [
+      "<rootDir>/src"
+    ]
+  },
+  "jsarch": {
+    "parserOptions": {
+      "plugins": [
+        "typescript"
+      ]
+    }
   }
 }
