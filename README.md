@@ -414,14 +414,40 @@ is maybe the best feature of this library ;).
 <dd></dd>
 </dl>
 
+## Members
+
+<dl>
+<dt><a href="#default">default</a> ⇒ <code>Promise.&lt;function()&gt;</code></dt>
+<dd><p>Instantiate the initializer builder service</p>
+</dd>
+</dl>
+
 ## Functions
 
 <dl>
-<dt><a href="#initInitializerBuilder">initInitializerBuilder(services)</a> ⇒ <code>Promise.&lt;function()&gt;</code></dt>
-<dd><p>Instantiate the initializer builder service</p>
-</dd>
 <dt><a href="#reuseSpecialProps">reuseSpecialProps(from, to, [amend])</a> ⇒ <code>function</code></dt>
-<dd><p>Apply special props to the given function from another one</p>
+<dd><p>Apply special props to the given initializer from another one
+ and optionally amend with new special props</p>
+</dd>
+<dt><a href="#constant">constant(name, value)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator that creates an initializer for a constant value</p>
+</dd>
+<dt><a href="#service">service(serviceBuilder, [name], [dependencies], [singleton], [extra])</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator that creates an initializer from a service builder</p>
+</dd>
+<dt><a href="#autoService">autoService(serviceBuilder)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator that creates an initializer from a service
+ builder by automatically detecting its name
+ and dependencies</p>
+</dd>
+<dt><a href="#provider">provider(providerBuilder, [name], [dependencies], [singleton], [extra])</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator that creates an initializer for a provider
+ builder</p>
+</dd>
+<dt><a href="#autoProvider">autoProvider(providerBuilder)</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator that creates an initializer from a provider
+ builder by automatically detecting its name
+ and dependencies</p>
 </dd>
 <dt><a href="#wrapInitializer">wrapInitializer(wrapper, baseInitializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Allows to wrap an initializer to add extra initialization steps</p>
@@ -452,8 +478,8 @@ is maybe the best feature of this library ;).
  informations but has no interaction with the
  Knifecycle internals.</p>
 </dd>
-<dt><a href="#options">options(options, initializer, [merge])</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator to amend an initializer options.</p>
+<dt><a href="#singleton">singleton(initializer, [isSingleton])</a> ⇒ <code>function</code></dt>
+<dd><p>Decorator to set an initializer singleton option.</p>
 </dd>
 <dt><a href="#name">name(name, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to set an initializer name.</p>
@@ -466,21 +492,6 @@ is maybe the best feature of this library ;).
 </dd>
 <dt><a href="#initializer">initializer(properties, initializer)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator to set an initializer properties.</p>
-</dd>
-<dt><a href="#constant">constant(name, initializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator that creates an initializer for a constant value</p>
-</dd>
-<dt><a href="#service">service(builder, [name], [dependencies], [options])</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator that creates an initializer for a service</p>
-</dd>
-<dt><a href="#autoService">autoService(initializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator that auto creates a service</p>
-</dd>
-<dt><a href="#provider">provider(builder, [name], [dependencies], [options])</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator that creates an initializer for a provider</p>
-</dd>
-<dt><a href="#autoProvider">autoProvider(initializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator that auto creates a provider</p>
 </dd>
 <dt><a href="#handler">handler(handlerFunction, [name], [dependencies], [options])</a> ⇒ <code>function</code></dt>
 <dd><p>Shortcut to create an initializer with a simple handler</p>
@@ -620,7 +631,7 @@ $.run(['ENV'])
 Initialize or return a service descriptor
 
 **Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
-**Returns**: <code>Promise</code> - Service dependencies hash promise.  
+**Returns**: <code>Promise</code> - Service descriptor promise.  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -664,12 +675,12 @@ Initialize a service dependencies
 | options.injectorContext | <code>Boolean</code> | Flag indicating the injection were initiated by the $injector |
 | options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependendencies on the fly loading. |
 
-<a name="initInitializerBuilder"></a>
+<a name="default"></a>
 
-## initInitializerBuilder(services) ⇒ <code>Promise.&lt;function()&gt;</code>
+## default ⇒ <code>Promise.&lt;function()&gt;</code>
 Instantiate the initializer builder service
 
-**Kind**: global function  
+**Kind**: global variable  
 **Returns**: <code>Promise.&lt;function()&gt;</code> - A promise of the buildInitializer function  
 
 | Param | Type | Description |
@@ -685,43 +696,160 @@ const buildInitializer = await initInitializerBuilder({
   $autoload: async () => {},
 });
 ```
-<a name="initInitializerBuilder..buildInitializer"></a>
-
-### initInitializerBuilder~buildInitializer(dependencies) ⇒ <code>Promise.&lt;String&gt;</code>
-Create a JavaScript module that initialize
-a set of dependencies with hardcoded
-import/awaits.
-
-**Kind**: inner method of [<code>initInitializerBuilder</code>](#initInitializerBuilder)  
-**Returns**: <code>Promise.&lt;String&gt;</code> - The JavaScript module content  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| dependencies | <code>Array.&lt;String&gt;</code> | The main dependencies |
-
-**Example**  
-```js
-import initInitializerBuilder from 'knifecycle/dist/build';
-
-const buildInitializer = await initInitializerBuilder({
-  $autoload: async () => {},
-});
-
-const content = await buildInitializer(['entryPoint']);
-```
 <a name="reuseSpecialProps"></a>
 
 ## reuseSpecialProps(from, to, [amend]) ⇒ <code>function</code>
-Apply special props to the given function from another one
+Apply special props to the given initializer from another one
+ and optionally amend with new special props
 
 **Kind**: global function  
-**Returns**: <code>function</code> - The newly built function  
+**Returns**: <code>function</code> - The newly built initializer  
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| from | <code>function</code> |  | The initialization function in which to pick the props |
-| to | <code>function</code> |  | The initialization function from which to build the new one |
+| from | <code>function</code> |  | The initializer in which to pick the props |
+| to | <code>function</code> |  | The initializer from which to build the new one |
 | [amend] | <code>Object</code> | <code>{}</code> | Some properties to override |
+
+<a name="constant"></a>
+
+## constant(name, value) ⇒ <code>function</code>
+Decorator that creates an initializer for a constant value
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new constant initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>String</code> | The constant's name. |
+| value | <code>any</code> | The constant's value |
+
+**Example**  
+```js
+import Knifecycle, { constant, service } from 'knifecycle';
+
+const { printAnswer } = new Knifecycle()
+  .register(constant('THE_NUMBER', value))
+  .register(constant('log', console.log.bind(console)))
+  .register(service(
+    async ({ THE_NUMBER, log }) => () => log(THE_NUMBER),
+    'printAnswer',
+    ['THE_NUMBER', 'log'],
+  ))
+  .run(['printAnswer']);
+
+printAnswer(); // 42
+```
+<a name="service"></a>
+
+## service(serviceBuilder, [name], [dependencies], [singleton], [extra]) ⇒ <code>function</code>
+Decorator that creates an initializer from a service builder
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| serviceBuilder | <code>function</code> | An async function to build the service |
+| [name] | <code>String</code> | The service's name |
+| [dependencies] | <code>Array.&lt;String&gt;</code> | The service's injected dependencies |
+| [singleton] | <code>Boolean</code> | Whether the service is a singleton or not |
+| [extra] | <code>any</code> | Eventual extra informations |
+
+**Example**  
+```js
+import Knifecycle, { constant, service } from 'knifecycle';
+
+const { printAnswer } = new Knifecycle()
+  .register(constant('THE_NUMBER', value))
+  .register(constant('log', console.log.bind(console)))
+  .register(service(
+    async ({ THE_NUMBER, log }) => () => log(THE_NUMBER),
+    'printAnswer',
+    ['THE_NUMBER', 'log'],
+    true
+  ))
+  .run(['printAnswer']);
+
+printAnswer(); // 42
+```
+<a name="autoService"></a>
+
+## autoService(serviceBuilder) ⇒ <code>function</code>
+Decorator that creates an initializer from a service
+ builder by automatically detecting its name
+ and dependencies
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| serviceBuilder | <code>function</code> | An async function to build the service |
+
+<a name="provider"></a>
+
+## provider(providerBuilder, [name], [dependencies], [singleton], [extra]) ⇒ <code>function</code>
+Decorator that creates an initializer for a provider
+ builder
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new provider initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| providerBuilder | <code>function</code> | An async function to build the service provider |
+| [name] | <code>String</code> | The service's name |
+| [dependencies] | <code>Array.&lt;String&gt;</code> | The service's dependencies |
+| [singleton] | <code>Boolean</code> | Whether the service is a singleton or not |
+| [extra] | <code>any</code> | Eventual extra informations |
+
+**Example**  
+```js
+import Knifecycle, { provider } from 'knifecycle'
+import fs from 'fs';
+
+const $ = new Knifecycle();
+
+$.register(provider(configProvider, 'config'));
+
+async function configProvider() {
+  return new Promise((resolve, reject) {
+    fs.readFile('config.js', function(err, data) {
+      let config;
+
+      if(err) {
+        reject(err);
+        return;
+      }
+
+      try {
+        config = JSON.parse(data.toString);
+      } catch (err) {
+        reject(err);
+        return;
+      }
+
+      resolve({
+        service: config,
+      });
+    });
+  });
+}
+```
+<a name="autoProvider"></a>
+
+## autoProvider(providerBuilder) ⇒ <code>function</code>
+Decorator that creates an initializer from a provider
+ builder by automatically detecting its name
+ and dependencies
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns a new provider initializer  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| providerBuilder | <code>function</code> | An async function to build the service provider |
 
 <a name="wrapInitializer"></a>
 
@@ -747,7 +875,7 @@ Decorator creating a new initializer with different
 
 | Param | Type | Description |
 | --- | --- | --- |
-| dependencies | <code>Array.&lt;String&gt;</code> | List of dependencies declarations to declare which  services the initializer needs to resolve its  own service |
+| dependencies | <code>Array.&lt;String&gt;</code> | List of dependencies declarations to declare which  services the initializer needs to provide its  own service |
 | initializer | <code>function</code> | The initializer to tweak |
 
 **Example**  
@@ -875,30 +1003,28 @@ new Knifecycle()
   'myService',
 ));
 ```
-<a name="options"></a>
+<a name="singleton"></a>
 
-## options(options, initializer, [merge]) ⇒ <code>function</code>
-Decorator to amend an initializer options.
+## singleton(initializer, [isSingleton]) ⇒ <code>function</code>
+Decorator to set an initializer singleton option.
 
 **Kind**: global function  
 **Returns**: <code>function</code> - Returns a new initializer  
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| options | <code>Object</code> |  | Options to set to the initializer |
-| options.singleton | <code>Object</code> |  | Define the initializer service as a singleton (one instance for several runs) |
 | initializer | <code>function</code> |  | The initializer to tweak |
-| [merge] | <code>function</code> | <code>true</code> | Whether options should be merged or not |
+| [isSingleton] | <code>boolean</code> | <code>true</code> | Define the initializer singleton option (one instance for several runs if true) |
 
 **Example**  
 ```js
-import Knifecycle, { inject, options } from 'knifecycle';
+import Knifecycle, { inject, singleton } from 'knifecycle';
 import myServiceInitializer from './service';
 
 new Knifecycle()
 .register(service(
   inject(['ENV'],
-    options({ singleton: true}, myServiceInitializer)
+    singleton(myServiceInitializer)
   ),
   'myService',
 ));
@@ -996,139 +1122,6 @@ new Knifecycle()
   options: { singleton: true }
 }, myServiceInitializer));
 ```
-<a name="constant"></a>
-
-## constant(name, initializer) ⇒ <code>function</code>
-Decorator that creates an initializer for a constant value
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| name | <code>String</code> | The constant's name. |
-| initializer | <code>any</code> | The constant's value |
-
-**Example**  
-```js
-import Knifecycle, { constant, service } from 'knifecycle';
-
-const { printAnswer } = new Knifecycle()
-  .register(constant('THE_NUMBER', value))
-  .register(constant('log', console.log.bind(console)))
-  .register(service(
-    async ({ THE_NUMBER, log }) => () => log(THE_NUMBER),
-    'printAnswer',
-    ['THE_NUMBER', 'log'],
-  ))
-  .run(['printAnswer']);
-
-printAnswer(); // 42
-```
-<a name="service"></a>
-
-## service(builder, [name], [dependencies], [options]) ⇒ <code>function</code>
-Decorator that creates an initializer for a service
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| builder | <code>function</code> | An initializer returning the service promise |
-| [name] | <code>String</code> | The service's name |
-| [dependencies] | <code>Array.&lt;String&gt;</code> | The service's dependencies |
-| [options] | <code>Object</code> | Options attached to the built initializer |
-
-**Example**  
-```js
-import Knifecycle, { constant, service } from 'knifecycle';
-
-const { printAnswer } = new Knifecycle()
-  .register(constant('THE_NUMBER', value))
-  .register(constant('log', console.log.bind(console)))
-  .register(service(
-    async ({ THE_NUMBER, log }) => () => log(THE_NUMBER),
-    'printAnswer',
-    ['THE_NUMBER', 'log'],
-    { singleton: true }
-  ))
-  .run(['printAnswer']);
-
-printAnswer(); // 42
-```
-<a name="autoService"></a>
-
-## autoService(initializer) ⇒ <code>function</code>
-Decorator that auto creates a service
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| initializer | <code>function</code> | An initializer returning the service promise |
-
-<a name="provider"></a>
-
-## provider(builder, [name], [dependencies], [options]) ⇒ <code>function</code>
-Decorator that creates an initializer for a provider
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| builder | <code>function</code> | A builder returning the provider promise |
-| [name] | <code>String</code> | The service's name |
-| [dependencies] | <code>Array.&lt;String&gt;</code> | The service's dependencies |
-| [options] | <code>Object</code> | Options attached to the built initializer |
-
-**Example**  
-```js
-import Knifecycle, { provider } from 'knifecycle'
-import fs from 'fs';
-
-const $ = new Knifecycle();
-
-$.register(provider(configProvider, 'config'));
-
-async function configProvider() {
-  return new Promise((resolve, reject) {
-    fs.readFile('config.js', function(err, data) {
-      let config;
-
-      if(err) {
-        reject(err);
-        return;
-      }
-
-      try {
-        config = JSON.parse(data.toString);
-      } catch (err) {
-        reject(err);
-        return;
-      }
-
-      resolve({
-        service: config,
-      });
-    });
-  });
-}
-```
-<a name="autoProvider"></a>
-
-## autoProvider(initializer) ⇒ <code>function</code>
-Decorator that auto creates a provider
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| initializer | <code>function</code> | An initializer returning the provider promise |
-
 <a name="handler"></a>
 
 ## handler(handlerFunction, [name], [dependencies], [options]) ⇒ <code>function</code>
