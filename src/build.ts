@@ -1,5 +1,11 @@
 import { SPECIAL_PROPS, parseDependencyDeclaration, initializer } from './util';
 import { buildInitializationSequence } from './sequence';
+import type { DependencyDeclaration } from './util';
+import type { Autoloader } from '.';
+
+export type BuildInitializer = (
+  dependencies: DependencyDeclaration[],
+) => Promise<string>;
 
 /* Architecture Note #2: Build
 
@@ -42,7 +48,11 @@ export default initializer(
  *   $autoload: async () => {},
  * });
  */
-async function initInitializerBuilder({ $autoload }) {
+async function initInitializerBuilder({
+  $autoload,
+}: {
+  $autoload: Autoloader;
+}) {
   return buildInitializer;
 
   /**
@@ -62,7 +72,9 @@ async function initInitializerBuilder({ $autoload }) {
    *
    * const content = await buildInitializer(['entryPoint']);
    */
-  async function buildInitializer(dependencies) {
+  async function buildInitializer(
+    dependencies: DependencyDeclaration[],
+  ): Promise<string> {
     const dependencyTrees = await Promise.all(
       dependencies.map((dependency) =>
         buildDependencyTree({ $autoload }, dependency),
