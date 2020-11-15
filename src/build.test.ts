@@ -2,15 +2,19 @@ import assert from 'assert';
 import YError from 'yerror';
 import initInitializerBuilder from './build';
 import Knifecycle, { initializer, constant } from '.';
+import type { BuildInitializer } from './build';
 
 describe('buildInitializer', () => {
-  async function aProvider() {}
+  async function aProvider() {
+    return {
+      service: 'PROVIDER_SERVICE',
+    };
+  }
   const mockedDepsHash = {
     NODE_ENV: constant('NODE_ENV', 'development'),
     dep1: initializer(
       {
         inject: [],
-        options: {},
         type: 'service',
         name: 'dep1',
       },
@@ -19,7 +23,6 @@ describe('buildInitializer', () => {
     dep2: initializer(
       {
         inject: ['dep1', 'NODE_ENV'],
-        options: {},
         type: 'provider',
         name: 'dep2',
       },
@@ -28,7 +31,6 @@ describe('buildInitializer', () => {
     dep3: initializer(
       {
         inject: ['dep2', 'dep1', '?depOpt'],
-        options: {},
         type: 'service',
         name: 'dep3',
       },
@@ -40,9 +42,7 @@ describe('buildInitializer', () => {
       name: '$autoload',
       type: 'service',
       inject: [],
-      options: {
-        singleton: true,
-      },
+      singleton: true,
     },
     async () => {
       return async function $autoload(name) {
@@ -57,13 +57,15 @@ describe('buildInitializer', () => {
   );
 
   it('should build an initialization module', async () => {
-    const $ = new Knifecycle();
+    const $ = new Knifecycle<BuildInitializer | string>();
 
     $.register(constant('PWD', '~/my-project'));
     $.register(initAutoloader);
     $.register(initInitializerBuilder);
 
-    const { buildInitializer } = await $.run(['buildInitializer']);
+    const { buildInitializer } = (await $.run(['buildInitializer'])) as {
+      buildInitializer: BuildInitializer;
+    };
 
     const content = await buildInitializer(['dep1', 'finalMappedDep>dep3']);
     assert.equal(
