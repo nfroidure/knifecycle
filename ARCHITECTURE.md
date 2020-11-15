@@ -24,7 +24,7 @@ It is designed to have a low footprint on services code.
  at all since they are just simple functions with annotations
  set as a property.
 
-[See in context](./src/index.js#L61-L77)
+[See in context](./src/index.ts#L155-L171)
 
 
 
@@ -39,7 +39,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.js#L79-L88)
+[See in context](./src/index.ts#L173-L182)
 
 
 
@@ -65,7 +65,7 @@ A service provider is full of state since its concern is
 `Knifecycle` provides a set of decorators that allows you to simply
  create new initializers.
 
-[See in context](./src/util.js#L6-L27)
+[See in context](./src/util.ts#L8-L29)
 
 
 
@@ -79,7 +79,7 @@ The `?` flag indicates an optional dependency.
 It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.js#L774-L783)
+[See in context](./src/util.ts#L1246-L1255)
 
 
 
@@ -107,7 +107,7 @@ Initializers can be of three types:
   executions silos using them (we will cover this
   topic later on).
 
-[See in context](./src/index.js#L138-L161)
+[See in context](./src/index.ts#L257-L280)
 
 
 
@@ -123,7 +123,7 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.js#L410-L420)
+[See in context](./src/index.ts#L565-L575)
 
 
 
@@ -143,5 +143,5 @@ For the build to work, we need:
 - the dependencies list you want to
  initialize
 
-[See in context](./src/build.js#L4-L19)
+[See in context](./src/build.ts#L10-L25)
 

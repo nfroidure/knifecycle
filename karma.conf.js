@@ -52,10 +52,7 @@ module.exports = function buildKarmeConf(config) {
 
   if (
     !process.env.SAUCE_USERNAME ||
-    !execSync('node -v')
-      .toString()
-      .trim()
-      .startsWith('v10') ||
+    !execSync('node -v').toString().trim().startsWith('v10') ||
     (process.env.TRAVIS_PULL_REQUEST &&
       'false' !== process.env.TRAVIS_PULL_REQUEST)
   ) {
@@ -114,9 +111,7 @@ module.exports = function buildKarmeConf(config) {
           logfile: 'sauce_connect.log',
         },
         public: 'public',
-        build: `build-${execSync('git rev-parse HEAD')
-          .toString()
-          .trim()}`,
+        build: `build-${execSync('git rev-parse HEAD').toString().trim()}`,
       },
 
       // start these browsers
