@@ -1,6 +1,6 @@
 {
   "name": "knifecycle",
-  "version": "10.0.3",
+  "version": "11.0.0-beta.7",
   "description": "Manage your NodeJS processes's lifecycle automatically with an unobtrusive dependency injection implementation.",
   "main": "dist/index",
   "module": "dist/index.mjs",
