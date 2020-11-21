@@ -1,3 +1,7 @@
+# [11.0.0-beta.3](https://github.com/nfroidure/knifecycle/compare/v10.0.3...v11.0.0-beta.3) (2020-11-21)
+
+
+
 ## [10.0.3](https://github.com/nfroidure/knifecycle/compare/v10.0.2...v10.0.3) (2020-10-18)
 
 

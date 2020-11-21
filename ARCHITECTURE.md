@@ -24,7 +24,7 @@ It is designed to have a low footprint on services code.
  at all since they are just simple functions with annotations
  set as a property.
 
-[See in context](./src/index.ts#L150-L166)
+[See in context](./src/index.ts#L154-L170)
 
 
 
@@ -39,7 +39,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.ts#L168-L177)
+[See in context](./src/index.ts#L172-L181)
 
 
 
@@ -79,7 +79,7 @@ The `?` flag indicates an optional dependency.
 It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.ts#L1237-L1246)
+[See in context](./src/util.ts#L1246-L1255)
 
 
 
@@ -107,7 +107,7 @@ Initializers can be of three types:
   executions silos using them (we will cover this
   topic later on).
 
-[See in context](./src/index.ts#L251-L274)
+[See in context](./src/index.ts#L255-L278)
 
 
 
@@ -123,7 +123,7 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.ts#L561-L571)
+[See in context](./src/index.ts#L565-L575)
 
 
 
