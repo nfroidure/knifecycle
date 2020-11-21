@@ -107,7 +107,7 @@ Initializers can be of three types:
   executions silos using them (we will cover this
   topic later on).
 
-[See in context](./src/index.ts#L257-L280)
+[See in context](./src/index.ts#L253-L276)
 
 
 
@@ -123,7 +123,7 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.ts#L565-L575)
+[See in context](./src/index.ts#L563-L573)
 
 
 
