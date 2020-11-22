@@ -1,3 +1,12 @@
+# [11.0.0-beta.8](https://github.com/nfroidure/knifecycle/compare/v10.0.3...v11.0.0-beta.8) (2020-11-22)
+
+
+### Bug Fixes
+
+* **types:** fix generic types initializer passthrough ([59aa179](https://github.com/nfroidure/knifecycle/commit/59aa17986bd98d75263acb5ab7732bc2ae66a1ca))
+
+
+
 ## [10.0.3](https://github.com/nfroidure/knifecycle/compare/v10.0.2...v10.0.3) (2020-10-18)
 
 
