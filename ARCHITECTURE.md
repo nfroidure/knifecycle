@@ -24,7 +24,7 @@ It is designed to have a low footprint on services code.
  at all since they are just simple functions with annotations
  set as a property.
 
-[See in context](./src/index.ts#L158-L174)
+[See in context](./src/index.ts#L159-L175)
 
 
 
@@ -39,7 +39,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.ts#L176-L185)
+[See in context](./src/index.ts#L177-L186)
 
 
 
@@ -79,7 +79,7 @@ The `?` flag indicates an optional dependency.
 It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.ts#L1246-L1255)
+[See in context](./src/util.ts#L1248-L1257)
 
 
 
@@ -107,7 +107,7 @@ Initializers can be of three types:
   executions silos using them (we will cover this
   topic later on).
 
-[See in context](./src/index.ts#L256-L279)
+[See in context](./src/index.ts#L257-L280)
 
 
 
@@ -123,7 +123,7 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.ts#L566-L576)
+[See in context](./src/index.ts#L542-L552)
 
 
 
@@ -144,4 +144,20 @@ For the build to work, we need:
  initialize
 
 [See in context](./src/build.ts#L10-L25)
+
+
+
+## TypeScript tweaks
+
+Sadly TypeScript does not allow to add generic types
+ in all cases. This is why `(Service|Provider)Initializer`
+ types do not embed the `(Service|Provider)Properties`
+ direclty. Instead, we use this utility function to
+ reveal it to TypeScript and, by the way, check their
+ completeness at execution time.
+
+For more details, see:
+https://stackoverflow.com/questions/64948037/generics-type-loss-while-infering/64950184#64950184
+
+[See in context](./src/util.ts#L1319-L1330)
 

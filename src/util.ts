@@ -59,6 +59,7 @@ export type ParsedDependencyDeclaration = {
 export type ConstantProperties = {
   $type: 'constant';
   $name: DependencyName;
+  $singleton: true;
 };
 export type ConstantInitializer<S extends Service> = ConstantProperties & {
   $value: S;
@@ -75,10 +76,9 @@ export type ProviderProperties = {
   $singleton?: boolean;
   $extra?: ExtraInformations;
 };
-export type ProviderInitializer<
-  D extends Dependencies,
-  S extends Service
-> = ProviderInitializerBuilder<D, S> & ProviderProperties;
+export type ProviderInitializer<D extends Dependencies, S extends Service> = (
+  dependencies?: D,
+) => Promise<Provider<S>>;
 export type ProviderInputProperties = {
   type: 'provider';
   name: DependencyName;
@@ -98,10 +98,9 @@ export type ServiceProperties = {
   $singleton?: boolean;
   $extra?: ExtraInformations;
 };
-export type ServiceInitializer<
-  D extends Dependencies,
-  S extends Service
-> = ServiceInitializerBuilder<D, S> & ServiceProperties;
+export type ServiceInitializer<D extends Dependencies, S extends Service> = (
+  dependencies?: D,
+) => Promise<S>;
 export type ServiceInputProperties = {
   type: 'service';
   name: DependencyName;
@@ -109,6 +108,11 @@ export type ServiceInputProperties = {
   singleton?: boolean;
   extra?: ExtraInformations;
 };
+
+export type InitializerProperties =
+  | ConstantProperties
+  | ProviderProperties
+  | ServiceProperties;
 
 export type AsyncInitializerBuilder<
   D extends Dependencies,
@@ -122,21 +126,18 @@ export type PartialAsyncInitializer<
   S extends Service
 > = Partial<ServiceInitializer<D, S>> | Partial<ProviderInitializer<D, S>>;
 
-export type Initializer<
-  S extends Service,
-  D extends Dependencies = Dependencies
-> =
+export type Initializer<S extends Service, D extends Dependencies> =
   | ConstantInitializer<S>
   | ServiceInitializer<D, S>
   | ProviderInitializer<D, S>;
 
 export type ServiceInitializerWrapper<
   S extends Service,
-  D extends Dependencies = Dependencies
+  D extends Dependencies
 > = (dependencies: D, baseService: S) => Promise<S>;
 export type ProviderInitializerWrapper<
   S extends Service,
-  D extends Dependencies = Dependencies
+  D extends Dependencies
 > = (dependencies: D, baseService: Provider<S>) => Promise<Provider<S>>;
 
 export type Parameters<V = any> = { [name: string]: V };
@@ -315,6 +316,7 @@ export function constant<V extends Service>(
   return {
     $type: 'constant',
     $name: name,
+    $singleton: true,
     $value: value,
   };
 }
@@ -1312,4 +1314,104 @@ export function stringifyDependencyDeclaration(
       ? '>' + dependencyDeclarationParts.mappedName
       : ''
   }`;
+}
+
+/* Architecture Note #3: TypeScript tweaks
+
+Sadly TypeScript does not allow to add generic types
+ in all cases. This is why `(Service|Provider)Initializer`
+ types do not embed the `(Service|Provider)Properties`
+ direclty. Instead, we use this utility function to
+ reveal it to TypeScript and, by the way, check their
+ completeness at execution time.
+
+For more details, see:
+https://stackoverflow.com/questions/64948037/generics-type-loss-while-infering/64950184#64950184
+*/
+
+/**
+ * Utility function to check and reveal initializer properties.
+ * @param  {Function}  initializer
+ * The initializer to tweak
+ * @return {Function}
+ * Returns revealed initializer (with TypeScript types for properties)
+ */
+export function unwrapInitializerProperties<S, D>(
+  initializer: ProviderInitializer<D, S>,
+): ProviderProperties;
+export function unwrapInitializerProperties<S, D>(
+  initializer: ServiceInitializer<D, S>,
+): ServiceProperties;
+export function unwrapInitializerProperties<S, D>(
+  initializer: ConstantInitializer<S>,
+): ConstantProperties;
+export function unwrapInitializerProperties<S, D>(
+  initializer: Initializer<S, D>,
+): InitializerProperties;
+export function unwrapInitializerProperties<S, D>(
+  initializer:
+    | ProviderInitializerBuilder<D, S>
+    | ServiceInitializerBuilder<D, S>
+    | ConstantInitializer<S>,
+): ProviderProperties | ServiceProperties | ConstantProperties {
+  if (typeof initializer !== 'function' && typeof initializer !== 'object') {
+    throw new YError('E_BAD_INITIALIZER', initializer);
+  }
+  const properties = initializer as InitializerProperties;
+
+  if (
+    typeof properties[SPECIAL_PROPS.NAME] !== 'string' ||
+    properties[SPECIAL_PROPS.NAME] === ''
+  ) {
+    throw new YError('E_ANONYMOUS_ANALYZER', properties[SPECIAL_PROPS.NAME]);
+  }
+
+  if (!ALLOWED_INITIALIZER_TYPES.includes(properties[SPECIAL_PROPS.TYPE])) {
+    throw new YError(
+      'E_BAD_INITIALIZER_TYPE',
+      initializer[SPECIAL_PROPS.NAME],
+      initializer[SPECIAL_PROPS.TYPE],
+      ALLOWED_INITIALIZER_TYPES,
+    );
+  }
+
+  if (
+    initializer[SPECIAL_PROPS.NAME] === '$autoload' &&
+    !initializer[SPECIAL_PROPS.SINGLETON]
+  ) {
+    throw new YError(
+      'E_BAD_AUTOLOADER',
+      initializer[SPECIAL_PROPS.SINGLETON] || false,
+    );
+  }
+
+  if (properties[SPECIAL_PROPS.TYPE] === 'constant') {
+    if (
+      'undefined' ===
+      typeof (initializer as ConstantInitializer<S>)[SPECIAL_PROPS.VALUE]
+    ) {
+      throw new YError(
+        'E_UNDEFINED_CONSTANT_INITIALIZER',
+        properties[SPECIAL_PROPS.NAME],
+      );
+    }
+    properties[SPECIAL_PROPS.SINGLETON] = true;
+  } else {
+    if ('undefined' !== typeof initializer[SPECIAL_PROPS.VALUE]) {
+      throw new YError(
+        'E_BAD_VALUED_NON_CONSTANT_INITIALIZER',
+        initializer[SPECIAL_PROPS.NAME],
+      );
+    }
+    properties[SPECIAL_PROPS.INJECT] = properties[SPECIAL_PROPS.INJECT] || [];
+    properties[SPECIAL_PROPS.SINGLETON] =
+      properties[SPECIAL_PROPS.SINGLETON] || false;
+    properties[SPECIAL_PROPS.EXTRA] =
+      properties[SPECIAL_PROPS.EXTRA] || undefined;
+  }
+
+  return initializer as
+    | (ProviderInitializer<D, S> & ProviderProperties)
+    | (ServiceInitializer<D, S> & ServiceProperties)
+    | ConstantInitializer<S>;
 }

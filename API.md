@@ -97,6 +97,9 @@
 <dt><a href="#stringifyDependencyDeclaration">stringifyDependencyDeclaration(dependencyDeclarationParts)</a> ⇒ <code>String</code></dt>
 <dd><p>Stringify a dependency declaration from its parts.</p>
 </dd>
+<dt><a href="#unwrapInitializerProperties">unwrapInitializerProperties(initializer)</a> ⇒ <code>function</code></dt>
+<dd><p>Utility function to check and reveal initializer properties.</p>
+</dd>
 </dl>
 
 <a name="Knifecycle"></a>
@@ -814,3 +817,15 @@ stringifyDependencyDeclaration({
 // Returns
 'pgsql>db'
 ```
+<a name="unwrapInitializerProperties"></a>
+
+## unwrapInitializerProperties(initializer) ⇒ <code>function</code>
+Utility function to check and reveal initializer properties.
+
+**Kind**: global function  
+**Returns**: <code>function</code> - Returns revealed initializer (with TypeScript types for properties)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| initializer | <code>function</code> | The initializer to tweak |
+
