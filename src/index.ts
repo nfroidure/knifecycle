@@ -31,6 +31,7 @@ import {
   autoHandler,
   parseDependencyDeclaration,
   stringifyDependencyDeclaration,
+  unwrapInitializerProperties,
 } from './util';
 import initInitializerBuilder from './build';
 import YError from 'yerror';
@@ -103,7 +104,7 @@ export interface Injector<S extends Service> {
 }
 export interface Autoloader<S extends Service = Service> {
   (name: DependencyDeclaration): Promise<{
-    initializer: Initializer<S>;
+    initializer: Initializer<S, Dependencies<S>>;
     path: string;
   }>;
 }
@@ -292,32 +293,7 @@ class Knifecycle<
       throw new YError(E_INSTANCE_DESTROYED);
     }
 
-    if (typeof initializer !== 'function' && typeof initializer !== 'object') {
-      throw new YError(E_BAD_INITIALIZER, initializer);
-    }
-
-    initializer[SPECIAL_PROPS.INJECT] = initializer[SPECIAL_PROPS.INJECT] || [];
-    initializer[SPECIAL_PROPS.SINGLETON] =
-      initializer[SPECIAL_PROPS.SINGLETON] || false;
-    initializer[SPECIAL_PROPS.TYPE] =
-      initializer[SPECIAL_PROPS.TYPE] || ALLOWED_INITIALIZER_TYPES[0];
-    if (!initializer[SPECIAL_PROPS.NAME]) {
-      throw new YError(E_ANONYMOUS_ANALYZER, initializer[SPECIAL_PROPS.NAME]);
-    }
-    if (
-      initializer[SPECIAL_PROPS.NAME] === AUTOLOAD &&
-      !initializer[SPECIAL_PROPS.SINGLETON]
-    ) {
-      throw new YError(E_BAD_AUTOLOADER, initializer[SPECIAL_PROPS.SINGLETON]);
-    }
-    if (!ALLOWED_INITIALIZER_TYPES.includes(initializer[SPECIAL_PROPS.TYPE])) {
-      throw new YError(
-        E_BAD_INITIALIZER_TYPE,
-        initializer[SPECIAL_PROPS.NAME],
-        initializer[SPECIAL_PROPS.TYPE],
-        ALLOWED_INITIALIZER_TYPES,
-      );
-    }
+    const properties = unwrapInitializerProperties(initializer);
 
     // Temporary cast constants into providers
     // Best would be to threat each differently
@@ -1197,6 +1173,7 @@ export {
   autoHandler,
   parseDependencyDeclaration,
   stringifyDependencyDeclaration,
+  unwrapInitializerProperties,
   initInitializerBuilder,
 };
 

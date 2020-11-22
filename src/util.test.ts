@@ -26,6 +26,7 @@ import {
   SPECIAL_PROPS,
 } from './util';
 import type { PromiseValue } from 'type-fest';
+import type { Provider } from './util';
 
 async function aProviderInitializer(_services: unknown) {
   return {
@@ -82,20 +83,26 @@ describe('reuseSpecialProps', () => {
 });
 
 describe('wrapInitializer', () => {
-  it('should work with a service initialzer', async () => {
-    async function baseInitializer() {
+  it('should work with a service initializer', async () => {
+    async function baseServiceInitializer() {
       return () => 'test';
     }
 
     const log = sinon.stub();
     const newInitializer = wrapInitializer(
-      async ({ log }, service) => {
+      async ({ log }, service: () => string) => {
         log('Wrapping...');
         return () => service() + '-wrapped';
       },
-      service(baseInitializer, 'baseInitializer', ['log', '?test'], false, {
-        httpHandler: false,
-      }),
+      service(
+        baseServiceInitializer,
+        'baseServiceInitializer',
+        ['log', '?test'],
+        false,
+        {
+          httpHandler: false,
+        },
+      ),
     );
 
     const newService = await newInitializer({ log });
@@ -110,15 +117,21 @@ describe('wrapInitializer', () => {
     }
 
     const log = sinon.stub();
-    const newInitializer = wrapInitializer(
-      async ({ log }, service) => {
-        log('Wrapping...');
-        return { service: () => service.service() + '-wrapped' };
-      },
-      provider(baseInitializer, 'baseInitializer', ['log', '?test'], false, {
+    const baseProviderInitializer = provider(
+      baseInitializer,
+      'baseInitializer',
+      ['log', '?test'],
+      false,
+      {
         httpHandler: false,
-      }),
+      },
     );
+    const newInitializer = wrapInitializer(async ({ log }, service): Promise<
+      Provider<() => string>
+    > => {
+      log('Wrapping...');
+      return { service: () => service.service() + '-wrapped' };
+    }, baseProviderInitializer);
 
     const newService = await newInitializer({ log });
     assert.equal(newService.service(), 'test-wrapped');
@@ -727,17 +740,18 @@ describe('service', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
   });
 
-  it('should allow to create an initializer from a service builder', async () => {
-    const aServiceBuilder = async (_services: unknown) => undefined;
+  it('should allow to create an initializer from a generic service builder', async () => {
+    const aServiceBuilder = async <T>(_services: T) => '';
     const dependencies = ['ANOTHER_ENV>ENV'];
     const extraData = { nice: true };
     const baseName = 'hash';
     const baseType = 'service';
     const newInitializer = service(
-      inject(
-        dependencies,
-        name(baseName, singleton(extra(extraData, aServiceBuilder))),
-      ),
+      aServiceBuilder,
+      baseName,
+      dependencies,
+      true,
+      extraData,
     );
 
     assert.notEqual(newInitializer, aProviderInitializer);
@@ -877,8 +891,8 @@ describe('handler', () => {
     };
     const theInitializer = handler(sampleHandler, baseName, injectedServices);
 
-    assert.deepEqual(theInitializer.$name, baseName);
-    assert.deepEqual(theInitializer.$inject, injectedServices);
+    assert.deepEqual((theInitializer as any).$name, baseName);
+    assert.deepEqual((theInitializer as any).$inject, injectedServices);
 
     const theHandler = await theInitializer(services);
     const result = await theHandler('test');
@@ -907,8 +921,8 @@ describe('autoHandler', () => {
     };
     const theInitializer = autoHandler(sampleHandler);
 
-    assert.deepEqual(theInitializer.$name, sampleHandler.name);
-    assert.deepEqual(theInitializer.$inject, ['kikooo', 'lol']);
+    assert.deepEqual((theInitializer as any).$name, sampleHandler.name);
+    assert.deepEqual((theInitializer as any).$inject, ['kikooo', 'lol']);
 
     const theHandler = await theInitializer(services);
     const result = await theHandler('test');
@@ -929,8 +943,8 @@ describe('autoHandler', () => {
     };
     const theInitializer = autoHandler(sampleHandler);
 
-    assert.deepEqual(theInitializer.$name, sampleHandler.name);
-    assert.deepEqual(theInitializer.$inject, ['kikooo', 'lol']);
+    assert.deepEqual((theInitializer as any).$name, sampleHandler.name);
+    assert.deepEqual((theInitializer as any).$inject, ['kikooo', 'lol']);
 
     const theHandler = await theInitializer(services);
     const result = await theHandler('test');
