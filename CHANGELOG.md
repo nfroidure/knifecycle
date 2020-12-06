@@ -1,3 +1,12 @@
+## [11.0.1](https://github.com/nfroidure/knifecycle/compare/v11.0.0...v11.0.1) (2020-12-06)
+
+
+### Bug Fixes
+
+* **build:** fix build issues with constants ([2d4d597](https://github.com/nfroidure/knifecycle/commit/2d4d597a54527f42d3e9bf9ad0a51d5018a9510b))
+
+
+
 # [11.0.0](https://github.com/nfroidure/knifecycle/compare/v10.0.3...v11.0.0) (2020-11-22)
 
 
