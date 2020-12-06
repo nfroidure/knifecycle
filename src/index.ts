@@ -293,7 +293,7 @@ class Knifecycle<
       throw new YError(E_INSTANCE_DESTROYED);
     }
 
-    const properties = unwrapInitializerProperties(initializer);
+    unwrapInitializerProperties(initializer);
 
     // Temporary cast constants into providers
     // Best would be to threat each differently
@@ -316,6 +316,11 @@ class Knifecycle<
         [],
         true,
       );
+
+      // Needed for the build utils to still recognize
+      // this initializer as a constant value
+      initializer[SPECIAL_PROPS.VALUE] = value;
+      initializer[SPECIAL_PROPS.TYPE] = 'constant';
     } else if ('undefined' !== typeof initializer[SPECIAL_PROPS.VALUE]) {
       throw new YError(
         E_BAD_VALUED_NON_CONSTANT_INITIALIZER,
