@@ -74,9 +74,6 @@ running your application over it.
 Let's say we are building a CLI script. Here is how we would proceed with
 Knifecycle:
 
-First, we need to handle a configuration file so we are creating an initializer
-to instanciate our `CONFIG` service:
-
 ```js
 // bin.js
 import fs from 'fs';
@@ -380,7 +377,6 @@ take place under the hood.
 The scope of this library won't change. However the plan is:
 
 - improve performances;
-- evolve with Node: I may not need to transpile this library at some point.
 - track bugs ;).
 
 I'll also share most of my own initializers and their stubs/mocks in order to
@@ -388,18 +384,17 @@ let you reuse it through your projects easily. Here are the current projects
 that use this DI lib:
 
 - [common-services](https://github.com/nfroidure/common-services): contains the
-  services I use the most in my apps.
-- [swagger-http-router](https://github.com/nfroidure/swagger-http-router): a
-  complete HTTP router based on OpenAPI definitions with a few useful services
-  compatible with Knifecycle.
+  services I use the most in my apps,
 - [memory-kv-store](https://github.com/nfroidure/memory-kv-store): a simple in
-  memory key-value store.
+  memory key-value store,
 - [whook](https://github.com/nfroidure/whook): a framework to build REST web
   services.
 - [postgresql-service](https://github.com/nfroidure/postgresql-service): a
-  simple wrapper around the `pg` module.
+  simple wrapper around the `pg` module,
 - [jwt-service](https://github.com/nfroidure/jwt-service): a simple wrapper
-  around the `jwt` module to simplify its use.
+  around the `jwt` module to simplify its use,
+- [ftp-service](https://github.com/nfroidure/ftp-service): a FTP client with
+  clean defaults.
 
 Notice that those modules remains usable without using Knifecycle at all which
 is maybe the best feature of this library ;).
