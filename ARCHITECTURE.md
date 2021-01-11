@@ -143,7 +143,7 @@ For the build to work, we need:
 - the dependencies list you want to
  initialize
 
-[See in context](./src/build.ts#L10-L25)
+[See in context](./src/build.ts#L12-L27)
 
 
 

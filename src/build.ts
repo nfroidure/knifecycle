@@ -3,8 +3,10 @@ import { buildInitializationSequence } from './sequence';
 import type { DependencyDeclaration } from './util';
 import type { Autoloader } from '.';
 
+export type BuildOptions = { modules?: 'commonjs' | true };
 export type BuildInitializer = (
   dependencies: DependencyDeclaration[],
+  options?: BuildOptions,
 ) => Promise<string>;
 
 /* Architecture Note #2: Build
@@ -74,6 +76,7 @@ async function initInitializerBuilder({
    */
   async function buildInitializer(
     dependencies: DependencyDeclaration[],
+    options: BuildOptions = {},
   ): Promise<string> {
     const dependencyTrees = await Promise.all(
       dependencies.map((dependency) =>
@@ -106,14 +109,21 @@ const ${name} = ${JSON.stringify(
               )};`;
             }
 
-            return `
+            return options.modules === 'commonjs'
+              ? `
+const ${dependenciesHash[name].__initializerName} = (() => { const m = require('${dependenciesHash[name].__path}'); return m && m.default || m; })();`
+              : `
 import ${dependenciesHash[name].__initializerName} from '${dependenciesHash[name].__path}';`;
           })
           .join('')}`,
       )
       .join('\n')}
 
-export async function initialize(services = {}) {${batches
+${
+  options.modules === 'commonjs'
+    ? 'module.exports = {}; module.exports.initialize = '
+    : 'export '
+}async function initialize(services = {}) {${batches
       .map(
         (batch, index) => `
   // Initialization batch #${index}
