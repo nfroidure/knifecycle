@@ -1,3 +1,12 @@
+# [11.1.0](https://github.com/nfroidure/knifecycle/compare/v11.0.1...v11.1.0) (2021-01-11)
+
+
+### Features
+
+* **build:** allow to either use esm or cjs ([719ba37](https://github.com/nfroidure/knifecycle/commit/719ba37a9a9452f2874054404a3a7c27a52d5e4a))
+
+
+
 ## [11.0.1](https://github.com/nfroidure/knifecycle/compare/v11.0.0...v11.0.1) (2020-12-06)
 
 
