@@ -1110,7 +1110,7 @@ export function type<D, S>(
  *   name: 'myService',
  *   type: 'service',
  *   inject: ['ENV'],
- *   options: { singleton: true }
+ *   singleton: true,
  * }, myServiceInitializer));
  */
 export function initializer<D, S>(

@@ -135,7 +135,7 @@ $.register(
       type: 'service',
       // We don't want to read the config file everytime we
       // inject it so declaring it as a singleton
-      options: { singleton: true },
+      singleton: true,
     },
     initConfig,
   ),
@@ -163,7 +163,7 @@ const initDB = initializer(
     // - an optional `fatalErrorPromise` property to
     // handle the service unrecoverable failure.
     type: 'provider',
-    options: { singleton: true },
+    singleton: true,
   },
   async ({ CONFIG, DB_URI, log }) => {
     const db = await MongoClient.connect(DB_URI, CONFIG.databaseOptions);
@@ -222,7 +222,7 @@ $.register(
       type: 'service',
       inject: ['CONFIG', 'ARGS'],
       // Note that the auto loader must be a singleton
-      options: { singleton: true },
+      singleton: true,
     },
     async ({ CONFIG, ARGS }) => async (serviceName) => {
       if ('command' !== serviceName) {
@@ -1117,7 +1117,7 @@ new Knifecycle()
   name: 'myService',
   type: 'service',
   inject: ['ENV'],
-  options: { singleton: true }
+  singleton: true,
 }, myServiceInitializer));
 ```
 <a name="handler"></a>

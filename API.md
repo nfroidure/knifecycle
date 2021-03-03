@@ -714,7 +714,7 @@ new Knifecycle()
   name: 'myService',
   type: 'service',
   inject: ['ENV'],
-  options: { singleton: true }
+  singleton: true,
 }, myServiceInitializer));
 ```
 <a name="handler"></a>
