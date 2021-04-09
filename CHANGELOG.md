@@ -1,3 +1,12 @@
+## [11.1.1](https://github.com/nfroidure/knifecycle/compare/v11.1.0...v11.1.1) (2021-04-09)
+
+
+### Bug Fixes
+
+* **docs:** fix the readme on singletons ([5e51fe9](https://github.com/nfroidure/knifecycle/commit/5e51fe92a45b5a2db447c21e5a8fe8ee08e460ec))
+
+
+
 # [11.1.0](https://github.com/nfroidure/knifecycle/compare/v11.0.1...v11.1.0) (2021-01-11)
 
 
