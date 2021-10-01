@@ -43,7 +43,6 @@ import type {
   FatalErrorProvider,
   Provider,
   Dependencies,
-  DependencyName,
   DependencyDeclaration,
   ExtraInformations,
   ParsedDependencyDeclaration,
@@ -63,7 +62,6 @@ import type {
   Initializer,
   ServiceInitializerWrapper,
   ProviderInitializerWrapper,
-  Parameters,
   HandlerFunction,
 } from './util';
 import type { BuildInitializer } from './build';
@@ -74,7 +72,6 @@ export type {
   FatalErrorProvider,
   Provider,
   Dependencies,
-  DependencyName,
   DependencyDeclaration,
   ExtraInformations,
   ParsedDependencyDeclaration,
@@ -94,7 +91,6 @@ export type {
   Initializer,
   ServiceInitializerWrapper,
   ProviderInitializerWrapper,
-  Parameters,
   HandlerFunction,
   BuildInitializer,
 };
@@ -139,14 +135,10 @@ const INSTANCE = '$instance';
 const SILO_CONTEXT = '$siloContext';
 const FATAL_ERROR = '$fatalError';
 
-const E_BAD_INITIALIZER_TYPE = 'E_BAD_INITIALIZER_TYPE';
 const E_BAD_AUTOLOADED_INITIALIZER = 'E_BAD_AUTOLOADED_INITIALIZER';
-const E_BAD_AUTOLOADER = 'E_BAD_AUTOLOADER';
 const E_AUTOLOADED_INITIALIZER_MISMATCH = 'E_AUTOLOADED_INITIALIZER_MISMATCH';
 const E_UNMATCHED_DEPENDENCY = 'E_UNMATCHED_DEPENDENCY';
 const E_CIRCULAR_DEPENDENCY = 'E_CIRCULAR_DEPENDENCY';
-const E_BAD_INITIALIZER = 'E_BAD_INITIALIZER';
-const E_ANONYMOUS_ANALYZER = 'E_ANONYMOUS_ANALYZER';
 const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
 const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
 const E_INSTANCE_DESTROYED = 'E_INSTANCE_DESTROYED';
@@ -205,7 +197,7 @@ class Knifecycle<
     }
   >;
   private _singletonsServicesShutdownsPromises: Map<string, Promise<void>>;
-  private shutdownPromise: Promise<void>;
+  private shutdownPromise?: Promise<void>;
 
   /**
    * Create a new Knifecycle instance
@@ -227,18 +219,9 @@ class Knifecycle<
     this._singletonsServicesShutdownsPromises = new Map();
     this.register(constant(INSTANCE, this as AS));
 
-    const initInjectorProvider = initializer(
-      {
-        name: INJECTOR,
-        type: 'provider',
-        inject: [SILO_CONTEXT],
-        // Despite its global definition, the injector
-        // depends on the silo context and then needs
-        // to be instanciated once per silo.
-        singleton: false,
-      },
-      async ({ $siloContext }: AD): Promise<Provider<AS>> => ({
-        service: (async (dependenciesDeclarations: DependencyDeclaration[]) =>
+    const initInjectorProvider = provider(
+      async ({ $siloContext }) => ({
+        service: async (dependenciesDeclarations: DependencyDeclaration[]) =>
           _buildFinalHash(
             await this._initializeDependencies(
               $siloContext,
@@ -247,11 +230,17 @@ class Knifecycle<
               { injectorContext: true, autoloading: false },
             ),
             dependenciesDeclarations,
-          )) as AS,
+          ),
       }),
+      INJECTOR,
+      [SILO_CONTEXT],
+      // Despite its global definition, the injector
+      // depends on the silo context and then needs
+      // to be instanciated once per silo.
+      false,
     );
 
-    this.register(initInjectorProvider);
+    this.register(initInjectorProvider as Initializer<AS, Dependencies<AS>>);
   }
 
   /* Architecture Note #1.3: Registering initializers
@@ -334,7 +323,11 @@ class Knifecycle<
     if ('service' === initializer[SPECIAL_PROPS.TYPE]) {
       initializer = reuseSpecialProps(
         initializer as ServiceInitializer<Dependencies<AS>, AS>,
-        serviceAdapter.bind(null, initializer[SPECIAL_PROPS.NAME], initializer),
+        serviceAdapter.bind(
+          null,
+          initializer[SPECIAL_PROPS.NAME],
+          initializer as ServiceInitializer<Dependencies<AS>, AS>,
+        ) as ServiceInitializer<Dependencies<AS>, AS>,
       ) as Initializer<AS, Dependencies<AS>>;
       initializer[SPECIAL_PROPS.TYPE] = 'provider';
     }
@@ -362,7 +355,7 @@ class Knifecycle<
         ) &&
         !this._singletonsServicesDescriptors.get(
           initializer[SPECIAL_PROPS.NAME],
-        ).preloaded;
+        )?.preloaded;
       const initializedAsInstance = [
         ...this._silosContexts.values(),
       ].some((siloContext) =>
@@ -395,7 +388,7 @@ class Knifecycle<
         // We do not directly use initializer[SPECIAL_PROPS.VALUE] here
         // since it looks like there is a bug with Babel build that
         // change functions to empty litteral objects
-        promise: (initializer as ProviderInitializer<Dependencies<AS>, AS>)(),
+        promise: (initializer as ProviderInitializer<Dependencies<AS>, AS>)({}),
       });
     }
 
@@ -500,7 +493,9 @@ class Knifecycle<
     const links = Array.from(servicesProviders.keys())
       .filter((provider) => !provider.startsWith('$'))
       .reduce((links, serviceName) => {
-        const serviceProvider = servicesProviders.get(serviceName);
+        const serviceProvider = servicesProviders.get(
+          serviceName,
+        ) as ProviderInitializer<Dependencies<AS>, AS>;
 
         if (!serviceProvider[SPECIAL_PROPS.INJECT].length) {
           return links;
@@ -644,7 +639,7 @@ class Knifecycle<
                 const serviceDescriptor =
                   singletonServiceDescriptor ||
                   (await siloContext.servicesDescriptors.get(serviceName));
-                let serviceShutdownPromise: Promise<void> =
+                let serviceShutdownPromise: Promise<void> | undefined =
                   _this._singletonsServicesShutdownsPromises.get(serviceName) ||
                   siloContext.servicesShutdownsPromises.get(serviceName);
 
@@ -664,7 +659,7 @@ class Knifecycle<
                 if (singletonServiceDescriptor) {
                   const handleSet = _this._singletonsServicesHandles.get(
                     serviceName,
-                  );
+                  ) as Set<string>;
 
                   handleSet.delete(siloContext.name);
                   if (handleSet.size) {
@@ -678,7 +673,7 @@ class Knifecycle<
                   _this._singletonsServicesDescriptors.delete(serviceName);
                 }
                 debug('Shutting down a service:', serviceName);
-                serviceShutdownPromise = serviceDescriptor.dispose
+                serviceShutdownPromise = serviceDescriptor?.dispose
                   ? serviceDescriptor.dispose()
                   : Promise.resolve();
                 if (singletonServiceDescriptor) {
@@ -742,7 +737,7 @@ class Knifecycle<
       Promise.all(
         [...this._silosContexts].map(async (siloContext) => {
           const $dispose = (await siloContext.servicesDescriptors.get(DISPOSE))
-            .service as Disposer;
+            ?.service as Disposer;
 
           return $dispose();
         }),
@@ -798,7 +793,7 @@ class Knifecycle<
 
     serviceDescriptorPromise = this._pickupSingletonServiceDescriptorPromise(
       serviceName,
-    );
+    ) as Promise<Provider<AS>>;
 
     if (serviceDescriptorPromise) {
       if (autoloading) {
@@ -806,7 +801,9 @@ class Knifecycle<
           `⚠️ - Possible dead lock due to reusing the singleton "${serviceName}" while autoloading.`,
         );
       }
-      this._singletonsServicesHandles.get(serviceName).add(siloContext.name);
+      (this._singletonsServicesHandles.get(serviceName) as Set<string>).add(
+        siloContext.name,
+      );
     } else {
       serviceDescriptorPromise = siloContext.servicesDescriptors.get(
         serviceName,
@@ -936,16 +933,21 @@ class Knifecycle<
         debug(`Could not load ${serviceName} via the auto loader.`);
         throw err;
       }
-    })();
+    })() as Promise<ProviderInitializer<Dependencies<AS>, AS>>;
 
-    this._initializerResolvers.set(serviceName, initializerPromise);
+    this._initializerResolvers.set(
+      serviceName,
+      initializerPromise as Promise<ProviderInitializer<Dependencies<AS>, AS>>,
+    );
 
-    return await initializerPromise;
+    return await (initializerPromise as Promise<
+      ProviderInitializer<Dependencies<AS>, AS>
+    >);
   }
 
   _pickupSingletonServiceDescriptorPromise(
     serviceName: ServiceName,
-  ): Promise<Provider<AS>> {
+  ): Promise<Provider<AS>> | void {
     const serviceDescriptor = this._singletonsServicesDescriptors.get(
       serviceName,
     );
@@ -1077,7 +1079,7 @@ class Knifecycle<
     }: { autoloading: boolean; injectorContext: boolean },
   ): Promise<Dependencies> {
     debug('Initializing dependencies:', serviceName, servicesDeclarations);
-    const servicesDescriptors: Provider<AS>[] = await Promise.all(
+    const servicesDescriptors: (Provider<AS> | undefined)[] = await Promise.all(
       servicesDeclarations.map(async (serviceDeclaration) => {
         const { mappedName, optional } = parseDependencyDeclaration(
           serviceDeclaration,

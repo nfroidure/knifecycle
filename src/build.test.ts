@@ -1,7 +1,7 @@
 import assert from 'assert';
 import YError from 'yerror';
 import initInitializerBuilder from './build';
-import Knifecycle, { initializer, constant } from '.';
+import Knifecycle, { initializer, constant, Autoloader } from '.';
 import type { BuildInitializer } from './build';
 
 describe('buildInitializer', () => {
@@ -59,12 +59,13 @@ describe('buildInitializer', () => {
   it('should build an initialization module', async () => {
     const $ = new Knifecycle<{
       buildInitializer: BuildInitializer;
+      $autoload: Autoloader;
       PWD: string;
     }>();
 
     $.register(constant('PWD', '~/my-project'));
     $.register(initAutoloader);
-    $.register(initInitializerBuilder);
+    $.register(initInitializerBuilder as any);
 
     const { buildInitializer } = await $.run(['buildInitializer']);
 
@@ -142,11 +143,12 @@ export async function initialize(services = {}) {
     const $ = new Knifecycle<{
       buildInitializer: BuildInitializer;
       PWD: string;
+      $autoload: Autoloader;
     }>();
 
     $.register(constant('PWD', '~/my-project'));
     $.register(initAutoloader);
-    $.register(initInitializerBuilder);
+    $.register(initInitializerBuilder as any);
 
     const { buildInitializer } = await $.run(['buildInitializer']);
 

@@ -47,9 +47,8 @@ export type Provider<S extends Service> = {
   fatalErrorPromise?: FatalErrorProvider;
 };
 export type Dependencies<S extends Service = Service> = { [name: string]: S };
-export type DependencyName = string;
 export type DependencyDeclaration = string;
-export type ExtraInformations = any;
+export type ExtraInformations = Record<string, unknown>;
 export type ParsedDependencyDeclaration = {
   serviceName: string;
   mappedName: string;
@@ -58,52 +57,52 @@ export type ParsedDependencyDeclaration = {
 
 export type ConstantProperties = {
   $type: 'constant';
-  $name: DependencyName;
+  $name: ServiceName;
   $singleton: true;
 };
 export type ConstantInitializer<S extends Service> = ConstantProperties & {
   $value: S;
 };
 
-export type ProviderInitializerBuilder<
-  D extends Dependencies,
-  S extends Service
-> = (dependencies?: D) => Promise<Provider<S>>;
 export type ProviderProperties = {
   $type: 'provider';
-  $name: DependencyName;
+  $name: ServiceName;
   $inject?: DependencyDeclaration[];
   $singleton?: boolean;
   $extra?: ExtraInformations;
 };
+export type ProviderInitializerBuilder<
+  D extends Dependencies,
+  S extends Service
+> = (dependencies: D) => Promise<Provider<S>>;
 export type ProviderInitializer<D extends Dependencies, S extends Service> = (
-  dependencies?: D,
+  dependencies: D,
 ) => Promise<Provider<S>>;
 export type ProviderInputProperties = {
   type: 'provider';
-  name: DependencyName;
+  name: ServiceName;
   inject?: DependencyDeclaration[];
   singleton?: boolean;
   extra?: ExtraInformations;
 };
 
-export type ServiceInitializerBuilder<
-  D extends Dependencies,
-  S extends Service
-> = (dependencies?: D) => Promise<S>;
 export type ServiceProperties = {
   $type: 'service';
-  $name: DependencyName;
+  $name: ServiceName;
   $inject?: DependencyDeclaration[];
   $singleton?: boolean;
   $extra?: ExtraInformations;
 };
+export type ServiceInitializerBuilder<
+  D extends Dependencies,
+  S extends Service
+> = (dependencies: D) => Promise<S>;
 export type ServiceInitializer<D extends Dependencies, S extends Service> = (
-  dependencies?: D,
+  dependencies: D,
 ) => Promise<S>;
 export type ServiceInputProperties = {
   type: 'service';
-  name: DependencyName;
+  name: ServiceName;
   inject?: DependencyDeclaration[];
   singleton?: boolean;
   extra?: ExtraInformations;
@@ -140,12 +139,10 @@ export type ProviderInitializerWrapper<
   D extends Dependencies
 > = (dependencies: D, baseService: Provider<S>) => Promise<Provider<S>>;
 
-export type Parameters<V = any> = { [name: string]: V };
 export interface HandlerFunction<
   D extends Dependencies,
-  V,
-  P extends Parameters<V>,
-  U extends any[],
+  P extends Record<string, unknown>,
+  U extends unknown[],
   R
 > {
   (dependencies: D, parameters?: P, ...args: U): Promise<R>;
@@ -198,11 +195,7 @@ export function parseInjections(
     .map(
       (injection) =>
         (injection.includes('=') ? '?' : '') +
-        injection
-          .split(/\s*=\s*/)
-          .shift()
-          .split(/\s*:\s*/)
-          .shift(),
+        (injection.split(/\s*=\s*/).shift() as string).split(/\s*:\s*/).shift(),
     )
     .filter((injection) => !/[)(\][]/.test(injection));
 }
@@ -222,10 +215,11 @@ export function readFunctionName(aFunction: Function): string {
 }
 
 export function parseName(functionName: string): string {
-  return functionName
+  return (functionName
     .split(' ')
-    .pop()
-    .replace(/^init(?:ialize)?([A-Z])/, (_, $1) => $1.toLowerCase());
+    .pop() as string).replace(/^init(?:ialize)?([A-Z])/, (_, $1) =>
+    $1.toLowerCase(),
+  );
 }
 
 /**
@@ -236,21 +230,33 @@ export function parseName(functionName: string): string {
  * @param  {Object}   [amend={}]   Some properties to override
  * @return {Function}      The newly built initializer
  */
-export function reuseSpecialProps<FD, TD, S>(
+export function reuseSpecialProps<
+  FD extends Dependencies,
+  TD extends Dependencies,
+  S extends Service
+>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
   to: ProviderInitializerBuilder<TD, S>,
   amend?: Partial<ProviderProperties>,
 ): ProviderInitializerBuilder<FD & TD, S>;
-export function reuseSpecialProps<FD, TD, S>(
+export function reuseSpecialProps<
+  FD extends Dependencies,
+  TD extends Dependencies,
+  S extends Service
+>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
   to: ServiceInitializerBuilder<TD, S>,
   amend?: Partial<ServiceProperties>,
 ): ServiceInitializerBuilder<FD & TD, S>;
-export function reuseSpecialProps<FD, TD, S>(
+export function reuseSpecialProps<
+  FD extends Dependencies,
+  TD extends Dependencies,
+  S extends Service
+>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
@@ -301,7 +307,7 @@ export function reuseSpecialProps<FD, TD, S>(
  * printAnswer(); // 42
  */
 export function constant<V extends Service>(
-  name: DependencyName,
+  name: ServiceName,
   value: V,
 ): ConstantInitializer<V> {
   const contantLooksLikeAnInitializer =
@@ -351,9 +357,9 @@ export function constant<V extends Service>(
  *
  * printAnswer(); // 42
  */
-export function service<D, S>(
+export function service<D extends Dependencies, S extends Service>(
   serviceBuilder: ServiceInitializerBuilder<D, S>,
-  name?: DependencyName,
+  name?: ServiceName,
   dependencies?: DependencyDeclaration[],
   singleton?: boolean,
   extra?: ExtraInformations,
@@ -392,7 +398,7 @@ export function service<D, S>(
  * @return {Function}
  * Returns a new initializer
  */
-export function autoService<D, S>(
+export function autoService<D extends Dependencies, S extends Service>(
   serviceBuilder: ServiceInitializerBuilder<D, S>,
 ): ServiceInitializer<D, S> {
   const name = readFunctionName(serviceBuilder as Function);
@@ -450,9 +456,9 @@ export function autoService<D, S>(
  *   });
  * }
  */
-export function provider<D, S>(
+export function provider<D extends Dependencies, S extends Service>(
   providerBuilder: ProviderInitializerBuilder<D, S>,
-  name?: DependencyName,
+  name?: ServiceName,
   dependencies?: DependencyDeclaration[],
   singleton?: boolean,
   extra?: ExtraInformations,
@@ -497,7 +503,7 @@ export function provider<D, S>(
  * @return {Function}
  * Returns a new provider initializer
  */
-export function autoProvider<D, S>(
+export function autoProvider<D extends Dependencies, S extends Service>(
   providerBuilder: ProviderInitializerBuilder<D, S>,
 ): ProviderInitializer<D, S> {
   const name = readFunctionName(providerBuilder as Function);
@@ -518,23 +524,23 @@ export function autoProvider<D, S>(
  * The new initializer
  */
 
-export function wrapInitializer<D, S>(
+export function wrapInitializer<D extends Dependencies, S extends Service>(
   wrapper: ProviderInitializerWrapper<S, D>,
   baseInitializer: ProviderInitializer<D, S>,
 ): ProviderInitializer<D, S>;
-export function wrapInitializer<D, S>(
+export function wrapInitializer<D extends Dependencies, S extends Service>(
   wrapper: ServiceInitializerWrapper<S, D>,
   baseInitializer: ServiceInitializer<D, S>,
 ): ServiceInitializer<D, S>;
-export function wrapInitializer<D, S>(
+export function wrapInitializer<D extends Dependencies, S extends Service>(
   wrapper: ProviderInitializerWrapper<S, D> | ServiceInitializerWrapper<S, D>,
   baseInitializer: ProviderInitializer<D, S> | ServiceInitializer<D, S>,
 ): ProviderInitializer<D, S> | ServiceInitializer<D, S> {
   return reuseSpecialProps(baseInitializer, async (services: D) => {
-    const baseInstance = await baseInitializer(services);
+    const baseInstance = await baseInitializer(services || ({} as D));
 
     return (wrapper as ServiceInitializerWrapper<S, D>)(
-      services,
+      services || ({} as D),
       baseInstance as S,
     );
   }) as ServiceInitializer<D, S>;
@@ -565,28 +571,30 @@ export function wrapInitializer<D, S>(
  *   )
  * );
  */
-export function inject<D, S>(
+export function inject<D extends Dependencies, S extends Service>(
   dependencies: DependencyDeclaration[],
-  initializer: ProviderInitializer<unknown, S>,
-): ProviderInitializer<D, S>;
-export function inject<D, S>(
+  initializer: ProviderInitializer<D, S>,
+): ProviderInitializer<D & Dependencies<unknown>, S>;
+export function inject<D extends Dependencies, S extends Service>(
   dependencies: DependencyDeclaration[],
-  initializer: ProviderInitializerBuilder<unknown, S>,
-): ProviderInitializerBuilder<D, S>;
-export function inject<D, S>(
+  initializer: ProviderInitializerBuilder<D, S>,
+): ProviderInitializerBuilder<D & Dependencies<unknown>, S>;
+export function inject<D extends Dependencies, S extends Service>(
   dependencies: DependencyDeclaration[],
-  initializer: ServiceInitializer<unknown, S>,
-): ServiceInitializer<D, S>;
-export function inject<D, S>(
+  initializer: ServiceInitializer<D, S>,
+): ServiceInitializer<D & Dependencies<unknown>, S>;
+export function inject<D extends Dependencies, S extends Service>(
   dependencies: DependencyDeclaration[],
-  initializer: ServiceInitializerBuilder<unknown, S>,
-): ServiceInitializerBuilder<D, S>;
-export function inject<D, S>(
+  initializer: ServiceInitializerBuilder<D, S>,
+): ServiceInitializerBuilder<D & Dependencies<unknown>, S>;
+export function inject<D extends Dependencies, S extends Service>(
   dependencies: DependencyDeclaration[],
   initializer:
-    | ProviderInitializerBuilder<unknown, S>
-    | ServiceInitializerBuilder<unknown, S>,
-): ProviderInitializerBuilder<D, S> | ServiceInitializerBuilder<D, S> {
+    | ProviderInitializerBuilder<D, S>
+    | ServiceInitializerBuilder<D, S>,
+):
+  | ProviderInitializerBuilder<D & Dependencies<unknown>, S>
+  | ServiceInitializerBuilder<D & Dependencies<unknown>, S> {
   if ('constant' === initializer[SPECIAL_PROPS.TYPE]) {
     throw new YError(
       E_BAD_INJECT_IN_CONSTANT,
@@ -595,9 +603,9 @@ export function inject<D, S>(
     );
   }
 
-  const uniqueInitializer = reuseSpecialProps<D, {}, S>(
+  const uniqueInitializer = reuseSpecialProps<D, D, S>(
     initializer,
-    initializer as ServiceInitializerBuilder<D, S>,
+    initializer as ServiceInitializerBuilder<D & Dependencies<unknown>, S>,
     {
       [SPECIAL_PROPS.INJECT]: dependencies,
     },
@@ -614,37 +622,46 @@ export function inject<D, S>(
  * @param  {Function} to   The destination initialization function
  * @return {Function}      The newly built initialization function
  */
-export function useInject<FD, S>(
+export function useInject<FD extends Dependencies, S extends Service>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
-  to: ProviderInitializer<unknown, S>,
+  to: ProviderInitializer<Dependencies<unknown>, S>,
 ): ProviderInitializer<FD, S>;
-export function useInject<FD, S>(
+export function useInject<FD extends Dependencies, S extends Service>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
-  to: ProviderInitializerBuilder<unknown, S>,
+  to: ProviderInitializerBuilder<Dependencies<unknown>, S>,
 ): ProviderInitializerBuilder<FD, S>;
-export function useInject<FD, S>(
+export function useInject<FD extends Dependencies, S extends Service>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
-  to: ServiceInitializer<unknown, S>,
+  to: ServiceInitializer<Dependencies<unknown>, S>,
 ): ServiceInitializer<FD, S>;
-export function useInject<FD, S>(
+export function useInject<FD extends Dependencies, S extends Service>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
-  to: ServiceInitializerBuilder<unknown, S>,
+  to: ServiceInitializerBuilder<Dependencies<unknown>, S>,
 ): ServiceInitializerBuilder<FD, S>;
-export function useInject<FD, S>(
+export function useInject<FD extends Dependencies, S extends Service>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
-  to: ProviderInitializerBuilder<unknown, S>,
-): ProviderInitializerBuilder<FD, S> | ServiceInitializerBuilder<FD, S> {
-  return inject<FD, S>(from[SPECIAL_PROPS.INJECT] || [], to);
+  to:
+    | ProviderInitializerBuilder<Dependencies<unknown>, S>
+    | ServiceInitializerBuilder<Dependencies<unknown>, S>,
+):
+  | ProviderInitializerBuilder<FD, S>
+  | ProviderInitializer<FD, S>
+  | ServiceInitializerBuilder<FD, S>
+  | ServiceInitializer<FD, S> {
+  return inject<FD, S>(
+    from[SPECIAL_PROPS.INJECT] || [],
+    to as ServiceInitializerBuilder<FD, S>,
+  );
 }
 
 /**
@@ -653,31 +670,51 @@ export function useInject<FD, S>(
  * @param  {Function} to   The destination initialization function
  * @return {Function}      The newly built initialization function
  */
-export function mergeInject<FD, D, S>(
+export function mergeInject<
+  FD extends Dependencies,
+  D extends Dependencies,
+  S extends Service
+>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
   to: ProviderInitializer<D, S>,
 ): ProviderInitializer<FD & D, S>;
-export function mergeInject<FD, D, S>(
+export function mergeInject<
+  FD extends Dependencies,
+  D extends Dependencies,
+  S extends Service
+>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
   to: ProviderInitializerBuilder<D, S>,
 ): ProviderInitializerBuilder<FD & D, S>;
-export function mergeInject<FD, D, S>(
+export function mergeInject<
+  FD extends Dependencies,
+  D extends Dependencies,
+  S extends Service
+>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
   to: ServiceInitializer<D, S>,
 ): ServiceInitializer<FD, S>;
-export function mergeInject<FD, D, S>(
+export function mergeInject<
+  FD extends Dependencies,
+  D extends Dependencies,
+  S extends Service
+>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
   to: ServiceInitializerBuilder<D, S>,
 ): ServiceInitializerBuilder<FD, S>;
-export function mergeInject<FD, D, S>(
+export function mergeInject<
+  FD extends Dependencies,
+  D extends Dependencies,
+  S extends Service
+>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
@@ -716,23 +753,25 @@ export function mergeInject<FD, D, S>(
  *   )
  * );
  */
-export function autoInject<D, S>(
+export function autoInject<D extends Dependencies, S extends Service>(
   initializer: ProviderInitializer<D, S>,
-): ProviderInitializer<D, S>;
-export function autoInject<D, S>(
+): ProviderInitializer<D & Dependencies<unknown>, S>;
+export function autoInject<D extends Dependencies, S extends Service>(
   initializer: ProviderInitializerBuilder<D, S>,
-): ProviderInitializerBuilder<D, S>;
-export function autoInject<D, S>(
+): ProviderInitializerBuilder<D & Dependencies<unknown>, S>;
+export function autoInject<D extends Dependencies, S extends Service>(
   initializer: ServiceInitializer<D, S>,
-): ServiceInitializer<D, S>;
-export function autoInject<D, S>(
+): ServiceInitializer<D & Dependencies<unknown>, S>;
+export function autoInject<D extends Dependencies, S extends Service>(
   initializer: ServiceInitializerBuilder<D, S>,
-): ServiceInitializerBuilder<D, S>;
-export function autoInject<D, S>(
+): ServiceInitializerBuilder<D & Dependencies<unknown>, S>;
+export function autoInject<D extends Dependencies, S extends Service>(
   initializer:
     | ProviderInitializerBuilder<D, S>
     | ServiceInitializerBuilder<D, S>,
-): ProviderInitializerBuilder<D, S> | ServiceInitializerBuilder<D, S> {
+):
+  | ProviderInitializerBuilder<D & Dependencies<unknown>, S>
+  | ServiceInitializerBuilder<D & Dependencies<unknown>, S> {
   const source = initializer.toString();
   const dependencies = parseInjections(source);
 
@@ -759,23 +798,51 @@ export function autoInject<D, S>(
  *   'myService',
  * ));
  */
-export function alsoInject<ND, D, S>(
+export function alsoInject<
+  ND extends Dependencies,
+  D extends Dependencies,
+  S extends Service
+>(
   dependencies: DependencyDeclaration[],
   to: ProviderInitializer<D, S>,
 ): ProviderInitializer<ND & D, S>;
-export function alsoInject<ND, D, S>(
+export function alsoInject<
+  ND extends Dependencies,
+  D extends Dependencies,
+  S extends Service
+>(
+  dependencies: DependencyDeclaration[],
+  to: ProviderInitializer<D, S>,
+): ProviderInitializer<ND & D, S>;
+export function alsoInject<
+  ND extends Dependencies,
+  D extends Dependencies,
+  S extends Service
+>(
   dependencies: DependencyDeclaration[],
   to: ProviderInitializerBuilder<D, S>,
 ): ProviderInitializerBuilder<ND & D, S>;
-export function alsoInject<ND, D, S>(
+export function alsoInject<
+  ND extends Dependencies,
+  D extends Dependencies,
+  S extends Service
+>(
   dependencies: DependencyDeclaration[],
   to: ServiceInitializer<D, S>,
 ): ServiceInitializer<ND & D, S>;
-export function alsoInject<ND, D, S>(
+export function alsoInject<
+  ND extends Dependencies,
+  D extends Dependencies,
+  S extends Service
+>(
   dependencies: DependencyDeclaration[],
   to: ServiceInitializerBuilder<D, S>,
 ): ServiceInitializerBuilder<ND & D, S>;
-export function alsoInject<ND, D, S>(
+export function alsoInject<
+  ND extends Dependencies,
+  D extends Dependencies,
+  S extends Service
+>(
   dependencies: DependencyDeclaration[],
   initializer:
     | ProviderInitializerBuilder<D, S>
@@ -848,25 +915,25 @@ export function alsoInject<ND, D, S>(
  * ));
  */
 
-export function extra<D, S>(
+export function extra<D extends Dependencies, S extends Service>(
   extraInformations: ExtraInformations,
   initializer: ProviderInitializer<D, S>,
   merge?: boolean,
 ): ProviderInitializer<D, S>;
-export function extra<D, S>(
+export function extra<D extends Dependencies, S extends Service>(
   extraInformations: ExtraInformations,
   initializer: ProviderInitializerBuilder<D, S>,
   merge?: boolean,
 ): ProviderInitializerBuilder<D, S>;
-export function extra<D, S>(
+export function extra<D extends Dependencies, S extends Service>(
   extraInformations: ExtraInformations,
   initializer: ServiceInitializer<D, S>,
 ): ServiceInitializer<D, S>;
-export function extra<D, S>(
+export function extra<D extends Dependencies, S extends Service>(
   extraInformations: ExtraInformations,
   initializer: ServiceInitializerBuilder<D, S>,
 ): ServiceInitializerBuilder<D, S>;
-export function extra<D, S>(
+export function extra<D extends Dependencies, S extends Service>(
   extraInformations: ExtraInformations,
   initializer:
     | ProviderInitializerBuilder<D, S>
@@ -913,23 +980,23 @@ export function extra<D, S>(
  *   'myService',
  * ));
  */
-export function singleton<D, S>(
+export function singleton<D extends Dependencies, S extends Service>(
   initializer: ProviderInitializer<D, S>,
   isSingleton?: boolean,
 ): ProviderInitializer<D, S>;
-export function singleton<D, S>(
+export function singleton<D extends Dependencies, S extends Service>(
   initializer: ProviderInitializerBuilder<D, S>,
   isSingleton?: boolean,
 ): ProviderInitializerBuilder<D, S>;
-export function singleton<D, S>(
+export function singleton<D extends Dependencies, S extends Service>(
   initializer: ServiceInitializer<D, S>,
   isSingleton?: boolean,
 ): ServiceInitializer<D, S>;
-export function singleton<D, S>(
+export function singleton<D extends Dependencies, S extends Service>(
   initializer: ServiceInitializerBuilder<D, S>,
   isSingleton?: boolean,
 ): ServiceInitializerBuilder<D, S>;
-export function singleton<D, S>(
+export function singleton<D extends Dependencies, S extends Service>(
   initializer:
     | ProviderInitializerBuilder<D, S>
     | ServiceInitializerBuilder<D, S>,
@@ -964,24 +1031,24 @@ export function singleton<D, S>(
  * new Knifecycle()
  * .register(name('myService', myServiceInitializer));
  */
-export function name<D, S>(
-  name: DependencyName,
+export function name<D extends Dependencies, S extends Service>(
+  name: ServiceName,
   initializer: ProviderInitializer<D, S>,
 ): ProviderInitializer<D, S>;
-export function name<D, S>(
-  name: DependencyName,
+export function name<D extends Dependencies, S extends Service>(
+  name: ServiceName,
   initializer: ProviderInitializerBuilder<D, S>,
 ): ProviderInitializerBuilder<D, S>;
-export function name<D, S>(
-  name: DependencyName,
+export function name<D extends Dependencies, S extends Service>(
+  name: ServiceName,
   initializer: ServiceInitializer<D, S>,
 ): ServiceInitializer<D, S>;
-export function name<D, S>(
-  name: DependencyName,
+export function name<D extends Dependencies, S extends Service>(
+  name: ServiceName,
   initializer: ServiceInitializerBuilder<D, S>,
 ): ServiceInitializerBuilder<D, S>;
-export function name<D, S>(
-  name: DependencyName,
+export function name<D extends Dependencies, S extends Service>(
+  name: ServiceName,
   initializer:
     | ProviderInitializerBuilder<D, S>
     | ServiceInitializerBuilder<D, S>,
@@ -1012,19 +1079,19 @@ export function name<D, S>(
  * new Knifecycle()
  * .register(autoName(async function myService() {}));
  */
-export function autoName<D, S>(
+export function autoName<D extends Dependencies, S extends Service>(
   initializer: ProviderInitializer<D, S>,
 ): ProviderInitializer<D, S>;
-export function autoName<D, S>(
+export function autoName<D extends Dependencies, S extends Service>(
   initializer: ProviderInitializerBuilder<D, S>,
 ): ProviderInitializerBuilder<D, S>;
-export function autoName<D, S>(
+export function autoName<D extends Dependencies, S extends Service>(
   initializer: ServiceInitializer<D, S>,
 ): ServiceInitializer<D, S>;
-export function autoName<D, S>(
+export function autoName<D extends Dependencies, S extends Service>(
   initializer: ServiceInitializerBuilder<D, S>,
 ): ServiceInitializerBuilder<D, S>;
-export function autoName<D, S>(
+export function autoName<D extends Dependencies, S extends Service>(
   initializer:
     | ProviderInitializerBuilder<D, S>
     | ServiceInitializerBuilder<D, S>,
@@ -1057,23 +1124,23 @@ export function autoName<D, S>(
  *   )
  * );
  */
-export function type<D, S>(
+export function type<D extends Dependencies, S extends Service>(
   type: 'provider',
   initializer: ProviderInitializer<D, S>,
 ): ProviderInitializer<D, S>;
-export function type<D, S>(
+export function type<D extends Dependencies, S extends Service>(
   type: 'provider',
   initializer: ProviderInitializerBuilder<D, S>,
 ): ProviderInitializerBuilder<D, S>;
-export function type<D, S>(
+export function type<D extends Dependencies, S extends Service>(
   type: 'service',
   initializer: ServiceInitializer<D, S>,
 ): ServiceInitializer<D, S>;
-export function type<D, S>(
+export function type<D extends Dependencies, S extends Service>(
   type: 'service',
   initializer: ServiceInitializerBuilder<D, S>,
 ): ServiceInitializerBuilder<D, S>;
-export function type<D, S>(
+export function type<D extends Dependencies, S extends Service>(
   type: 'service' | 'provider',
   initializer:
     | ProviderInitializerBuilder<D, S>
@@ -1113,15 +1180,15 @@ export function type<D, S>(
  *   singleton: true,
  * }, myServiceInitializer));
  */
-export function initializer<D, S>(
+export function initializer<D extends Dependencies, S extends Service>(
   properties: ProviderInputProperties,
   initializer: ProviderInitializerBuilder<D, S>,
 ): ProviderInitializer<D, S>;
-export function initializer<D, S>(
+export function initializer<D extends Dependencies, S extends Service>(
   properties: ServiceInputProperties,
   initializer: ServiceInitializerBuilder<D, S>,
 ): ServiceInitializer<D, S>;
-export function initializer<D, S>(
+export function initializer<D extends Dependencies, S extends Service>(
   properties: ServiceInputProperties | ProviderInputProperties,
   initializer:
     | ProviderInitializerBuilder<D, S>
@@ -1173,12 +1240,11 @@ export function initializer<D, S>(
  */
 export function handler<
   D extends Dependencies,
-  V,
-  P extends Parameters<V>,
+  P extends Record<string, unknown>,
   U extends unknown[],
   R
 >(
-  handlerFunction: HandlerFunction<D, V, P, U, R>,
+  handlerFunction: HandlerFunction<D, P, U, R>,
   name?: ServiceName,
   dependencies?: DependencyDeclaration[],
   singleton?: boolean,
@@ -1199,7 +1265,8 @@ export function handler<
       singleton,
       extra,
     },
-    async (...args) => handlerFunction.bind(null, ...args),
+    async (dependencies, ...args) =>
+      handlerFunction.bind(null, dependencies || ({} as D), ...args),
   );
 }
 
@@ -1224,12 +1291,11 @@ export function handler<
  */
 export function autoHandler<
   D extends Dependencies,
-  V,
-  P extends Parameters<V>,
+  P extends Record<string, unknown>,
   U extends unknown[],
   R
 >(
-  handlerFunction: HandlerFunction<D, V, P, U, R>,
+  handlerFunction: HandlerFunction<D, P, U, R>,
 ): ServiceInitializer<D, (parameters: P, ...args: U) => Promise<R>> {
   const name = readFunctionName(handlerFunction);
   const source = handlerFunction.toString();
@@ -1241,7 +1307,8 @@ export function autoHandler<
       type: 'service',
       inject: dependencies,
     },
-    async (...args) => handlerFunction.bind(null, ...args),
+    async (dependencies, ...args) =>
+      handlerFunction.bind(null, dependencies || ({} as D), ...args),
   );
 }
 
@@ -1336,19 +1403,28 @@ https://stackoverflow.com/questions/64948037/generics-type-loss-while-infering/6
  * @return {Function}
  * Returns revealed initializer (with TypeScript types for properties)
  */
-export function unwrapInitializerProperties<S, D>(
-  initializer: ProviderInitializer<D, S>,
-): ProviderProperties;
-export function unwrapInitializerProperties<S, D>(
-  initializer: ServiceInitializer<D, S>,
-): ServiceProperties;
-export function unwrapInitializerProperties<S, D>(
-  initializer: ConstantInitializer<S>,
-): ConstantProperties;
-export function unwrapInitializerProperties<S, D>(
-  initializer: Initializer<S, D>,
-): InitializerProperties;
-export function unwrapInitializerProperties<S, D>(
+export function unwrapInitializerProperties<
+  S extends Service,
+  D extends Dependencies
+>(initializer: ProviderInitializer<D, S>): ProviderProperties;
+export function unwrapInitializerProperties<
+  S extends Service,
+  D extends Dependencies
+>(initializer: ServiceInitializer<D, S>): ServiceProperties;
+export function unwrapInitializerProperties<
+  S extends Service,
+  // Ignoring the dependencies for the constants case
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  D extends Dependencies
+>(initializer: ConstantInitializer<S>): ConstantProperties;
+export function unwrapInitializerProperties<
+  S extends Service,
+  D extends Dependencies
+>(initializer: Initializer<S, D>): InitializerProperties;
+export function unwrapInitializerProperties<
+  S extends Service,
+  D extends Dependencies
+>(
   initializer:
     | ProviderInitializerBuilder<D, S>
     | ServiceInitializerBuilder<D, S>

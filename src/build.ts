@@ -1,13 +1,31 @@
 import { SPECIAL_PROPS, parseDependencyDeclaration, initializer } from './util';
 import { buildInitializationSequence } from './sequence';
 import type { DependencyDeclaration } from './util';
-import type { Autoloader } from '.';
+import type { Autoloader, Initializer } from '.';
+import type {
+  ConstantProperties,
+  Dependencies,
+  ProviderProperties,
+  ServiceProperties,
+} from '.';
 
 export type BuildOptions = { modules?: 'commonjs' | true };
 export type BuildInitializer = (
   dependencies: DependencyDeclaration[],
   options?: BuildOptions,
 ) => Promise<string>;
+type BuildNode = {
+  __name: string;
+  __initializer: Initializer<unknown, Dependencies<unknown>>;
+  __inject: DependencyDeclaration[];
+  __type:
+    | ConstantProperties['$type']
+    | ServiceProperties['$type']
+    | ProviderProperties['$type'];
+  __initializerName: string;
+  __path: string;
+  __childNodes: BuildNode[];
+};
 
 /* Architecture Note #2: Build
 
@@ -54,7 +72,7 @@ async function initInitializerBuilder({
   $autoload,
 }: {
   $autoload: Autoloader;
-}) {
+}): Promise<BuildInitializer> {
   return buildInitializer;
 
   /**
@@ -88,7 +106,7 @@ async function initInitializerBuilder({
     );
     const batches = buildInitializationSequence({
       __name: 'main',
-      __childNodes: dependencyTrees.filter(identity),
+      __childNodes: dependencyTrees.filter(identity) as BuildNode[],
     });
     batches.pop();
 
@@ -185,14 +203,17 @@ ${batch
   }
 }
 
-async function buildDependencyTree({ $autoload }, dependencyDeclaration) {
+async function buildDependencyTree(
+  { $autoload }: { $autoload: Autoloader },
+  dependencyDeclaration: DependencyDeclaration,
+): Promise<BuildNode | null> {
   const { mappedName, optional } = parseDependencyDeclaration(
     dependencyDeclaration,
   );
 
   try {
     const { path, initializer } = await $autoload(mappedName);
-    const node = {
+    const node: BuildNode = {
       __name: mappedName,
       __initializer: initializer,
       __inject:
@@ -213,11 +234,13 @@ async function buildDependencyTree({ $autoload }, dependencyDeclaration) {
       initializer[SPECIAL_PROPS.INJECT].length
     ) {
       const childNodes = await Promise.all(
-        initializer[SPECIAL_PROPS.INJECT].map((childDependencyDeclaration) =>
+        (initializer[
+          SPECIAL_PROPS.INJECT
+        ] as string[]).map((childDependencyDeclaration) =>
           buildDependencyTree({ $autoload }, childDependencyDeclaration),
         ),
       );
-      node.__childNodes = childNodes.filter(identity);
+      node.__childNodes = childNodes.filter(identity) as BuildNode[];
       return node;
     } else {
       return node;
@@ -253,10 +276,10 @@ function buildHashFromNode(node, hash = {}) {
   return hash;
 }
 
-function identity(a) {
+function identity<T>(a: T): T {
   return a;
 }
 
-function upperCaseFirst(str) {
+function upperCaseFirst(str: string): string {
   return str[0].toUpperCase() + str.slice(1);
 }

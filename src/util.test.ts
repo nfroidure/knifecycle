@@ -27,13 +27,14 @@ import {
 } from './util';
 import type { PromiseValue } from 'type-fest';
 import type { Provider } from './util';
+import type { Dependencies, ServiceInitializer } from '.';
 
-async function aProviderInitializer(_services: unknown) {
+async function aProviderInitializer() {
   return {
     service: 'A_PROVIDER_SERVICE',
   };
 }
-async function aServiceInitializer(_services: unknown) {
+async function aServiceInitializer() {
   return 'A_PROVIDER_SERVICE';
 }
 
@@ -56,29 +57,29 @@ describe('reuseSpecialProps', () => {
     from.$singleton = false;
     from.$extra = { httpHandler: true };
 
-    const newFn = reuseSpecialProps(from, to) as any;
+    const newFn = reuseSpecialProps(from, to);
 
     assert.notEqual(newFn, to);
-    assert.equal(newFn.$name, from.$name);
-    assert.equal(newFn.$type, from.$type);
-    assert.notEqual(newFn.$inject, from.$inject);
-    assert.deepEqual(newFn.$inject, from.$inject);
-    assert.equal(newFn.$singleton, from.$singleton);
-    assert.notEqual(newFn.$extra, from.$extra);
-    assert.deepEqual(newFn.$extra, from.$extra);
+    assert.equal((newFn as any).$name, from.$name);
+    assert.equal((newFn as any).$type, from.$type);
+    assert.notEqual((newFn as any).$inject, from.$inject);
+    assert.deepEqual((newFn as any).$inject, from.$inject);
+    assert.equal((newFn as any).$singleton, from.$singleton);
+    assert.notEqual((newFn as any).$extra, from.$extra);
+    assert.deepEqual((newFn as any).$extra, from.$extra);
 
-    const newFn2 = reuseSpecialProps(from as any, to, {
+    const newFn2 = reuseSpecialProps(from, to, {
       $name: 'yolo',
-    }) as any;
+    });
 
     assert.notEqual(newFn2, to);
-    assert.equal(newFn2.$name, 'yolo');
-    assert.equal(newFn2.$type, from.$type);
-    assert.notEqual(newFn2.$inject, from.$inject);
-    assert.deepEqual(newFn2.$inject, from.$inject);
-    assert.equal(newFn2.$singleton, from.$singleton);
-    assert.notEqual(newFn.$extra, from.$extra);
-    assert.deepEqual(newFn.$extra, from.$extra);
+    assert.equal((newFn2 as any).$name, 'yolo');
+    assert.equal((newFn2 as any).$type, from.$type);
+    assert.notEqual((newFn2 as any).$inject, from.$inject);
+    assert.deepEqual((newFn2 as any).$inject, from.$inject);
+    assert.equal((newFn2 as any).$singleton, from.$singleton);
+    assert.notEqual((newFn as any).$extra, from.$extra);
+    assert.deepEqual((newFn as any).$extra, from.$extra);
   });
 });
 
@@ -126,12 +127,16 @@ describe('wrapInitializer', () => {
         httpHandler: false,
       },
     );
-    const newInitializer = wrapInitializer(async ({ log }, service): Promise<
-      Provider<() => string>
-    > => {
-      log('Wrapping...');
-      return { service: () => service.service() + '-wrapped' };
-    }, baseProviderInitializer);
+    const newInitializer = wrapInitializer(
+      async (
+        { log }: { log: (message: string) => void },
+        service,
+      ): Promise<Provider<() => string>> => {
+        log('Wrapping...');
+        return { service: () => service.service() + '-wrapped' };
+      },
+      baseProviderInitializer,
+    );
 
     const newService = await newInitializer({ log });
     assert.equal(newService.service(), 'test-wrapped');
@@ -200,7 +205,13 @@ describe('inject', () => {
 
   it('should fail with a constant', () => {
     assert.throws(() => {
-      inject(['test'], constant('test', 'test') as any);
+      inject(
+        ['test'],
+        (constant('test', 'test') as unknown) as ServiceInitializer<
+          Dependencies,
+          unknown
+        >,
+      );
     }, /E_BAD_INJECT_IN_CONSTANT/);
   });
 });
@@ -333,9 +344,9 @@ describe('autoInject', () => {
 
   it('should fail with non async initializers', () => {
     assert.throws(() => {
-      autoInject((({ foo: bar = { bar: 'foo' } }) => {
+      autoInject(({ foo: bar = { bar: 'foo' } }) => {
         return bar;
-      }) as any);
+      });
     }, /E_NON_ASYNC_INITIALIZER/);
   });
 
@@ -908,7 +919,7 @@ describe('handler', () => {
 
   it('should fail with no name', () => {
     assert.throws(() => {
-      handler(() => undefined);
+      handler(async () => undefined);
     }, /E_NO_HANDLER_NAME/);
   });
 });
@@ -960,7 +971,7 @@ describe('autoHandler', () => {
 
   it('should fail for anonymous functions', () => {
     assert.throws(() => {
-      autoHandler(() => undefined);
+      autoHandler(async () => undefined);
     }, /E_AUTO_NAMING_FAILURE/);
   });
 });

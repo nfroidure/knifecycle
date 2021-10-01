@@ -41,14 +41,14 @@ function recursivelyGetNextSequenceBatch(
 
   if (
     nodeIsALeaf ||
-    node.__childNodes.every((childNode: Node) =>
+    (node.__childNodes as Node[]).every((childNode: Node) =>
       nodeIsInBatches(batches, childNode),
     )
   ) {
     return batch.concat(node.__name);
   }
 
-  return node.__childNodes.reduce(
+  return (node.__childNodes as Node[]).reduce(
     (batch, childNode) => [
       ...new Set(recursivelyGetNextSequenceBatch(childNode, batches, batch)),
     ],
