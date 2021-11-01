@@ -278,11 +278,7 @@ class Knifecycle {
    * @return {Knifecycle}
    * The Knifecycle instance (for chaining)
    */
-  register<
-    D extends Dependencies,
-    S extends Service,
-    T extends Initializer<S, D>
-  >(initializer: T): Knifecycle {
+  register<T extends Initializer<unknown, any>>(initializer: T): Knifecycle {
     if (this.shutdownPromise) {
       throw new YError(E_INSTANCE_DESTROYED);
     }
