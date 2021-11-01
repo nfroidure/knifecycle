@@ -1,6 +1,6 @@
 import { SPECIAL_PROPS, parseDependencyDeclaration, initializer } from './util';
 import { buildInitializationSequence } from './sequence';
-import type { DependencyDeclaration } from './util';
+import type { DependencyDeclaration, Initializer } from './util';
 import type { Autoloader } from '.';
 
 export type BuildOptions = { modules?: 'commonjs' | true };
@@ -53,7 +53,7 @@ export default initializer(
 async function initInitializerBuilder({
   $autoload,
 }: {
-  $autoload: Autoloader;
+  $autoload: Autoloader<Initializer<unknown, Record<string, unknown>>>;
 }) {
   return buildInitializer;
 
