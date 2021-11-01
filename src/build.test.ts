@@ -57,16 +57,15 @@ describe('buildInitializer', () => {
   );
 
   it('should build an initialization module', async () => {
-    const $ = new Knifecycle<{
-      buildInitializer: BuildInitializer;
-      PWD: string;
-    }>();
+    const $ = new Knifecycle();
 
     $.register(constant('PWD', '~/my-project'));
     $.register(initAutoloader);
     $.register(initInitializerBuilder);
 
-    const { buildInitializer } = await $.run(['buildInitializer']);
+    const { buildInitializer } = await $.run<{
+      buildInitializer: BuildInitializer;
+    }>(['buildInitializer']);
 
     const content = await buildInitializer(['dep1', 'finalMappedDep>dep3']);
     assert.equal(
@@ -139,16 +138,15 @@ export async function initialize(services = {}) {
   });
 
   it('should allows to use commonjs', async () => {
-    const $ = new Knifecycle<{
-      buildInitializer: BuildInitializer;
-      PWD: string;
-    }>();
+    const $ = new Knifecycle();
 
     $.register(constant('PWD', '~/my-project'));
     $.register(initAutoloader);
     $.register(initInitializerBuilder);
 
-    const { buildInitializer } = await $.run(['buildInitializer']);
+    const { buildInitializer } = await $.run<{
+      buildInitializer: BuildInitializer;
+    }>(['buildInitializer']);
 
     const content = await buildInitializer(['dep1', 'finalMappedDep>dep3'], {
       modules: 'commonjs',

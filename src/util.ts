@@ -40,11 +40,11 @@ export type Service = any;
 export interface Disposer {
   (): Promise<void>;
 }
-export type FatalErrorProvider = Promise<void>;
+export type FatalErrorPromise = Promise<void>;
 export type Provider<S extends Service> = {
   service: S;
   dispose?: Disposer;
-  fatalErrorPromise?: FatalErrorProvider;
+  fatalErrorPromise?: FatalErrorPromise;
 };
 export type Dependencies<S extends Service = Service> = { [name: string]: S };
 export type DependencyName = string;
@@ -68,7 +68,9 @@ export type ConstantInitializer<S extends Service> = ConstantProperties & {
 export type ProviderInitializerBuilder<
   D extends Dependencies,
   S extends Service
-> = (dependencies?: D) => Promise<Provider<S>>;
+> =
+  | ((dependencies: D) => Promise<Provider<S>>)
+  | ((dependencies?: D) => Promise<Provider<S>>);
 export type ProviderProperties = {
   $type: 'provider';
   $name: DependencyName;
@@ -76,9 +78,9 @@ export type ProviderProperties = {
   $singleton?: boolean;
   $extra?: ExtraInformations;
 };
-export type ProviderInitializer<D extends Dependencies, S extends Service> = (
-  dependencies?: D,
-) => Promise<Provider<S>>;
+export type ProviderInitializer<D extends Dependencies, S extends Service> =
+  | ((dependencies: D) => Promise<Provider<S>>)
+  | ((dependencies?: D) => Promise<Provider<S>>);
 export type ProviderInputProperties = {
   type: 'provider';
   name: DependencyName;
@@ -90,7 +92,7 @@ export type ProviderInputProperties = {
 export type ServiceInitializerBuilder<
   D extends Dependencies,
   S extends Service
-> = (dependencies?: D) => Promise<S>;
+> = ((dependencies: D) => Promise<S>) | ((dependencies?: D) => Promise<S>);
 export type ServiceProperties = {
   $type: 'service';
   $name: DependencyName;
@@ -98,9 +100,9 @@ export type ServiceProperties = {
   $singleton?: boolean;
   $extra?: ExtraInformations;
 };
-export type ServiceInitializer<D extends Dependencies, S extends Service> = (
-  dependencies?: D,
-) => Promise<S>;
+export type ServiceInitializer<D extends Dependencies, S extends Service> =
+  | ((dependencies: D) => Promise<S>)
+  | ((dependencies?: D) => Promise<S>);
 export type ServiceInputProperties = {
   type: 'service';
   name: DependencyName;
@@ -567,25 +569,25 @@ export function wrapInitializer<D, S>(
  */
 export function inject<D, S>(
   dependencies: DependencyDeclaration[],
-  initializer: ProviderInitializer<unknown, S>,
+  initializer: ProviderInitializer<Dependencies, S>,
 ): ProviderInitializer<D, S>;
 export function inject<D, S>(
   dependencies: DependencyDeclaration[],
-  initializer: ProviderInitializerBuilder<unknown, S>,
+  initializer: ProviderInitializerBuilder<Dependencies, S>,
 ): ProviderInitializerBuilder<D, S>;
 export function inject<D, S>(
   dependencies: DependencyDeclaration[],
-  initializer: ServiceInitializer<unknown, S>,
+  initializer: ServiceInitializer<Dependencies, S>,
 ): ServiceInitializer<D, S>;
 export function inject<D, S>(
   dependencies: DependencyDeclaration[],
-  initializer: ServiceInitializerBuilder<unknown, S>,
+  initializer: ServiceInitializerBuilder<Dependencies, S>,
 ): ServiceInitializerBuilder<D, S>;
 export function inject<D, S>(
   dependencies: DependencyDeclaration[],
   initializer:
-    | ProviderInitializerBuilder<unknown, S>
-    | ServiceInitializerBuilder<unknown, S>,
+    | ProviderInitializerBuilder<Dependencies, S>
+    | ServiceInitializerBuilder<Dependencies, S>,
 ): ProviderInitializerBuilder<D, S> | ServiceInitializerBuilder<D, S> {
   if ('constant' === initializer[SPECIAL_PROPS.TYPE]) {
     throw new YError(
@@ -618,31 +620,31 @@ export function useInject<FD, S>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
-  to: ProviderInitializer<unknown, S>,
+  to: ProviderInitializer<Dependencies, S>,
 ): ProviderInitializer<FD, S>;
 export function useInject<FD, S>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
-  to: ProviderInitializerBuilder<unknown, S>,
+  to: ProviderInitializerBuilder<Dependencies, S>,
 ): ProviderInitializerBuilder<FD, S>;
 export function useInject<FD, S>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
-  to: ServiceInitializer<unknown, S>,
+  to: ServiceInitializer<Dependencies, S>,
 ): ServiceInitializer<FD, S>;
 export function useInject<FD, S>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
-  to: ServiceInitializerBuilder<unknown, S>,
+  to: ServiceInitializerBuilder<Dependencies, S>,
 ): ServiceInitializerBuilder<FD, S>;
 export function useInject<FD, S>(
   from:
     | AsyncInitializerBuilder<FD, unknown>
     | PartialAsyncInitializer<FD, unknown>,
-  to: ProviderInitializerBuilder<unknown, S>,
+  to: ProviderInitializerBuilder<Dependencies, S>,
 ): ProviderInitializerBuilder<FD, S> | ServiceInitializerBuilder<FD, S> {
   return inject<FD, S>(from[SPECIAL_PROPS.INJECT] || [], to);
 }
@@ -1342,6 +1344,7 @@ export function unwrapInitializerProperties<S, D>(
 export function unwrapInitializerProperties<S, D>(
   initializer: ServiceInitializer<D, S>,
 ): ServiceProperties;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function unwrapInitializerProperties<S, D>(
   initializer: ConstantInitializer<S>,
 ): ConstantProperties;
