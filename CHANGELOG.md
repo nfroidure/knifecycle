@@ -1,3 +1,12 @@
+## [12.0.1](https://github.com/nfroidure/knifecycle/compare/v12.0.0...v12.0.1) (2021-11-01)
+
+
+### Bug Fixes
+
+* **types:** less strict registering ([3453508](https://github.com/nfroidure/knifecycle/commit/345350877e6bcf24f40cf2ed3d43d8ec92e2ef2a))
+
+
+
 # [12.0.0](https://github.com/nfroidure/knifecycle/compare/v11.1.1...v12.0.0) (2021-11-01)
 
 
