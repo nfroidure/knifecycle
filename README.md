@@ -10,11 +10,6 @@
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nfroidure/knifecycle/blob/master/LICENSE)
 [![Build status](https://travis-ci.com/nfroidure/knifecycle.svg?branch=master)](https://travis-ci.com/github/nfroidure/knifecycle)
 [![Coverage Status](https://coveralls.io/repos/github/nfroidure/knifecycle/badge.svg?branch=master)](https://coveralls.io/github/nfroidure/knifecycle?branch=master)
-[![NPM version](https://badge.fury.io/js/knifecycle.svg)](https://npmjs.org/package/knifecycle)
-[![Dependency Status](https://david-dm.org/nfroidure/knifecycle.svg)](https://david-dm.org/nfroidure/knifecycle)
-[![devDependency Status](https://david-dm.org/nfroidure/knifecycle/dev-status.svg)](https://david-dm.org/nfroidure/knifecycle#info=devDependencies)
-[![Package Quality](https://npm.packagequality.com/shield/knifecycle.svg)](https://packagequality.com/#?package=knifecycle)
-[![Code Climate](https://codeclimate.com/github/nfroidure/knifecycle.svg)](https://codeclimate.com/github/nfroidure/knifecycle)
 
 
 [//]: # (::contents:start)

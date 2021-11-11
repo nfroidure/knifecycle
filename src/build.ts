@@ -88,7 +88,7 @@ async function initInitializerBuilder({
     );
     const batches = buildInitializationSequence({
       __name: 'main',
-      __childNodes: dependencyTrees.filter(identity),
+      __childNodes: dependencyTrees.filter(identity) as DependencyTreeNode[],
     });
     batches.pop();
 
@@ -185,14 +185,29 @@ ${batch
   }
 }
 
-async function buildDependencyTree({ $autoload }, dependencyDeclaration) {
+type DependencyTreeNode = {
+  __name: string;
+  __childNodes?: DependencyTreeNode[];
+  __initializer: Initializer<unknown, Record<string, unknown>>;
+  __inject: DependencyDeclaration[];
+  __type: 'provider' | 'constant' | 'service';
+  __initializerName: string;
+  __path: string;
+};
+
+async function buildDependencyTree(
+  {
+    $autoload,
+  }: { $autoload: Autoloader<Initializer<unknown, Record<string, unknown>>> },
+  dependencyDeclaration,
+): Promise<DependencyTreeNode | null> {
   const { mappedName, optional } = parseDependencyDeclaration(
     dependencyDeclaration,
   );
 
   try {
     const { path, initializer } = await $autoload(mappedName);
-    const node = {
+    const node: DependencyTreeNode = {
       __name: mappedName,
       __initializer: initializer,
       __inject:
@@ -212,7 +227,7 @@ async function buildDependencyTree({ $autoload }, dependencyDeclaration) {
       initializer[SPECIAL_PROPS.INJECT] &&
       initializer[SPECIAL_PROPS.INJECT].length
     ) {
-      const childNodes = await Promise.all(
+      const childNodes: DependencyTreeNode[] = await Promise.all(
         initializer[SPECIAL_PROPS.INJECT].map((childDependencyDeclaration) =>
           buildDependencyTree({ $autoload }, childDependencyDeclaration),
         ),

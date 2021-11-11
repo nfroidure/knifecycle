@@ -52,28 +52,25 @@ describe('Knifecycle', () => {
       it('should work when overriding a previously set constant', async () => {
         $.register(constant('TEST', 1));
         $.register(constant('TEST', 2));
-        assert.deepEqual(
-          await $.run<Record<string, any>>(['TEST']),
-          {
-            TEST: 2,
-          },
-        );
+        assert.deepEqual(await $.run<Record<string, any>>(['TEST']), {
+          TEST: 2,
+        });
       });
 
       it('should fail when overriding an initialized constant', async () => {
         $.register(constant('TEST', 1));
-        assert.deepEqual(
-          await $.run<Record<string, any>>(['TEST']),
-          {
-            TEST: 1,
-          },
-        );
+        assert.deepEqual(await $.run<Record<string, any>>(['TEST']), {
+          TEST: 1,
+        });
 
         try {
           $.register(constant('TEST', 2));
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal(err.code, 'E_INITIALIZER_ALREADY_INSTANCIATED');
+          assert.equal(
+            (err as YError).code,
+            'E_INITIALIZER_ALREADY_INSTANCIATED',
+          );
         }
       });
     });
@@ -100,7 +97,10 @@ describe('Knifecycle', () => {
           $.register(service(async () => () => 2, 'test'));
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal(err.code, 'E_INITIALIZER_ALREADY_INSTANCIATED');
+          assert.equal(
+            (err as YError).code,
+            'E_INITIALIZER_ALREADY_INSTANCIATED',
+          );
         }
       });
     });
@@ -204,7 +204,10 @@ describe('Knifecycle', () => {
           );
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal(err.code, 'E_INITIALIZER_ALREADY_INSTANCIATED');
+          assert.equal(
+            (err as YError).code,
+            'E_INITIALIZER_ALREADY_INSTANCIATED',
+          );
         }
       });
     });
@@ -215,8 +218,8 @@ describe('Knifecycle', () => {
           $.register('not_a_function' as any);
         },
         (err) => {
-          assert.deepEqual(err.code, 'E_BAD_INITIALIZER');
-          assert.deepEqual(err.params, ['not_a_function']);
+          assert.deepEqual((err as YError).code, 'E_BAD_INITIALIZER');
+          assert.deepEqual((err as YError).params, ['not_a_function']);
           return true;
         },
       );
@@ -228,8 +231,8 @@ describe('Knifecycle', () => {
           $.register(async () => undefined);
         },
         (err) => {
-          assert.deepEqual(err.code, 'E_ANONYMOUS_ANALYZER');
-          assert.deepEqual(err.params, []);
+          assert.deepEqual((err as YError).code, 'E_ANONYMOUS_ANALYZER');
+          assert.deepEqual((err as YError).params, []);
           return true;
         },
       );
@@ -244,8 +247,8 @@ describe('Knifecycle', () => {
           $.register(fn);
         },
         (err) => {
-          assert.deepEqual(err.code, 'E_BAD_INITIALIZER_TYPE');
-          assert.deepEqual(err.params, [
+          assert.deepEqual((err as YError).code, 'E_BAD_INITIALIZER_TYPE');
+          assert.deepEqual((err as YError).params, [
             'test',
             'not_allowed_type',
             ALLOWED_INITIALIZER_TYPES,
@@ -265,8 +268,11 @@ describe('Knifecycle', () => {
           $.register(fn);
         },
         (err) => {
-          assert.deepEqual(err.code, 'E_UNDEFINED_CONSTANT_INITIALIZER');
-          assert.deepEqual(err.params, ['THE_NUMBER']);
+          assert.deepEqual(
+            (err as YError).code,
+            'E_UNDEFINED_CONSTANT_INITIALIZER',
+          );
+          assert.deepEqual((err as YError).params, ['THE_NUMBER']);
           return true;
         },
       );
@@ -282,8 +288,11 @@ describe('Knifecycle', () => {
           $.register(fn);
         },
         (err) => {
-          assert.deepEqual(err.code, 'E_BAD_VALUED_NON_CONSTANT_INITIALIZER');
-          assert.deepEqual(err.params, ['myService']);
+          assert.deepEqual(
+            (err as YError).code,
+            'E_BAD_VALUED_NON_CONSTANT_INITIALIZER',
+          );
+          assert.deepEqual((err as YError).params, ['myService']);
           return true;
         },
       );
@@ -303,8 +312,8 @@ describe('Knifecycle', () => {
           );
         },
         (err) => {
-          assert.deepEqual(err.code, 'E_BAD_AUTOLOADER');
-          assert.deepEqual(err.params, [false]);
+          assert.deepEqual((err as YError).code, 'E_BAD_AUTOLOADER');
+          assert.deepEqual((err as YError).params, [false]);
           return true;
         },
       );
@@ -322,8 +331,8 @@ describe('Knifecycle', () => {
           $.register(provider(hashProvider, 'hash', ['hash']));
         },
         (err) => {
-          assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
-          assert.deepEqual(err.params, ['hash']);
+          assert.deepEqual((err as YError).code, 'E_CIRCULAR_DEPENDENCY');
+          assert.deepEqual((err as YError).params, ['hash']);
           return true;
         },
       );
@@ -335,8 +344,8 @@ describe('Knifecycle', () => {
           $.register(provider(hashProvider, 'hash', ['hash>lol']));
         },
         (err) => {
-          assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
-          assert.deepEqual(err.params, ['hash']);
+          assert.deepEqual((err as YError).code, 'E_CIRCULAR_DEPENDENCY');
+          assert.deepEqual((err as YError).params, ['hash']);
           return true;
         },
       );
@@ -351,8 +360,8 @@ describe('Knifecycle', () => {
           $.register(provider(inject(['hash'], hashProvider), 'hash3'));
         },
         (err) => {
-          assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
-          assert.deepEqual(err.params, ['hash3', 'hash', 'hash3']);
+          assert.deepEqual((err as YError).code, 'E_CIRCULAR_DEPENDENCY');
+          assert.deepEqual((err as YError).params, ['hash3', 'hash', 'hash3']);
           return true;
         },
       );
@@ -367,8 +376,8 @@ describe('Knifecycle', () => {
           $.register(provider(inject(['hash'], hashProvider), 'hash3'));
         },
         (err) => {
-          assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
-          assert.deepEqual(err.params, [
+          assert.deepEqual((err as YError).code, 'E_CIRCULAR_DEPENDENCY');
+          assert.deepEqual((err as YError).params, [
             'hash3',
             'hash',
             'hash1',
@@ -389,8 +398,12 @@ describe('Knifecycle', () => {
           $.register(provider(inject(['hash>aHash'], hashProvider), 'hash3'));
         },
         (err) => {
-          assert.deepEqual(err.code, 'E_CIRCULAR_DEPENDENCY');
-          assert.deepEqual(err.params, ['hash3', 'hash>aHash', 'hash3>aHash3']);
+          assert.deepEqual((err as YError).code, 'E_CIRCULAR_DEPENDENCY');
+          assert.deepEqual((err as YError).params, [
+            'hash3',
+            'hash>aHash',
+            'hash3>aHash3',
+          ]);
           return true;
         },
       );
@@ -418,14 +431,13 @@ describe('Knifecycle', () => {
     });
 
     it('should work with service dependencies', async () => {
-      $.register(
-        service(
-          inject(['time'], function sampleService({ time }) {
-            return Promise.resolve(typeof time);
-          }),
-          'sample',
-        ),
+      const wrappedSampleService = inject<{ time: any }, string>(
+        ['time'],
+        async function sampleService({ time }: { time: any }) {
+          return Promise.resolve(typeof time);
+        },
       );
+      $.register(service(wrappedSampleService, 'sample'));
       $.register(constant('time', time));
 
       const dependencies = await $.run<Record<string, any>>(['sample']);
@@ -576,8 +588,8 @@ describe('Knifecycle', () => {
         await $.run<Record<string, any>>(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        assert.deepEqual(err.code, 'E_BAD_SERVICE_PROMISE');
-        assert.deepEqual(err.params, ['lol']);
+        assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROMISE');
+        assert.deepEqual((err as YError).params, ['lol']);
       }
     });
 
@@ -587,8 +599,8 @@ describe('Knifecycle', () => {
         await $.run<Record<string, any>>(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        assert.deepEqual(err.code, 'E_BAD_SERVICE_PROVIDER');
-        assert.deepEqual(err.params, ['lol']);
+        assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROVIDER');
+        assert.deepEqual((err as YError).params, ['lol']);
       }
     });
 
@@ -598,8 +610,8 @@ describe('Knifecycle', () => {
         await $.run<Record<string, any>>(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        assert.deepEqual(err.code, 'E_BAD_SERVICE_PROVIDER');
-        assert.deepEqual(err.params, ['lol']);
+        assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROVIDER');
+        assert.deepEqual((err as YError).params, ['lol']);
       }
     });
 
@@ -608,8 +620,8 @@ describe('Knifecycle', () => {
         await $.run<Record<string, any>>(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        assert.deepEqual(err.code, 'E_UNMATCHED_DEPENDENCY');
-        assert.deepEqual(err.params, ['lol']);
+        assert.deepEqual((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
+        assert.deepEqual((err as YError).params, ['lol']);
       }
     });
 
@@ -623,8 +635,8 @@ describe('Knifecycle', () => {
         await $.run<Record<string, any>>(['time', 'hash']);
         throw new Error('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        assert.deepEqual(err.code, 'E_UNMATCHED_DEPENDENCY');
-        assert.deepEqual(err.params, ['hash', 'hash2', 'lol']);
+        assert.deepEqual((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
+        assert.deepEqual((err as YError).params, ['hash', 'hash2', 'lol']);
       }
     });
 
@@ -675,7 +687,7 @@ describe('Knifecycle', () => {
         await process.fatalErrorPromise;
         throw new Error('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        assert.deepEqual(err.message, 'E_DB_ERROR');
+        assert.deepEqual((err as Error).message, 'E_DB_ERROR');
       }
     });
   });
@@ -835,7 +847,7 @@ describe('Knifecycle', () => {
         await $.run<Record<string, any>>(['test']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        assert.equal(err.code, 'E_UNMATCHED_DEPENDENCY');
+        assert.equal((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
       }
     });
 
@@ -858,8 +870,8 @@ describe('Knifecycle', () => {
         await $.run<Record<string, any>>(['test']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        assert.equal(err.code, 'E_CANNOT_AUTOLOAD');
-        assert.deepEqual(err.params, ['test']);
+        assert.equal((err as YError).code, 'E_CANNOT_AUTOLOAD');
+        assert.deepEqual((err as YError).params, ['test']);
       }
     });
 
@@ -880,8 +892,8 @@ describe('Knifecycle', () => {
         await $.run<Record<string, any>>(['test']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        assert.equal(err.code, 'E_BAD_AUTOLOADED_INITIALIZER');
-        assert.deepEqual(err.params, ['test', undefined]);
+        assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
+        assert.deepEqual((err as YError).params, ['test', undefined]);
       }
     });
 
@@ -912,8 +924,8 @@ describe('Knifecycle', () => {
         await $.run<Record<string, any>>(['test']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        assert.equal(err.code, 'E_AUTOLOADED_INITIALIZER_MISMATCH');
-        assert.deepEqual(err.params, ['test', 'not-test']);
+        assert.equal((err as YError).code, 'E_AUTOLOADED_INITIALIZER_MISMATCH');
+        assert.deepEqual((err as YError).params, ['test', 'not-test']);
       }
     });
 
@@ -944,8 +956,8 @@ describe('Knifecycle', () => {
         await $.run<Record<string, any>>(['test']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        assert.equal(err.code, 'E_AUTOLOADER_DYNAMIC_DEPENDENCY');
-        assert.deepEqual(err.params, ['ENV']);
+        assert.equal((err as YError).code, 'E_AUTOLOADER_DYNAMIC_DEPENDENCY');
+        assert.deepEqual((err as YError).params, ['ENV']);
       }
     });
 
@@ -1133,15 +1145,13 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash', ['ENV'], true));
       $.register(provider(hashProvider, 'hash2', ['ENV'], true));
 
-      const [
-        { hash, hash2 },
-        { hash: sameHash, hash2: sameHash2 },
-      ] = await Promise.all([
-        $.run<Record<string, any>>(['hash']),
-        $.run<Record<string, any>>(['hash']),
-        $.run<Record<string, any>>(['hash2']),
-        $.run<Record<string, any>>(['hash2']),
-      ]);
+      const [{ hash, hash2 }, { hash: sameHash, hash2: sameHash2 }] =
+        await Promise.all([
+          $.run<Record<string, any>>(['hash']),
+          $.run<Record<string, any>>(['hash']),
+          $.run<Record<string, any>>(['hash2']),
+          $.run<Record<string, any>>(['hash2']),
+        ]);
       assert.equal(hash, sameHash);
       assert.equal(hash2, sameHash2);
 
@@ -1243,7 +1253,7 @@ describe('Knifecycle', () => {
         await $.run<Record<string, any>>(['ENV', 'hash', 'hash1']);
         throw new YError('E_UNEXPECTED_SUCCES');
       } catch (err) {
-        assert.equal(err.code, 'E_INSTANCE_DESTROYED');
+        assert.equal((err as YError).code, 'E_INSTANCE_DESTROYED');
       }
     });
   });

@@ -5,9 +5,19 @@
 [//]: # ( )
 # Architecture Notes
 
+## Summary
+
+1. [Knifecycle](#1-knifecycle)
+   1. [OOP](#11-oop)
+   2. [Creating initializers](#12-creating-initializers)
+      1. [Dependencies declaration syntax](#121-dependencies-declaration-syntax)
+   3. [Registering initializers](#13-registering-initializers)
+   4. [Execution silos](#14-execution-silos)
+2. [Build](#2-build)
+3. [TypeScript tweaks](#3-typescript-tweaks)
 
 
-## Knifecycle
+## 1. Knifecycle
 
 The `knifecycle` project is intended to be a [dependency
  injection](https://en.wikipedia.org/wiki/Dependency_injection)
@@ -28,7 +38,7 @@ It is designed to have a low footprint on services code.
 
 
 
-### OOP
+### 1.1. OOP
 
 The `knifecycle` use case is one of the rare use case where
  [OOP](https://en.wikipedia.org/wiki/Object-oriented_programming)
@@ -43,7 +53,7 @@ A service provider is full of state since its concern is
 
 
 
-### Creating initializers
+### 1.2. Creating initializers
 
 `knifecycle` uses initializers at its a core. An initializer is basically
  an asynchronous function with some annotations:
@@ -69,7 +79,7 @@ A service provider is full of state since its concern is
 
 
 
-#### Dependencies declaration syntax
+#### 1.2.1. Dependencies declaration syntax
 
 The dependencies syntax is of the following form:
  `?serviceName>mappedName`
@@ -79,11 +89,11 @@ The `?` flag indicates an optional dependency.
 It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.ts#L1250-L1259)
+[See in context](./src/util.ts#L1249-L1258)
 
 
 
-### Registering initializers
+### 1.3. Registering initializers
 
 The first step to use `knifecycle` is to create a new
  `Knifecycle` instance and register the previously
@@ -111,7 +121,7 @@ Initializers can be of three types:
 
 
 
-### Execution silos
+### 1.4. Execution silos
 
 Once every initializers are registered, we need a way to bring
  them to life. Execution silos are where the magic happens.
@@ -123,11 +133,11 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.ts#L538-L548)
+[See in context](./src/index.ts#L536-L546)
 
 
 
-## Build
+## 2. Build
 
 Using Knifecycle only makes sense for
  monoliths. For some targets like
@@ -147,7 +157,7 @@ For the build to work, we need:
 
 
 
-## TypeScript tweaks
+## 3. TypeScript tweaks
 
 Sadly TypeScript does not allow to add generic types
  in all cases. This is why `(Service|Provider)Initializer`
@@ -159,5 +169,5 @@ Sadly TypeScript does not allow to add generic types
 For more details, see:
 https://stackoverflow.com/questions/64948037/generics-type-loss-while-infering/64950184#64950184
 
-[See in context](./src/util.ts#L1321-L1332)
+[See in context](./src/util.ts#L1319-L1330)
 

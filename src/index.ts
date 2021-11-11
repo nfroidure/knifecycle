@@ -101,7 +101,7 @@ export interface Injector<T extends Record<string, unknown>> {
   (dependencies: DependencyDeclaration[]): Promise<T>;
 }
 export interface Autoloader<
-  T extends Initializer<unknown, Record<string, unknown>>
+  T extends Initializer<unknown, Record<string, unknown>>,
 > {
   (name: DependencyDeclaration): Promise<{
     initializer: T;
@@ -357,12 +357,11 @@ class Knifecycle {
         !this._singletonsServicesDescriptors.get(
           initializer[SPECIAL_PROPS.NAME],
         )?.preloaded;
-      const initializedAsInstance = [
-        ...this._silosContexts.values(),
-      ].some((siloContext) =>
-        siloContext.servicesSequence.some((sequence) =>
-          sequence.includes(initializer[SPECIAL_PROPS.NAME]),
-        ),
+      const initializedAsInstance = [...this._silosContexts.values()].some(
+        (siloContext) =>
+          siloContext.servicesSequence.some((sequence) =>
+            sequence.includes(initializer[SPECIAL_PROPS.NAME]),
+          ),
       );
       if (initializedAsSingleton || initializedAsInstance) {
         throw new YError(
@@ -389,10 +388,9 @@ class Knifecycle {
         // We do not directly use initializer[SPECIAL_PROPS.VALUE] here
         // since it looks like there is a bug with Babel build that
         // change functions to empty litteral objects
-        promise: (initializer as ProviderInitializer<
-          Record<string, unknown>,
-          unknown
-        >)({}),
+        promise: (
+          initializer as ProviderInitializer<Record<string, unknown>, unknown>
+        )({}),
       });
     }
 
@@ -629,9 +627,10 @@ class Knifecycle {
 
             await Promise.all(
               reversedServiceSequence.pop().map(async (serviceName) => {
-                const singletonServiceDescriptor = await _this._pickupSingletonServiceDescriptorPromise(
-                  serviceName,
-                );
+                const singletonServiceDescriptor =
+                  await _this._pickupSingletonServiceDescriptorPromise(
+                    serviceName,
+                  );
                 const serviceDescriptor =
                   singletonServiceDescriptor ||
                   (await siloContext.servicesDescriptors.get(serviceName));
@@ -705,10 +704,10 @@ class Knifecycle {
     debug('Handling fatal errors:', siloContext.errorsPromises);
     Promise.all(siloContext.errorsPromises).catch(siloContext.throwFatalError);
 
-    return (_buildFinalHash(
+    return _buildFinalHash(
       servicesHash,
       dependenciesDeclarations,
-    ) as unknown) as ID;
+    ) as unknown as ID;
   }
 
   /**
@@ -773,9 +772,8 @@ class Knifecycle {
     }: { injectorContext: boolean; autoloading: boolean },
   ): Promise<Provider<unknown>> {
     // Try to get service descriptior early from the silo context
-    let serviceDescriptorPromise = siloContext.servicesDescriptors.get(
-      serviceName,
-    );
+    let serviceDescriptorPromise =
+      siloContext.servicesDescriptors.get(serviceName);
     if (serviceDescriptorPromise) {
       if (autoloading) {
         debug(
@@ -794,7 +792,7 @@ class Knifecycle {
       serviceName,
     ) as Promise<Provider<unknown>>;
 
-    if (serviceDescriptorPromise) {
+    if (serviceDescriptorPromise as Promise<Provider<unknown>> | undefined) {
       if (autoloading) {
         debug(
           `⚠️ - Possible dead lock due to reusing the singleton "${serviceName}" while autoloading.`,
@@ -804,9 +802,8 @@ class Knifecycle {
         siloContext.name,
       );
     } else {
-      serviceDescriptorPromise = siloContext.servicesDescriptors.get(
-        serviceName,
-      );
+      serviceDescriptorPromise =
+        siloContext.servicesDescriptors.get(serviceName);
     }
 
     if (serviceDescriptorPromise) {
@@ -951,9 +948,8 @@ class Knifecycle {
   _pickupSingletonServiceDescriptorPromise(
     serviceName: ServiceName,
   ): Promise<Provider<unknown>> | void {
-    const serviceDescriptor = this._singletonsServicesDescriptors.get(
-      serviceName,
-    );
+    const serviceDescriptor =
+      this._singletonsServicesDescriptors.get(serviceName);
 
     if (!serviceDescriptor) {
       return;
@@ -1042,12 +1038,16 @@ class Knifecycle {
         Promise.resolve(serviceDescriptor),
       );
     } catch (err) {
-      debug('Error initializing a service descriptor:', serviceName, err.stack);
-      if (E_UNMATCHED_DEPENDENCY === err.code) {
+      debug(
+        'Error initializing a service descriptor:',
+        serviceName,
+        (err as Error).stack || 'no_stack_trace',
+      );
+      if (E_UNMATCHED_DEPENDENCY === (err as YError).code) {
         throw YError.wrap(
           err,
           E_UNMATCHED_DEPENDENCY,
-          ...[serviceName].concat(err.params),
+          ...[serviceName].concat((err as YError).params),
         );
       }
       throw err;
@@ -1082,44 +1082,41 @@ class Knifecycle {
     }: { autoloading: boolean; injectorContext: boolean },
   ): Promise<Dependencies> {
     debug('Initializing dependencies:', serviceName, servicesDeclarations);
-    const servicesDescriptors: (
-      | Provider<unknown>
-      | undefined
-    )[] = await Promise.all(
-      servicesDeclarations.map(async (serviceDeclaration) => {
-        const { mappedName, optional } = parseDependencyDeclaration(
-          serviceDeclaration,
-        );
+    const servicesDescriptors: (Provider<unknown> | undefined)[] =
+      await Promise.all(
+        servicesDeclarations.map(async (serviceDeclaration) => {
+          const { mappedName, optional } =
+            parseDependencyDeclaration(serviceDeclaration);
 
-        try {
-          const serviceDescriptor = await this._getServiceDescriptor(
-            siloContext,
-            mappedName,
-            {
-              injectorContext,
-              autoloading,
-            },
-          );
-          return serviceDescriptor;
-        } catch (err) {
-          if (
-            optional &&
-            [
-              'E_UNMATCHED_DEPENDENCY',
-              E_AUTOLOADER_DYNAMIC_DEPENDENCY,
-            ].includes(err.code)
-          ) {
-            debug(
-              'Optional dependency not found:',
-              serviceDeclaration,
-              err.stack,
+          try {
+            const serviceDescriptor = await this._getServiceDescriptor(
+              siloContext,
+              mappedName,
+              {
+                injectorContext,
+                autoloading,
+              },
             );
-            return;
+            return serviceDescriptor;
+          } catch (err) {
+            if (
+              optional &&
+              [
+                'E_UNMATCHED_DEPENDENCY',
+                E_AUTOLOADER_DYNAMIC_DEPENDENCY,
+              ].includes((err as YError).code)
+            ) {
+              debug(
+                'Optional dependency not found:',
+                serviceDeclaration,
+                (err as Error).stack || 'no_stack_trace',
+              );
+              return;
+            }
+            throw err;
           }
-          throw err;
-        }
-      }),
-    );
+        }),
+      );
     debug(
       'Initialized dependencies descriptors:',
       serviceName,
@@ -1279,7 +1276,7 @@ function _applyStyles(
 
 function serviceAdapter<
   S,
-  T extends ServiceInitializer<Record<string, unknown>, S>
+  T extends ServiceInitializer<Record<string, unknown>, S>,
 >(
   serviceName: ServiceName,
   initializer: T,

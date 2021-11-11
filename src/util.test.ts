@@ -91,7 +91,7 @@ describe('wrapInitializer', () => {
 
     const log = sinon.stub();
     const newInitializer = wrapInitializer(
-      async ({ log }, service: () => string) => {
+      async ({ log }: { log: any }, service: () => string) => {
         log('Wrapping...');
         return () => service() + '-wrapped';
       },
@@ -207,7 +207,7 @@ describe('inject', () => {
     assert.throws(() => {
       inject(
         ['test'],
-        (constant('test', 'test') as unknown) as ServiceInitializer<
+        constant('test', 'test') as unknown as ServiceInitializer<
           Dependencies,
           unknown
         >,
@@ -258,10 +258,12 @@ describe('mergeInject', () => {
 
 describe('autoInject', () => {
   it('should allow to decorate an initializer with dependencies', () => {
-    const baseProvider = async ({ ENV, mysql: db }) => async () => ({
-      ENV,
-      db,
-    });
+    const baseProvider =
+      async ({ ENV, mysql: db }) =>
+      async () => ({
+        ENV,
+        db,
+      });
     const dependencies = ['ENV', 'mysql'];
     const newInitializer = autoInject(baseProvider);
 
@@ -287,15 +289,13 @@ describe('autoInject', () => {
 
   it('should allow to decorate an initializer with optional dependencies', () => {
     const noop = () => undefined;
-    const baseProvider = async ({
-      ENV,
-      log = noop,
-      debug: aDebug = noop,
-    }) => async () => ({
-      ENV,
-      log,
-      aDebug,
-    });
+    const baseProvider =
+      async ({ ENV, log = noop, debug: aDebug = noop }) =>
+      async () => ({
+        ENV,
+        log,
+        aDebug,
+      });
     const dependencies = ['ENV', '?log', '?debug'];
     const newInitializer = autoInject(baseProvider);
 
@@ -306,15 +306,13 @@ describe('autoInject', () => {
 
   it('should allow to decorate an initializer with several arguments', () => {
     const noop = () => undefined;
-    const baseProvider = async ({
-      ENV,
-      log = noop,
-      debug: aDebug = noop,
-    }) => async () => ({
-      ENV,
-      log,
-      aDebug,
-    });
+    const baseProvider =
+      async ({ ENV, log = noop, debug: aDebug = noop }) =>
+      async () => ({
+        ENV,
+        log,
+        aDebug,
+      });
     const dependencies = ['ENV', '?log', '?debug'];
     const newInitializer = autoInject(baseProvider);
 
@@ -325,15 +323,13 @@ describe('autoInject', () => {
 
   it('should allow to decorate an initializer with complex arguments', () => {
     const noop = () => undefined;
-    const baseProvider = async ({
-      ENV,
-      log = noop,
-      debug: aDebug = noop,
-    }) => async () => ({
-      ENV,
-      log,
-      aDebug,
-    });
+    const baseProvider =
+      async ({ ENV, log = noop, debug: aDebug = noop }) =>
+      async () => ({
+        ENV,
+        log,
+        aDebug,
+      });
     const dependencies = ['ENV', '?log', '?debug'];
     const newInitializer = autoInject(baseProvider);
 

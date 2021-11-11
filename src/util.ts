@@ -67,7 +67,7 @@ export type ConstantInitializer<S extends Service> = ConstantProperties & {
 
 export type ProviderInitializerBuilder<
   D extends Dependencies,
-  S extends Service
+  S extends Service,
 > =
   | ((dependencies: D) => Promise<Provider<S>>)
   | ((dependencies?: D) => Promise<Provider<S>>);
@@ -91,7 +91,7 @@ export type ProviderInputProperties = {
 
 export type ServiceInitializerBuilder<
   D extends Dependencies,
-  S extends Service
+  S extends Service,
 > = ((dependencies: D) => Promise<S>) | ((dependencies?: D) => Promise<S>);
 export type ServiceProperties = {
   $type: 'service';
@@ -118,14 +118,14 @@ export type InitializerProperties =
 
 export type AsyncInitializerBuilder<
   D extends Dependencies,
-  S extends Service
+  S extends Service,
 > = ProviderInitializerBuilder<D, S> | ServiceInitializerBuilder<D, S>;
 export type AsyncInitializer<D extends Dependencies, S extends Service> =
   | ServiceInitializer<D, S>
   | ProviderInitializer<D, S>;
 export type PartialAsyncInitializer<
   D extends Dependencies,
-  S extends Service
+  S extends Service,
 > = Partial<ServiceInitializer<D, S>> | Partial<ProviderInitializer<D, S>>;
 
 export type Initializer<S extends Service, D extends Dependencies> =
@@ -135,23 +135,23 @@ export type Initializer<S extends Service, D extends Dependencies> =
 
 export type ServiceInitializerWrapper<
   S extends Service,
-  D extends Dependencies
+  D extends Dependencies,
 > = (dependencies: D, baseService: S) => Promise<S>;
 export type ProviderInitializerWrapper<
   S extends Service,
-  D extends Dependencies
+  D extends Dependencies,
 > = (dependencies: D, baseService: Provider<S>) => Promise<Provider<S>>;
 
 export type Parameters<V = any> = { [name: string]: V };
-export interface HandlerFunction<
+export type HandlerFunction<
   D extends Dependencies,
   V,
   P extends Parameters<V>,
   U extends any[],
-  R
-> {
-  (dependencies: D, parameters?: P, ...args: U): Promise<R>;
-}
+  R,
+> =
+  | ((dependencies: D, parameters: P, ...args: U) => Promise<R>)
+  | ((dependencies: D, parameters?: P, ...args: U) => Promise<R>);
 
 export const SPECIAL_PROPS_PREFIX = '$';
 export const SPECIAL_PROPS = {
@@ -200,11 +200,7 @@ export function parseInjections(
     .map(
       (injection) =>
         (injection.includes('=') ? '?' : '') +
-        injection
-          .split(/\s*=\s*/)
-          .shift()
-          .split(/\s*:\s*/)
-          .shift(),
+        (injection.split(/\s*=\s*/).shift() as string).split(/\s*:\s*/).shift(),
     )
     .filter((injection) => !/[)(\][]/.test(injection));
 }
@@ -224,10 +220,10 @@ export function readFunctionName(aFunction: Function): string {
 }
 
 export function parseName(functionName: string): string {
-  return functionName
-    .split(' ')
-    .pop()
-    .replace(/^init(?:ialize)?([A-Z])/, (_, $1) => $1.toLowerCase());
+  return (functionName.split(' ').pop() as string).replace(
+    /^init(?:ialize)?([A-Z])/,
+    (_, $1) => $1.toLowerCase(),
+  );
 }
 
 /**
@@ -261,7 +257,7 @@ export function reuseSpecialProps<FD, TD, S>(
 ):
   | ProviderInitializerBuilder<FD & TD, S>
   | ServiceInitializerBuilder<FD & TD, S> {
-  const uniqueInitializer = ((to as unknown) as Function).bind(null);
+  const uniqueInitializer = (to as unknown as Function).bind(null);
 
   return [...new Set(Object.keys(from).concat(Object.keys(amend)))]
     .filter((prop) => prop.startsWith(SPECIAL_PROPS_PREFIX))
@@ -569,25 +565,25 @@ export function wrapInitializer<D, S>(
  */
 export function inject<D, S>(
   dependencies: DependencyDeclaration[],
-  initializer: ProviderInitializer<Dependencies, S>,
+  initializer: ProviderInitializer<any, S>,
 ): ProviderInitializer<D, S>;
 export function inject<D, S>(
   dependencies: DependencyDeclaration[],
-  initializer: ProviderInitializerBuilder<Dependencies, S>,
+  initializer: ProviderInitializerBuilder<any, S>,
 ): ProviderInitializerBuilder<D, S>;
 export function inject<D, S>(
   dependencies: DependencyDeclaration[],
-  initializer: ServiceInitializer<Dependencies, S>,
+  initializer: ServiceInitializer<any, S>,
 ): ServiceInitializer<D, S>;
 export function inject<D, S>(
   dependencies: DependencyDeclaration[],
-  initializer: ServiceInitializerBuilder<Dependencies, S>,
+  initializer: ServiceInitializerBuilder<any, S>,
 ): ServiceInitializerBuilder<D, S>;
 export function inject<D, S>(
   dependencies: DependencyDeclaration[],
   initializer:
-    | ProviderInitializerBuilder<Dependencies, S>
-    | ServiceInitializerBuilder<Dependencies, S>,
+    | ProviderInitializerBuilder<any, S>
+    | ServiceInitializerBuilder<any, S>,
 ): ProviderInitializerBuilder<D, S> | ServiceInitializerBuilder<D, S> {
   if ('constant' === initializer[SPECIAL_PROPS.TYPE]) {
     throw new YError(
@@ -597,9 +593,9 @@ export function inject<D, S>(
     );
   }
 
-  const uniqueInitializer = reuseSpecialProps<D, {}, S>(
+  const uniqueInitializer = reuseSpecialProps<D, Dependencies, S>(
     initializer,
-    initializer as ServiceInitializerBuilder<D, S>,
+    initializer as ServiceInitializerBuilder<Dependencies, S>,
     {
       [SPECIAL_PROPS.INJECT]: dependencies,
     },
@@ -738,7 +734,10 @@ export function autoInject<D, S>(
   const source = initializer.toString();
   const dependencies = parseInjections(source);
 
-  return inject(dependencies, initializer as ServiceInitializerBuilder<D, S>);
+  return inject<D, S>(
+    dependencies,
+    initializer as ServiceInitializerBuilder<Dependencies, S>,
+  );
 }
 
 /**
@@ -819,7 +818,7 @@ export function alsoInject<ND, D, S>(
 
   return inject(
     dedupedDependencies,
-    initializer as ServiceInitializerBuilder<D, S>,
+    initializer as ServiceInitializerBuilder<Dependencies, S>,
   );
 }
 
@@ -1178,7 +1177,7 @@ export function handler<
   V,
   P extends Parameters<V>,
   U extends unknown[],
-  R
+  R,
 >(
   handlerFunction: HandlerFunction<D, V, P, U, R>,
   name?: ServiceName,
@@ -1201,7 +1200,7 @@ export function handler<
       singleton,
       extra,
     },
-    async (...args) => handlerFunction.bind(null, ...args),
+    async (dependencies: D) => handlerFunction.bind(null, dependencies),
   );
 }
 
@@ -1229,7 +1228,7 @@ export function autoHandler<
   V,
   P extends Parameters<V>,
   U extends unknown[],
-  R
+  R,
 >(
   handlerFunction: HandlerFunction<D, V, P, U, R>,
 ): ServiceInitializer<D, (parameters: P, ...args: U) => Promise<R>> {
@@ -1243,7 +1242,7 @@ export function autoHandler<
       type: 'service',
       inject: dependencies,
     },
-    async (...args) => handlerFunction.bind(null, ...args),
+    async (dependencies: D) => handlerFunction.bind(null, dependencies),
   );
 }
 
@@ -1277,9 +1276,8 @@ export function parseDependencyDeclaration(
   dependencyDeclaration: DependencyDeclaration,
 ): ParsedDependencyDeclaration {
   const optional = dependencyDeclaration.startsWith(OPTIONAL_FLAG);
-  const [serviceName, mappedName] = (optional
-    ? dependencyDeclaration.slice(1)
-    : dependencyDeclaration
+  const [serviceName, mappedName] = (
+    optional ? dependencyDeclaration.slice(1) : dependencyDeclaration
   ).split(DECLARATION_SEPARATOR);
 
   return {

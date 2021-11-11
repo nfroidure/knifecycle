@@ -8,6 +8,7 @@
     "preserveConstEnums": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
+    "strict": true,
     "declaration": true
   },
   "include": [

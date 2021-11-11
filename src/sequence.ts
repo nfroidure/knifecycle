@@ -7,7 +7,9 @@ export type Node = {
 
 const MAX_ITERATIONS = 99;
 
-export function buildInitializationSequence(rootNode: Node): string[][] {
+export function buildInitializationSequence<T extends Node>(
+  rootNode: T,
+): string[][] {
   const batches: string[][] = [];
   let i = 0;
 
@@ -41,14 +43,14 @@ function recursivelyGetNextSequenceBatch(
 
   if (
     nodeIsALeaf ||
-    node.__childNodes.every((childNode: Node) =>
+    (node.__childNodes as Node[]).every((childNode: Node) =>
       nodeIsInBatches(batches, childNode),
     )
   ) {
     return batch.concat(node.__name);
   }
 
-  return node.__childNodes.reduce(
+  return (node.__childNodes as Node[]).reduce(
     (batch, childNode) => [
       ...new Set(recursivelyGetNextSequenceBatch(childNode, batches, batch)),
     ],
