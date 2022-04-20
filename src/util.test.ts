@@ -24,8 +24,6 @@ import {
   autoService,
   provider,
   autoProvider,
-  handler,
-  autoHandler,
   SPECIAL_PROPS,
 } from './util.js';
 import type { Provider } from './util.js';
@@ -887,90 +885,6 @@ describe('autoProvider', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], []);
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], 'mySQL');
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'provider');
-  });
-});
-
-describe('handler', () => {
-  test('should work', async () => {
-    const baseName = 'sampleHandler';
-    const injectedServices = ['kikooo', 'lol'];
-    const services = {
-      kikooo: 'kikooo',
-      lol: 'lol',
-    };
-    const theInitializer = handler(sampleHandler, baseName, injectedServices);
-
-    assert.deepEqual((theInitializer as any).$name, baseName);
-    assert.deepEqual((theInitializer as any).$inject, injectedServices);
-
-    const theHandler = await theInitializer(services);
-    const result = await theHandler('test');
-    assert.deepEqual(result, {
-      deps: services,
-      args: ['test'],
-    });
-
-    async function sampleHandler(deps, ...args) {
-      return { deps, args };
-    }
-  });
-
-  test('should fail with no name', () => {
-    assert.throws(() => {
-      handler(async () => undefined);
-    }, /E_NO_HANDLER_NAME/);
-  });
-});
-
-describe('autoHandler', () => {
-  test('should work', async () => {
-    const services = {
-      kikooo: 'kikooo',
-      lol: 'lol',
-    };
-    const theInitializer = autoHandler(sampleHandler);
-
-    assert.deepEqual((theInitializer as any).$name, sampleHandler.name);
-    assert.deepEqual((theInitializer as any).$inject, ['kikooo', 'lol']);
-
-    const theHandler = await theInitializer(services);
-    const result = await theHandler('test');
-    assert.deepEqual(result, {
-      deps: services,
-      args: ['test'],
-    });
-
-    async function sampleHandler({ kikooo, lol }, ...args) {
-      return { deps: { kikooo, lol }, args };
-    }
-  });
-
-  test('should work with spread services', async () => {
-    const services = {
-      kikooo: 'kikooo',
-      lol: 'lol',
-    };
-    const theInitializer = autoHandler(sampleHandler);
-
-    assert.deepEqual((theInitializer as any).$name, sampleHandler.name);
-    assert.deepEqual((theInitializer as any).$inject, ['kikooo', 'lol']);
-
-    const theHandler = await theInitializer(services);
-    const result = await theHandler('test');
-    assert.deepEqual(result, {
-      deps: services,
-      args: ['test'],
-    });
-
-    async function sampleHandler({ kikooo, lol, ...services }, ...args) {
-      return { deps: { kikooo, lol, ...services }, args };
-    }
-  });
-
-  test('should fail for anonymous functions', () => {
-    assert.throws(() => {
-      autoHandler(async () => undefined);
-    }, /E_AUTO_NAMING_FAILURE/);
   });
 });
 
