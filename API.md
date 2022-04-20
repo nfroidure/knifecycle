@@ -36,12 +36,6 @@ initialized silo content.</p>
  builder by automatically detecting its name
  and dependencies</p>
 </dd>
-<dt><a href="#handler">handler(handlerFunction, [name], [dependencies], [options])</a> ⇒ <code>function</code></dt>
-<dd><p>Shortcut to create an initializer with a simple handler</p>
-</dd>
-<dt><a href="#autoHandler">autoHandler(handlerFunction)</a> ⇒ <code>function</code></dt>
-<dd><p>Allows to create an initializer with a simple handler automagically</p>
-</dd>
 <dt><a href="#parseDependencyDeclaration">parseDependencyDeclaration(dependencyDeclaration)</a> ⇒ <code>Object</code></dt>
 <dd><p>Explode a dependency declaration an returns its parts.</p>
 </dd>
@@ -363,61 +357,6 @@ Decorator that creates an initializer from a provider
 | --- | --- | --- |
 | providerBuilder | <code>function</code> | An async function to build the service provider |
 
-<a name="handler"></a>
-
-## handler(handlerFunction, [name], [dependencies], [options]) ⇒ <code>function</code>
-Shortcut to create an initializer with a simple handler
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| handlerFunction | <code>function</code> |  | The handler function |
-| [name] | <code>String</code> |  | The name of the handler. Default to the DI prop if exists |
-| [dependencies] | <code>Array.&lt;String&gt;</code> | <code>[]</code> | The dependencies to inject in it |
-| [options] | <code>Object</code> |  | Options attached to the built initializer |
-
-**Example**  
-```js
-import Knifecycle, { handler } from 'knifecycle';
-
-new Knifecycle()
-.register(handler(getUser, 'getUser', ['db', '?log']));
-
-const QUERY = `SELECT * FROM users WHERE id=$1`
-async function getUser({ db }, userId) {
-  const [row] = await db.query(QUERY, userId);
-
-  return row;
-}
-```
-<a name="autoHandler"></a>
-
-## autoHandler(handlerFunction) ⇒ <code>function</code>
-Allows to create an initializer with a simple handler automagically
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| handlerFunction | <code>function</code> | The handler function |
-
-**Example**  
-```js
-import Knifecycle, { autoHandler } from 'knifecycle';
-
-new Knifecycle()
-.register(autoHandler(getUser));
-
-const QUERY = `SELECT * FROM users WHERE id=$1`
-async function getUser({ db }, userId) {
-  const [row] = await db.query(QUERY, userId);
-
-  return row;
-}
-```
 <a name="parseDependencyDeclaration"></a>
 
 ## parseDependencyDeclaration(dependencyDeclaration) ⇒ <code>Object</code>

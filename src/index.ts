@@ -35,8 +35,6 @@ import {
   autoProvider,
   location,
   wrapInitializer,
-  handler,
-  autoHandler,
   parseDependencyDeclaration,
   stringifyDependencyDeclaration,
   unwrapInitializerProperties,
@@ -72,8 +70,6 @@ import type {
   Initializer,
   ServiceInitializerWrapper,
   ProviderInitializerWrapper,
-  HandlerFunction,
-  Parameters,
 } from './util.js';
 import type { BuildInitializer } from './build.js';
 import type { FatalErrorService } from './fatalError.js';
@@ -103,8 +99,6 @@ export type {
   Initializer,
   ServiceInitializerWrapper,
   ProviderInitializerWrapper,
-  HandlerFunction,
-  Parameters,
   BuildInitializer,
   FatalErrorService,
   Overrides,
@@ -141,8 +135,6 @@ export {
   provider,
   autoProvider,
   location,
-  handler,
-  autoHandler,
   parseDependencyDeclaration,
   stringifyDependencyDeclaration,
   unwrapInitializerProperties,

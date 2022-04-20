@@ -22,8 +22,6 @@ import {
   autoService,
   provider,
   autoProvider,
-  handler,
-  autoHandler,
   SPECIAL_PROPS,
   unInject,
   location,
@@ -1000,98 +998,6 @@ describe('autoProvider', () => {
     expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([]);
     expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual('mySQL');
     expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual('provider');
-  });
-});
-
-describe('handler', () => {
-  test('should work', async () => {
-    const baseName = 'sampleHandler';
-    const injectedServices = ['kikooo', 'lol'];
-    const services = {
-      kikooo: 'kikooo',
-      lol: 'lol',
-    };
-    const theInitializer = handler(sampleHandler, baseName, injectedServices);
-
-    expect((theInitializer as any).$name).toEqual(baseName);
-    expect((theInitializer as any).$inject).toEqual(injectedServices);
-
-    const theHandler = await theInitializer(services);
-    const result = await theHandler('test');
-    expect(result).toEqual({
-      deps: services,
-      args: ['test'],
-    });
-
-    async function sampleHandler(deps, ...args) {
-      return { deps, args };
-    }
-  });
-
-  test('should fail with no name', () => {
-    try {
-      handler(async () => undefined);
-      throw new YError('E_UNEXPECTED_SUCCESS');
-    } catch (err) {
-      expect((err as YError).code).toEqual('E_NO_HANDLER_NAME');
-    }
-  });
-});
-
-describe('autoHandler', () => {
-  test('should work', async () => {
-    const services = {
-      kikooo: 'kikooo',
-      lol: 'lol',
-    };
-    const theInitializer = autoHandler(sampleHandler);
-
-    expect((theInitializer as any).$name).toEqual(sampleHandler.name);
-    expect((theInitializer as any).$inject).toEqual(['kikooo', 'lol']);
-
-    const theHandler = await theInitializer(services);
-    const result = await theHandler('test');
-
-    expect(result).toEqual({
-      deps: services,
-      args: ['test'],
-    });
-
-    async function sampleHandler({ kikooo, lol }, ...args) {
-      return { deps: { kikooo, lol }, args };
-    }
-  });
-
-  test('should work with spread services', async () => {
-    const services = {
-      kikooo: 'kikooo',
-      lol: 'lol',
-    };
-    const theInitializer = autoHandler(sampleHandler);
-
-    expect((theInitializer as any).$name).toEqual(sampleHandler.name);
-    expect((theInitializer as any).$inject).toEqual(['kikooo', 'lol']);
-
-    const theHandler = await theInitializer(services);
-    const result = await theHandler('test');
-
-    expect(result).toEqual({
-      deps: services,
-      args: ['test'],
-    });
-
-    async function sampleHandler({ kikooo, lol, ...services }, ...args) {
-      return { deps: { kikooo, lol, ...services }, args };
-    }
-  });
-
-  test('should fail for anonymous functions', () => {
-    try {
-      autoHandler(async () => undefined);
-      throw new YError('E_UNEXPECTED_SUCCESS');
-    } catch (err) {
-      expect((err as YError).code).toEqual('E_AUTO_NAMING_FAILURE');
-    }
   });
 });
 
