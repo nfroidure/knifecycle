@@ -158,17 +158,6 @@ export type ProviderInitializerWrapper<
   D extends Dependencies,
 > = (dependencies: D, baseService: Provider<S>) => Promise<Provider<S>>;
 
-export type Parameters<V = any> = { [name: string]: V };
-export type HandlerFunction<
-  D extends Dependencies,
-  V,
-  P extends Parameters<V>,
-  U extends any[],
-  R,
-> =
-  | ((dependencies: D, parameters: P, ...args: U) => Promise<R>)
-  | ((dependencies: D, parameters?: P, ...args: U) => Promise<R>);
-
 export const SPECIAL_PROPS_PREFIX = '$';
 export const SPECIAL_PROPS = {
   TYPE: `${SPECIAL_PROPS_PREFIX}type`,
@@ -1358,105 +1347,6 @@ export function initializer<D extends Dependencies<any>, S>(
   debug('Wrapped an initializer with properties:', properties);
 
   return uniqueInitializer as ServiceInitializer<D, S>;
-}
-
-/**
- * Shortcut to create an initializer with a simple handler
- * @param  {Function} handlerFunction
- * The handler function
- * @param  {String}  [name]
- * The name of the handler. Default to the DI prop if exists
- * @param  {Array<String>}  [dependencies=[]]
- * The dependencies to inject in it
- * @param  {Object}    [options]
- * Options attached to the built initializer
- * @return {Function}
- * Returns a new initializer
- * @example
- * import Knifecycle, { handler } from 'knifecycle';
- *
- * new Knifecycle()
- * .register(handler(getUser, 'getUser', ['db', '?log']));
- *
- * const QUERY = `SELECT * FROM users WHERE id=$1`
- * async function getUser({ db }, userId) {
- *   const [row] = await db.query(QUERY, userId);
- *
- *   return row;
- * }
- */
-export function handler<
-  D extends Dependencies,
-  V,
-  P extends Parameters<V>,
-  U extends unknown[],
-  R,
->(
-  handlerFunction: HandlerFunction<D, V, P, U, R>,
-  name?: ServiceName,
-  dependencies?: DependencyDeclaration[],
-  singleton?: boolean,
-  extra?: ExtraInformation,
-): ServiceInitializer<D, (parameters: P, ...args: U) => Promise<R>> {
-  name = name || handlerFunction[SPECIAL_PROPS.NAME];
-  dependencies = dependencies || handlerFunction[SPECIAL_PROPS.INJECT] || [];
-
-  if (!name) {
-    throw new YError('E_NO_HANDLER_NAME', handlerFunction);
-  }
-
-  return initializer(
-    {
-      name,
-      type: 'service',
-      inject: dependencies,
-      singleton,
-      extra,
-    },
-    async (dependencies: D) => handlerFunction.bind(null, dependencies),
-  );
-}
-
-/**
- * Allows to create an initializer with a simple handler automagically
- * @param  {Function} handlerFunction
- * The handler function
- * @return {Function}
- * Returns a new initializer
- * @example
- * import Knifecycle, { autoHandler } from 'knifecycle';
- *
- * new Knifecycle()
- * .register(autoHandler(getUser));
- *
- * const QUERY = `SELECT * FROM users WHERE id=$1`
- * async function getUser({ db }, userId) {
- *   const [row] = await db.query(QUERY, userId);
- *
- *   return row;
- * }
- */
-export function autoHandler<
-  D extends Dependencies,
-  V,
-  P extends Parameters<V>,
-  U extends unknown[],
-  R,
->(
-  handlerFunction: HandlerFunction<D, V, P, U, R>,
-): ServiceInitializer<D, (parameters: P, ...args: U) => Promise<R>> {
-  const name = readFunctionName(handlerFunction);
-  const source = handlerFunction.toString();
-  const dependencies = parseInjections(source);
-
-  return initializer(
-    {
-      name,
-      type: 'service',
-      inject: dependencies,
-    },
-    async (dependencies: D) => handlerFunction.bind(null, dependencies),
-  );
 }
 
 /* Architecture Note #1.2.1: Dependencies declaration syntax
