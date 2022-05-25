@@ -1045,7 +1045,7 @@ class Knifecycle {
       );
       if (E_UNMATCHED_DEPENDENCY === (err as YError).code) {
         throw YError.wrap(
-          err,
+          err as Error,
           E_UNMATCHED_DEPENDENCY,
           ...[serviceName].concat((err as YError).params),
         );
