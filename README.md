@@ -72,7 +72,7 @@ Knifecycle:
 ```js
 // bin.js
 import fs from 'fs';
-import YError from 'YError';
+import { YError } from 'YError';
 import Knifecycle, { initializer, constant, inject, name } from 'knifecycle';
 
 // First of all we create a new Knifecycle instance

@@ -34,7 +34,7 @@ import {
   unwrapInitializerProperties,
 } from './util';
 import initInitializerBuilder from './build';
-import YError from 'yerror';
+import { YError } from 'yerror';
 import initDebug from 'debug';
 import type {
   ServiceName,

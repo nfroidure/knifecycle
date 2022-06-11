@@ -10,13 +10,12 @@
     "url": "git+https://github.com/nfroidure/knifecycle.git"
   },
   "engines": {
-    "node": ">=12.19.0"
+    "node": ">=16.15.0"
   },
   "metapak": {
     "configs": [
       "main",
       "readme",
-      "eslint",
       "babel",
       "typescript",
       "jest",
@@ -91,15 +90,16 @@
     "@babel/preset-env": "^7.18.2",
     "@babel/preset-typescript": "^7.17.12",
     "@babel/register": "^7.17.7",
-    "@types/jest": "^27.0.2",
-    "@typescript-eslint/eslint-plugin": "^5.26.0",
-    "@typescript-eslint/parser": "^5.26.0",
+    "@types/jest": "^28.1.1",
+    "@typescript-eslint/eslint-plugin": "^5.27.0",
+    "@typescript-eslint/parser": "^5.27.0",
     "browserify": "^17.0.0",
     "commitizen": "^4.2.4",
     "conventional-changelog-cli": "^2.2.2",
     "coveralls": "^3.1.1",
     "cz-conventional-changelog": "^3.3.0",
-    "eslint": "^8.16.0",
+    "eslint": "^8.17.0",
+    "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.0.0",
     "jest": "^28.1.0",
     "jsarch": "^5.0.1",
@@ -110,8 +110,8 @@
     "karma-firefox-launcher": "^2.1.2",
     "karma-mocha": "^2.0.1",
     "karma-sauce-launcher": "^4.3.6",
-    "metapak": "^4.0.3",
-    "metapak-nfroidure": "11.2.1",
+    "metapak": "^4.0.4",
+    "metapak-nfroidure": "12.0.6",
     "mocha": "8.2.1",
     "prettier": "^2.6.2",
     "rimraf": "^3.0.2",
@@ -121,7 +121,7 @@
   "dependencies": {
     "debug": "^4.3.4",
     "type-fest": "^2.13.0",
-    "yerror": "^6.0.2"
+    "yerror": "^6.1.1"
   },
   "config": {
     "commitizen": {
@@ -133,10 +133,6 @@
       "commitizen",
       "cz-conventional-changelog",
       "conventional-changelog-cli",
-      "eslint",
-      "eslint-config-prettier",
-      "prettier",
-      "@typescript-eslint/parser",
       "@babel/cli",
       "@babel/core",
       "@babel/register",
@@ -144,7 +140,6 @@
       "@babel/plugin-proposal-object-rest-spread",
       "@babel/preset-typescript",
       "@babel/plugin-proposal-class-properties",
-      "babel-eslint",
       "babel-core",
       "typescript",
       "jest",
@@ -206,7 +201,7 @@
         "@babel/env",
         {
           "targets": {
-            "node": "12.19.0"
+            "node": "16.15.0"
           }
         }
       ]

@@ -2,7 +2,7 @@
 
 import assert from 'assert';
 import sinon from 'sinon';
-import YError from 'yerror';
+import { YError } from 'yerror';
 
 import {
   SPECIAL_PROPS,

@@ -1,6 +1,6 @@
 /* eslint @typescript-eslint/ban-types:0 */
 
-import YError from 'yerror';
+import { YError } from 'yerror';
 import initDebug from 'debug';
 
 const debug = initDebug('knifecycle');
