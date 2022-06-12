@@ -1,3 +1,7 @@
+# [13.0.0](https://github.com/nfroidure/knifecycle/compare/v12.0.4...v13.0.0) (2022-06-12)
+
+
+
 ## [12.0.4](https://github.com/nfroidure/knifecycle/compare/v12.0.3...v12.0.4) (2022-05-25)
 
 
