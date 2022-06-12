@@ -32,8 +32,8 @@ import {
   parseDependencyDeclaration,
   stringifyDependencyDeclaration,
   unwrapInitializerProperties,
-} from './util';
-import initInitializerBuilder from './build';
+} from './util.js';
+import initInitializerBuilder from './build.js';
 import { YError } from 'yerror';
 import initDebug from 'debug';
 import type {
@@ -64,8 +64,8 @@ import type {
   ProviderInitializerWrapper,
   HandlerFunction,
   Parameters,
-} from './util';
-import type { BuildInitializer } from './build';
+} from './util.js';
+import type { BuildInitializer } from './build.js';
 export type {
   ServiceName,
   Service,

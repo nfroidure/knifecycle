@@ -1,8 +1,8 @@
 import assert from 'assert';
 import { YError } from 'yerror';
-import initInitializerBuilder from './build';
-import Knifecycle, { initializer, constant } from '.';
-import type { BuildInitializer } from './build';
+import initInitializerBuilder from './build.js';
+import Knifecycle, { initializer, constant } from './index.js';
+import type { BuildInitializer } from './build.js';
 
 describe('buildInitializer', () => {
   async function aProvider() {

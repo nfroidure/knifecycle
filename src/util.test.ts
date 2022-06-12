@@ -24,10 +24,9 @@ import {
   handler,
   autoHandler,
   SPECIAL_PROPS,
-} from './util';
-import type { PromiseValue } from 'type-fest';
-import type { Provider } from './util';
-import type { Dependencies, ServiceInitializer } from '.';
+} from './util.js';
+import type { Provider } from './util.js';
+import type { Dependencies, ServiceInitializer } from './index.js';
 
 async function aProviderInitializer() {
   return {
@@ -240,7 +239,7 @@ describe('mergeInject', () => {
         db: 'db';
         log: 'log';
       },
-      PromiseValue<ReturnType<typeof aProviderInitializer>>
+      Awaited<ReturnType<typeof aProviderInitializer>>
     >(fromDependencies, aProviderInitializer);
     const toDependencies = ['db', 'log'];
     const toInitializer = inject(toDependencies, aProviderInitializer);

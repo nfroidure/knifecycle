@@ -1,7 +1,11 @@
-import { SPECIAL_PROPS, parseDependencyDeclaration, initializer } from './util';
-import { buildInitializationSequence } from './sequence';
-import type { DependencyDeclaration, Initializer } from './util';
-import type { Autoloader } from '.';
+import {
+  SPECIAL_PROPS,
+  parseDependencyDeclaration,
+  initializer,
+} from './util.js';
+import { buildInitializationSequence } from './sequence.js';
+import type { DependencyDeclaration, Initializer } from './util.js';
+import type { Autoloader } from './index.js';
 
 export type BuildOptions = { modules?: 'commonjs' | true };
 export type BuildInitializer = (

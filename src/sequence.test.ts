@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { buildInitializationSequence } from './sequence';
+import { buildInitializationSequence } from './sequence.js';
 
 describe('buildInitializationSequence()', () => {
   it('should work with one level trees', () => {

@@ -8,7 +8,6 @@
 > Manage your NodeJS processes's lifecycle automatically with an unobtrusive dependency injection implementation.
 
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nfroidure/knifecycle/blob/master/LICENSE)
-[![Build status](https://travis-ci.com/nfroidure/knifecycle.svg?branch=master)](https://travis-ci.com/github/nfroidure/knifecycle)
 [![Coverage Status](https://coveralls.io/repos/github/nfroidure/knifecycle/badge.svg?branch=master)](https://coveralls.io/github/nfroidure/knifecycle?branch=master)
 
 
@@ -404,20 +403,11 @@ is maybe the best feature of this library ;).
 <dd></dd>
 </dl>
 
-## Members
-
-<dl>
-<dt><a href="#default">default</a> ⇒ <code>Promise.&lt;function()&gt;</code></dt>
-<dd><p>Instantiate the initializer builder service</p>
-</dd>
-</dl>
-
 ## Functions
 
 <dl>
-<dt><a href="#reuseSpecialProps">reuseSpecialProps(from, to, [amend])</a> ⇒ <code>function</code></dt>
-<dd><p>Apply special props to the given initializer from another one
- and optionally amend with new special props</p>
+<dt><a href="#initInitializerBuilder">initInitializerBuilder(services)</a> ⇒ <code>Promise.&lt;function()&gt;</code></dt>
+<dd><p>Instantiate the initializer builder service</p>
 </dd>
 <dt><a href="#constant">constant(name, value)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator that creates an initializer for a constant value</p>
@@ -439,50 +429,6 @@ is maybe the best feature of this library ;).
  builder by automatically detecting its name
  and dependencies</p>
 </dd>
-<dt><a href="#wrapInitializer">wrapInitializer(wrapper, baseInitializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Allows to wrap an initializer to add extra initialization steps</p>
-</dd>
-<dt><a href="#inject">inject(dependencies, initializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator creating a new initializer with different
- dependencies declarations set to it.</p>
-</dd>
-<dt><a href="#useInject">useInject(from, to)</a> ⇒ <code>function</code></dt>
-<dd><p>Apply injected dependencies from the given initializer to another one</p>
-</dd>
-<dt><a href="#mergeInject">mergeInject(from, to)</a> ⇒ <code>function</code></dt>
-<dd><p>Merge injected dependencies of the given initializer with another one</p>
-</dd>
-<dt><a href="#autoInject">autoInject(initializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator creating a new initializer with different
- dependencies declarations set to it according to the
- given function signature.</p>
-</dd>
-<dt><a href="#alsoInject">alsoInject(dependencies, initializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator creating a new initializer with some
- more dependencies declarations appended to it.</p>
-</dd>
-<dt><a href="#extra">extra(extraInformations, initializer, [merge])</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator creating a new initializer with some
- extra informations appended to it. It is just
- a way for user to store some additional
- informations but has no interaction with the
- Knifecycle internals.</p>
-</dd>
-<dt><a href="#singleton">singleton(initializer, [isSingleton])</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator to set an initializer singleton option.</p>
-</dd>
-<dt><a href="#name">name(name, initializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator to set an initializer name.</p>
-</dd>
-<dt><a href="#autoName">autoName(initializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator to set an initializer name from its function name.</p>
-</dd>
-<dt><a href="#type">type(type, initializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator to set an initializer type.</p>
-</dd>
-<dt><a href="#initializer">initializer(properties, initializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Decorator to set an initializer properties.</p>
-</dd>
 <dt><a href="#handler">handler(handlerFunction, [name], [dependencies], [options])</a> ⇒ <code>function</code></dt>
 <dd><p>Shortcut to create an initializer with a simple handler</p>
 </dd>
@@ -494,9 +440,6 @@ is maybe the best feature of this library ;).
 </dd>
 <dt><a href="#stringifyDependencyDeclaration">stringifyDependencyDeclaration(dependencyDeclarationParts)</a> ⇒ <code>String</code></dt>
 <dd><p>Stringify a dependency declaration from its parts.</p>
-</dd>
-<dt><a href="#unwrapInitializerProperties">unwrapInitializerProperties(initializer)</a> ⇒ <code>function</code></dt>
-<dd><p>Utility function to check and reveal initializer properties.</p>
 </dd>
 </dl>
 
@@ -668,12 +611,12 @@ Initialize a service dependencies
 | options.injectorContext | <code>Boolean</code> | Flag indicating the injection were initiated by the $injector |
 | options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependendencies on the fly loading. |
 
-<a name="default"></a>
+<a name="initInitializerBuilder"></a>
 
-## default ⇒ <code>Promise.&lt;function()&gt;</code>
+## initInitializerBuilder(services) ⇒ <code>Promise.&lt;function()&gt;</code>
 Instantiate the initializer builder service
 
-**Kind**: global variable  
+**Kind**: global function  
 **Returns**: <code>Promise.&lt;function()&gt;</code> - A promise of the buildInitializer function  
 
 | Param | Type | Description |
@@ -689,21 +632,30 @@ const buildInitializer = await initInitializerBuilder({
   $autoload: async () => {},
 });
 ```
-<a name="reuseSpecialProps"></a>
+<a name="initInitializerBuilder..buildInitializer"></a>
 
-## reuseSpecialProps(from, to, [amend]) ⇒ <code>function</code>
-Apply special props to the given initializer from another one
- and optionally amend with new special props
+### initInitializerBuilder~buildInitializer(dependencies) ⇒ <code>Promise.&lt;String&gt;</code>
+Create a JavaScript module that initialize
+a set of dependencies with hardcoded
+import/awaits.
 
-**Kind**: global function  
-**Returns**: <code>function</code> - The newly built initializer  
+**Kind**: inner method of [<code>initInitializerBuilder</code>](#initInitializerBuilder)  
+**Returns**: <code>Promise.&lt;String&gt;</code> - The JavaScript module content  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| from | <code>function</code> |  | The initializer in which to pick the props |
-| to | <code>function</code> |  | The initializer from which to build the new one |
-| [amend] | <code>Object</code> | <code>{}</code> | Some properties to override |
+| Param | Type | Description |
+| --- | --- | --- |
+| dependencies | <code>Array.&lt;String&gt;</code> | The main dependencies |
 
+**Example**  
+```js
+import initInitializerBuilder from 'knifecycle/dist/build';
+
+const buildInitializer = await initInitializerBuilder({
+  $autoload: async () => {},
+});
+
+const content = await buildInitializer(['entryPoint']);
+```
 <a name="constant"></a>
 
 ## constant(name, value) ⇒ <code>function</code>
@@ -844,277 +796,6 @@ Decorator that creates an initializer from a provider
 | --- | --- | --- |
 | providerBuilder | <code>function</code> | An async function to build the service provider |
 
-<a name="wrapInitializer"></a>
-
-## wrapInitializer(wrapper, baseInitializer) ⇒ <code>function</code>
-Allows to wrap an initializer to add extra initialization steps
-
-**Kind**: global function  
-**Returns**: <code>function</code> - The new initializer  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| wrapper | <code>function</code> | A function taking dependencies and the base service in arguments |
-| baseInitializer | <code>function</code> | The initializer to decorate |
-
-<a name="inject"></a>
-
-## inject(dependencies, initializer) ⇒ <code>function</code>
-Decorator creating a new initializer with different
- dependencies declarations set to it.
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| dependencies | <code>Array.&lt;String&gt;</code> | List of dependencies declarations to declare which  services the initializer needs to provide its  own service |
-| initializer | <code>function</code> | The initializer to tweak |
-
-**Example**  
-```js
-import Knifecycle, { inject } from 'knifecycle'
-import myServiceInitializer from './service';
-
-new Knifecycle()
- .register(
-   service(
-     inject(['ENV'], myServiceInitializer)
-     'myService',
-   )
-  )
-);
-```
-<a name="useInject"></a>
-
-## useInject(from, to) ⇒ <code>function</code>
-Apply injected dependencies from the given initializer to another one
-
-**Kind**: global function  
-**Returns**: <code>function</code> - The newly built initialization function  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| from | <code>function</code> | The initialization function in which to pick the dependencies |
-| to | <code>function</code> | The destination initialization function |
-
-<a name="mergeInject"></a>
-
-## mergeInject(from, to) ⇒ <code>function</code>
-Merge injected dependencies of the given initializer with another one
-
-**Kind**: global function  
-**Returns**: <code>function</code> - The newly built initialization function  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| from | <code>function</code> | The initialization function in which to pick the dependencies |
-| to | <code>function</code> | The destination initialization function |
-
-<a name="autoInject"></a>
-
-## autoInject(initializer) ⇒ <code>function</code>
-Decorator creating a new initializer with different
- dependencies declarations set to it according to the
- given function signature.
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| initializer | <code>function</code> | The original initializer |
-
-**Example**  
-```js
-import Knifecycle, { autoInject, name } from 'knifecycle'
-
-new Knifecycle()
-  .register(
-    name(
-      'application',
-      autoInject(
-        async ({ NODE_ENV, mysql: db }) =>
-          async () => db.query('SELECT applicationId FROM applications WHERE environment=?', [NODE_ENV])
-        )
-      )
-    )
-  )
-);
-```
-<a name="alsoInject"></a>
-
-## alsoInject(dependencies, initializer) ⇒ <code>function</code>
-Decorator creating a new initializer with some
- more dependencies declarations appended to it.
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| dependencies | <code>Array.&lt;String&gt;</code> | List of dependencies declarations to append |
-| initializer | <code>function</code> | The initializer to tweak |
-
-**Example**  
-```js
-import Knifecycle, { alsoInject } from 'knifecycle'
-import myServiceInitializer from './service';
-
-new Knifecycle()
-.register(service(
-  alsoInject(['ENV'], myServiceInitializer),
-  'myService',
-));
-```
-<a name="extra"></a>
-
-## extra(extraInformations, initializer, [merge]) ⇒ <code>function</code>
-Decorator creating a new initializer with some
- extra informations appended to it. It is just
- a way for user to store some additional
- informations but has no interaction with the
- Knifecycle internals.
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| extraInformations | <code>Object</code> |  | An object containing those extra informations. |
-| initializer | <code>function</code> |  | The initializer to tweak |
-| [merge] | <code>Boolean</code> | <code>false</code> | Whether the extra object should be merged with the existing one or not |
-
-**Example**  
-```js
-import Knifecycle, { extra } from 'knifecycle'
-import myServiceInitializer from './service';
-
-new Knifecycle()
-.register(service(
-  extra({ httpHandler: true }, myServiceInitializer),
-  'myService',
-));
-```
-<a name="singleton"></a>
-
-## singleton(initializer, [isSingleton]) ⇒ <code>function</code>
-Decorator to set an initializer singleton option.
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| initializer | <code>function</code> |  | The initializer to tweak |
-| [isSingleton] | <code>boolean</code> | <code>true</code> | Define the initializer singleton option (one instance for several runs if true) |
-
-**Example**  
-```js
-import Knifecycle, { inject, singleton } from 'knifecycle';
-import myServiceInitializer from './service';
-
-new Knifecycle()
-.register(service(
-  inject(['ENV'],
-    singleton(myServiceInitializer)
-  ),
-  'myService',
-));
-```
-<a name="name"></a>
-
-## name(name, initializer) ⇒ <code>function</code>
-Decorator to set an initializer name.
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer with that name set  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| name | <code>String</code> | The name of the service the initializer resolves to. |
-| initializer | <code>function</code> | The initializer to tweak |
-
-**Example**  
-```js
-import Knifecycle, { name } from 'knifecycle';
-import myServiceInitializer from './service';
-
-new Knifecycle()
-.register(name('myService', myServiceInitializer));
-```
-<a name="autoName"></a>
-
-## autoName(initializer) ⇒ <code>function</code>
-Decorator to set an initializer name from its function name.
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer with that name set  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| initializer | <code>function</code> | The initializer to name |
-
-**Example**  
-```js
-import Knifecycle, { autoName } from 'knifecycle';
-
-new Knifecycle()
-.register(autoName(async function myService() {}));
-```
-<a name="type"></a>
-
-## type(type, initializer) ⇒ <code>function</code>
-Decorator to set an initializer type.
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| type | <code>String</code> | The type to set to the initializer. |
-| initializer | <code>function</code> | The initializer to tweak |
-
-**Example**  
-```js
-import Knifecycle, { name, type } from 'knifecycle';
-import myServiceInitializer from './service';
-
-new Knifecycle()
-.register(
-  type('service',
-    name('myService',
-      myServiceInitializer
-    )
-  )
-);
-```
-<a name="initializer"></a>
-
-## initializer(properties, initializer) ⇒ <code>function</code>
-Decorator to set an initializer properties.
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns a new initializer  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| properties | <code>Object</code> | Properties to set to the service. |
-| initializer | <code>function</code> | The initializer to tweak |
-
-**Example**  
-```js
-import Knifecycle, { initializer } from 'knifecycle';
-import myServiceInitializer from './service';
-
-new Knifecycle()
-.register(initializer({
-  name: 'myService',
-  type: 'service',
-  inject: ['ENV'],
-  singleton: true,
-}, myServiceInitializer));
-```
 <a name="handler"></a>
 
 ## handler(handlerFunction, [name], [dependencies], [options]) ⇒ <code>function</code>
@@ -1215,18 +896,6 @@ stringifyDependencyDeclaration({
 // Returns
 'pgsql>db'
 ```
-<a name="unwrapInitializerProperties"></a>
-
-## unwrapInitializerProperties(initializer) ⇒ <code>function</code>
-Utility function to check and reveal initializer properties.
-
-**Kind**: global function  
-**Returns**: <code>function</code> - Returns revealed initializer (with TypeScript types for properties)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| initializer | <code>function</code> | The initializer to tweak |
-
 
 # Authors
 - [Nicolas Froidure](http://insertafter.com/en/index.html)

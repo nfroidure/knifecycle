@@ -1,5 +1,4 @@
 /* eslint max-nested-callbacks:0 */
-
 import assert from 'assert';
 import sinon from 'sinon';
 import { YError } from 'yerror';
@@ -14,9 +13,8 @@ import {
   provider,
   singleton,
   FatalErrorService,
-  ProviderInitializer,
-} from './index';
-import { ALLOWED_INITIALIZER_TYPES } from './util';
+} from './index.js';
+import { ALLOWED_INITIALIZER_TYPES } from './util.js';
 
 describe('Knifecycle', () => {
   let $: Knifecycle;

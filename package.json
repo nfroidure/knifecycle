@@ -2,9 +2,9 @@
   "name": "knifecycle",
   "version": "12.0.4",
   "description": "Manage your NodeJS processes's lifecycle automatically with an unobtrusive dependency injection implementation.",
-  "main": "dist/index",
-  "module": "dist/index.mjs",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nfroidure/knifecycle.git"
@@ -16,11 +16,10 @@
     "configs": [
       "main",
       "readme",
-      "babel",
-      "typescript",
+      "tsesm",
+      "eslint",
       "jest",
-      "travis",
-      "karma",
+      "ghactions",
       "jsdocs",
       "jsarch",
       "codeclimate"
@@ -47,25 +46,21 @@
   ],
   "scripts": {
     "architecture": "jsarch 'src/**/*.ts' > ARCHITECTURE.md && git add ARCHITECTURE.md",
+    "build": "rimraf -f 'dist' && tsc --outDir dist",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
     "cli": "env NODE_ENV=${NODE_ENV:-cli}",
-    "compile": "rimraf -f 'dist' && npm run compile:cjs && npm run compile:mjs",
-    "compile:cjs": "babel --env-name=cjs --out-dir=dist --extensions '.ts,.js' --source-maps=true src",
-    "compile:mjs": "babel --env-name=mjs --out-file-extension=.mjs --out-dir=dist --extensions '.ts,.js' --source-maps=true src",
     "cover": "npm run jest -- --coverage",
     "coveralls": "npm run cover && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage",
     "cz": "env NODE_ENV=${NODE_ENV:-cli} git cz",
     "doc": "echo \"# API\" > API.md; jsdoc2md 'dist/**/*.js' >> API.md && git add API.md",
-    "jest": "NODE_ENV=test jest",
-    "karma": "karma start karma.conf.js",
+    "jest": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest",
     "lint": "eslint 'src/**/*.ts'",
     "metapak": "metapak",
-    "precz": "npm run compile && npm run types && npm run lint && npm t && npm run doc && npm run architecture && npm run metapak -- -s",
-    "prepublish": "npm run compile && npm run types",
+    "precz": "npm run build && npm run lint && npm t && npm run doc && npm run architecture && npm run metapak -- -s",
+    "prepublish": "npm run build",
     "prettier": "prettier --write 'src/**/*.ts'",
-    "preversion": "npm run compile && npm run types && npm run lint && npm t && npm run doc && npm run architecture && npm run metapak -- -s",
-    "test": "npm run jest && npm run karma",
-    "types": "rimraf -f 'dist/**/*.d.ts' && tsc --project . --declaration --emitDeclarationOnly --outDir dist",
+    "preversion": "npm run build && npm run lint && npm t && npm run doc && npm run architecture && npm run metapak -- -s",
+    "test": "npm run jest",
     "version": "npm run changelog"
   },
   "keywords": [
@@ -82,45 +77,31 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@babel/cli": "^7.17.10",
-    "@babel/core": "^7.18.2",
-    "@babel/eslint-parser": "^7.18.2",
-    "@babel/plugin-proposal-class-properties": "^7.17.12",
-    "@babel/plugin-proposal-object-rest-spread": "^7.18.0",
-    "@babel/preset-env": "^7.18.2",
-    "@babel/preset-typescript": "^7.17.12",
-    "@babel/register": "^7.17.7",
     "@types/jest": "^28.1.1",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
-    "browserify": "^17.0.0",
     "commitizen": "^4.2.4",
     "conventional-changelog-cli": "^2.2.2",
     "coveralls": "^3.1.1",
     "cz-conventional-changelog": "^3.3.0",
+    "esbuild": "^0.14.43",
+    "esbuild-jest": "^0.5.0",
     "eslint": "^8.17.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.0.0",
     "jest": "^28.1.0",
     "jsarch": "^5.0.1",
     "jsdoc-to-markdown": "^7.1.1",
-    "karma": "^6.3.20",
-    "karma-browserify": "^8.0.0",
-    "karma-chrome-launcher": "^3.1.1",
-    "karma-firefox-launcher": "^2.1.2",
-    "karma-mocha": "^2.0.1",
-    "karma-sauce-launcher": "^4.3.6",
     "metapak": "^4.0.4",
     "metapak-nfroidure": "12.0.6",
     "mocha": "8.2.1",
     "prettier": "^2.6.2",
     "rimraf": "^3.0.2",
     "sinon": "^14.0.0",
-    "typescript": "^4.7.2"
+    "typescript": "^4.7.3"
   },
   "dependencies": {
     "debug": "^4.3.4",
-    "type-fest": "^2.13.0",
     "yerror": "^6.1.1"
   },
   "config": {
@@ -133,20 +114,16 @@
       "commitizen",
       "cz-conventional-changelog",
       "conventional-changelog-cli",
-      "@babel/cli",
-      "@babel/core",
-      "@babel/register",
-      "@babel/preset-env",
-      "@babel/plugin-proposal-object-rest-spread",
-      "@babel/preset-typescript",
-      "@babel/plugin-proposal-class-properties",
-      "babel-core",
       "typescript",
+      "rimraf",
+      "eslint",
+      "eslint-config-prettier",
+      "eslint-plugin-prettier",
+      "prettier",
+      "@typescript-eslint/eslint-plugin",
+      "@typescript-eslint/parser",
       "jest",
       "coveralls",
-      "karma",
-      "karma-chrome-launcher",
-      "karma-firefox-launcher",
       "jsdoc-to-markdown",
       "jsarch"
     ]
@@ -159,12 +136,13 @@
   "eslintConfig": {
     "extends": [
       "eslint:recommended",
+      "plugin:prettier/recommended",
       "plugin:@typescript-eslint/eslint-recommended",
       "plugin:@typescript-eslint/recommended"
     ],
     "parserOptions": {
       "ecmaVersion": 2018,
-      "sourceType": "module",
+      "sourceType": "script",
       "modules": true
     },
     "env": {
@@ -191,53 +169,6 @@
     "trailingComma": "all",
     "proseWrap": "always"
   },
-  "babel": {
-    "plugins": [
-      "@babel/proposal-class-properties"
-    ],
-    "presets": [
-      "@babel/typescript",
-      [
-        "@babel/env",
-        {
-          "targets": {
-            "node": "16.15.0"
-          }
-        }
-      ]
-    ],
-    "env": {
-      "cjs": {
-        "presets": [
-          [
-            "@babel/env",
-            {
-              "targets": {
-                "node": "10"
-              },
-              "modules": "commonjs"
-            }
-          ]
-        ],
-        "comments": true
-      },
-      "mjs": {
-        "presets": [
-          [
-            "@babel/env",
-            {
-              "targets": {
-                "node": "12"
-              },
-              "modules": false
-            }
-          ]
-        ],
-        "comments": false
-      }
-    },
-    "sourceMaps": true
-  },
   "jest": {
     "coverageReporters": [
       "lcov"
@@ -247,6 +178,22 @@
     ],
     "roots": [
       "<rootDir>/src"
+    ],
+    "transform": {
+      "^.+\\.tsx?$": [
+        "esbuild-jest",
+        {
+          "sourcemap": true,
+          "format": "esm"
+        }
+      ]
+    },
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "(.+)\\.js": "$1"
+    },
+    "extensionsToTreatAsEsm": [
+      ".ts"
     ]
   },
   "jsarch": {
