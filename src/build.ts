@@ -7,10 +7,8 @@ import { buildInitializationSequence } from './sequence.js';
 import type { DependencyDeclaration, Initializer } from './util.js';
 import type { Autoloader } from './index.js';
 
-export type BuildOptions = { modules?: 'commonjs' | true };
 export type BuildInitializer = (
   dependencies: DependencyDeclaration[],
-  options?: BuildOptions,
 ) => Promise<string>;
 
 /* Architecture Note #2: Build
@@ -80,7 +78,6 @@ async function initInitializerBuilder({
    */
   async function buildInitializer(
     dependencies: DependencyDeclaration[],
-    options: BuildOptions = {},
   ): Promise<string> {
     const dependencyTrees = await Promise.all(
       dependencies.map((dependency) =>
@@ -113,21 +110,14 @@ const ${name} = ${JSON.stringify(
               )};`;
             }
 
-            return options.modules === 'commonjs'
-              ? `
-const ${dependenciesHash[name].__initializerName} = (() => { const m = require('${dependenciesHash[name].__path}'); return m && m.default || m; })();`
-              : `
+            return `
 import ${dependenciesHash[name].__initializerName} from '${dependenciesHash[name].__path}';`;
           })
           .join('')}`,
       )
       .join('\n')}
 
-${
-  options.modules === 'commonjs'
-    ? 'module.exports = {}; module.exports.initialize = '
-    : 'export '
-}async function initialize(services = {}) {${batches
+export async function initialize(services = {}) {${batches
       .map(
         (batch, index) => `
   // Initialization batch #${index}

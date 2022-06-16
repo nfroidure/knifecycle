@@ -369,7 +369,7 @@ class Knifecycle {
           initializer[SPECIAL_PROPS.NAME],
         );
       }
-      debug(`'Overridden an initializer: ${initializer[SPECIAL_PROPS.NAME]}`);
+      debug(`Overridden an initializer: ${initializer[SPECIAL_PROPS.NAME]}`);
     } else {
       debug(`Registered an initializer: ${initializer[SPECIAL_PROPS.NAME]}`);
     }
@@ -1149,7 +1149,6 @@ class Knifecycle {
   }
 }
 
-export default Knifecycle;
 export {
   SPECIAL_PROPS,
   SPECIAL_PROPS_PREFIX,
