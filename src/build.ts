@@ -4,8 +4,22 @@ import {
   initializer,
 } from './util.js';
 import { buildInitializationSequence } from './sequence.js';
-import type { DependencyDeclaration, Initializer } from './util.js';
+import type {
+  DependencyDeclaration,
+  Initializer,
+  Dependencies,
+} from './util.js';
 import type { Autoloader } from './index.js';
+
+type DependencyTreeNode = {
+  __name: string;
+  __childNodes?: DependencyTreeNode[];
+  __initializer: Initializer<unknown, Dependencies<unknown>>;
+  __inject: DependencyDeclaration[];
+  __type: 'provider' | 'constant' | 'service';
+  __initializerName: string;
+  __path: string;
+};
 
 export type BuildInitializer = (
   dependencies: DependencyDeclaration[],
@@ -85,7 +99,7 @@ async function initInitializerBuilder({
       ),
     );
     const dependenciesHash = buildDependenciesHash(
-      dependencyTrees.filter(identity),
+      dependencyTrees.filter(identity) as DependencyTreeNode[],
     );
     const batches = buildInitializationSequence({
       __name: 'main',
@@ -179,16 +193,6 @@ ${batch
   }
 }
 
-type DependencyTreeNode = {
-  __name: string;
-  __childNodes?: DependencyTreeNode[];
-  __initializer: Initializer<unknown, Record<string, unknown>>;
-  __inject: DependencyDeclaration[];
-  __type: 'provider' | 'constant' | 'service';
-  __initializerName: string;
-  __path: string;
-};
-
 async function buildDependencyTree(
   {
     $autoload,
@@ -239,14 +243,20 @@ async function buildDependencyTree(
   }
 }
 
-function buildDependenciesHash(dependencyTrees, hash = {}) {
+function buildDependenciesHash(
+  dependencyTrees: DependencyTreeNode[],
+  hash: Record<string, DependencyTreeNode> = {},
+): Record<string, DependencyTreeNode> {
   return dependencyTrees.reduce(
     (hash, tree) => buildHashFromNode(tree, hash),
     hash,
   );
 }
 
-function buildHashFromNode(node, hash = {}) {
+function buildHashFromNode(
+  node: DependencyTreeNode,
+  hash: Record<string, DependencyTreeNode> = {},
+): Record<string, DependencyTreeNode> {
   const nodeIsALeaf = !(node.__childNodes && node.__childNodes.length);
 
   hash[node.__name] = node;
@@ -255,17 +265,17 @@ function buildHashFromNode(node, hash = {}) {
     return hash;
   }
 
-  node.__childNodes.forEach((childNode) => {
+  (node?.__childNodes || []).forEach((childNode) => {
     hash = buildHashFromNode(childNode, hash);
   });
 
   return hash;
 }
 
-function identity(a) {
+function identity<T = unknown>(a: T): T {
   return a;
 }
 
-function upperCaseFirst(str) {
+function upperCaseFirst(str: string): string {
   return str[0].toUpperCase() + str.slice(1);
 }
