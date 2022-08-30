@@ -1,3 +1,12 @@
+# [14.1.0](https://github.com/nfroidure/knifecycle/compare/v14.0.0...v14.1.0) (2022-08-30)
+
+
+### Bug Fixes
+
+* **types:** fix types according to the last TypeScript version ([0873bff](https://github.com/nfroidure/knifecycle/commit/0873bffb094563c4ffecd80b6484d50f068d7f9b))
+
+
+
 # [14.0.0](https://github.com/nfroidure/knifecycle/compare/v13.0.0...v14.0.0) (2022-06-16)
 
 
