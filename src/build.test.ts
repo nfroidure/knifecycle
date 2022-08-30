@@ -1,3 +1,4 @@
+import { describe, test } from '@jest/globals';
 import assert from 'assert';
 import { YError } from 'yerror';
 import initInitializerBuilder from './build.js';
@@ -56,7 +57,7 @@ describe('buildInitializer', () => {
     },
   );
 
-  it('should build an initialization module', async () => {
+  test('should build an initialization module', async () => {
     const $ = new Knifecycle();
 
     $.register(constant('PWD', '~/my-project'));

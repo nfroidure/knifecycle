@@ -1,8 +1,9 @@
+import { describe, test } from '@jest/globals';
 import assert from 'assert';
 import { buildInitializationSequence } from './sequence.js';
 
 describe('buildInitializationSequence()', () => {
-  it('should work with one level trees', () => {
+  test('should work with one level trees', () => {
     const tree = {
       __name: 'lol',
     };
@@ -10,7 +11,7 @@ describe('buildInitializationSequence()', () => {
     assert.deepEqual(buildInitializationSequence(tree), [['lol']]);
   });
 
-  it('should work with multi-level trees', () => {
+  test('should work with multi-level trees', () => {
     const tree = {
       __name: 'lol',
       __childNodes: [
@@ -65,7 +66,7 @@ describe('buildInitializationSequence()', () => {
     ]);
   });
 
-  it('should work with multi-level trees and cross dependencies', () => {
+  test('should work with multi-level trees and cross dependencies', () => {
     const tree = {
       __name: 'lol',
       __childNodes: [

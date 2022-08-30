@@ -1,4 +1,5 @@
 /* eslint max-nested-callbacks:0 */
+import { describe, beforeEach, test } from '@jest/globals';
 import assert from 'assert';
 import sinon from 'sinon';
 import { YError } from 'yerror';
@@ -39,15 +40,15 @@ describe('Knifecycle', () => {
 
   describe('register', () => {
     describe('with constants', () => {
-      it('should work with an object', () => {
+      test('should work with an object', () => {
         $.register(constant('ENV', ENV));
       });
 
-      it('should work with a function', () => {
+      test('should work with a function', () => {
         $.register(constant('time', time));
       });
 
-      it('should work when overriding a previously set constant', async () => {
+      test('should work when overriding a previously set constant', async () => {
         $.register(constant('TEST', 1));
         $.register(constant('TEST', 2));
         assert.deepEqual(await $.run<Record<string, any>>(['TEST']), {
@@ -55,7 +56,7 @@ describe('Knifecycle', () => {
         });
       });
 
-      it('should fail when overriding an initialized constant', async () => {
+      test('should fail when overriding an initialized constant', async () => {
         $.register(constant('TEST', 1));
         assert.deepEqual(await $.run<Record<string, any>>(['TEST']), {
           TEST: 1,
@@ -74,11 +75,11 @@ describe('Knifecycle', () => {
     });
 
     describe('with services', () => {
-      it('should  work with a service', () => {
+      test('should  work with a service', () => {
         $.register(service(timeService, 'time'));
       });
 
-      it('should work when overriding a previously set service', async () => {
+      test('should work when overriding a previously set service', async () => {
         $.register(service(async () => () => 1, 'test'));
         $.register(service(async () => () => 2, 'test'));
 
@@ -86,7 +87,7 @@ describe('Knifecycle', () => {
         assert.deepEqual(test(), 2);
       });
 
-      it('should fail when overriding an initialized service', async () => {
+      test('should fail when overriding an initialized service', async () => {
         $.register(service(async () => () => 1, 'test'));
         const { test } = await $.run<{ test: () => number }>(['test']);
         assert.deepEqual(test(), 1);
@@ -104,11 +105,11 @@ describe('Knifecycle', () => {
     });
 
     describe('with providers', () => {
-      it('should  work with a provider', () => {
+      test('should  work with a provider', () => {
         $.register(service(hashProvider, 'hash'));
       });
 
-      it('should work when overriding a previously set provider', async () => {
+      test('should work when overriding a previously set provider', async () => {
         $.register(
           initializer(
             {
@@ -138,7 +139,7 @@ describe('Knifecycle', () => {
         assert.deepEqual(test, 2);
       });
 
-      it('should work when overriding a previously set singleton provider', async () => {
+      test('should work when overriding a previously set singleton provider', async () => {
         $.register(
           initializer(
             {
@@ -169,7 +170,7 @@ describe('Knifecycle', () => {
         assert.deepEqual(test, 2);
       });
 
-      it('should fail when overriding an initialized provider', async () => {
+      test('should fail when overriding an initialized provider', async () => {
         $.register(
           initializer(
             {
@@ -210,7 +211,7 @@ describe('Knifecycle', () => {
       });
     });
 
-    it('should fail when intitializer is no a function', () => {
+    test('should fail when intitializer is no a function', () => {
       assert.throws(
         () => {
           $.register('not_a_function' as any);
@@ -223,7 +224,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should fail with no service name', () => {
+    test('should fail with no service name', () => {
       assert.throws(
         () => {
           $.register(async () => undefined);
@@ -236,7 +237,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should fail with a bad service type', () => {
+    test('should fail with a bad service type', () => {
       assert.throws(
         () => {
           const fn = async () => undefined;
@@ -256,7 +257,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should fail with an undefined constant', () => {
+    test('should fail with an undefined constant', () => {
       assert.throws(
         () => {
           const fn = async () => undefined;
@@ -276,7 +277,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should fail with a non constant that has a value', () => {
+    test('should fail with a non constant that has a value', () => {
       assert.throws(
         () => {
           const fn = async () => undefined;
@@ -296,7 +297,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should fail with special autoload intitializer that is not a singleton', () => {
+    test('should fail with special autoload intitializer that is not a singleton', () => {
       assert.throws(
         () => {
           $.register(
@@ -319,11 +320,11 @@ describe('Knifecycle', () => {
   });
 
   describe('provider', () => {
-    it('should register provider', () => {
+    test('should register provider', () => {
       $.register(provider(hashProvider, 'hash'));
     });
 
-    it('should fail with direct circular dependencies', () => {
+    test('should fail with direct circular dependencies', () => {
       assert.throws(
         () => {
           $.register(provider(hashProvider, 'hash', ['hash']));
@@ -336,7 +337,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should fail with direct circular dependencies on mapped services', () => {
+    test('should fail with direct circular dependencies on mapped services', () => {
       assert.throws(
         () => {
           $.register(provider(hashProvider, 'hash', ['hash>lol']));
@@ -349,7 +350,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should fail with circular dependencies', () => {
+    test('should fail with circular dependencies', () => {
       assert.throws(
         () => {
           $.register(provider(inject(['hash3'], hashProvider), 'hash'));
@@ -365,7 +366,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should fail with deeper circular dependencies', () => {
+    test('should fail with deeper circular dependencies', () => {
       assert.throws(
         () => {
           $.register(provider(inject(['hash1'], hashProvider), 'hash'));
@@ -387,7 +388,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should fail with circular dependencies on mapped services', () => {
+    test('should fail with circular dependencies on mapped services', () => {
       assert.throws(
         () => {
           $.register(provider(inject(['hash3>aHash3'], hashProvider), 'hash'));
@@ -409,13 +410,13 @@ describe('Knifecycle', () => {
   });
 
   describe('run', () => {
-    it('should work with no dependencies', async () => {
+    test('should work with no dependencies', async () => {
       const dependencies = await $.run<Record<string, any>>([]);
 
       assert.deepEqual(dependencies, {});
     });
 
-    it('should work with constant dependencies', async () => {
+    test('should work with constant dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
 
@@ -428,7 +429,7 @@ describe('Knifecycle', () => {
       });
     });
 
-    it('should work with service dependencies', async () => {
+    test('should work with service dependencies', async () => {
       const wrappedSampleService = inject<{ time: any }, string>(
         ['time'],
         async function sampleService({ time }: { time: any }) {
@@ -446,7 +447,7 @@ describe('Knifecycle', () => {
       });
     });
 
-    it('should work with simple dependencies', async () => {
+    test('should work with simple dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -460,7 +461,7 @@ describe('Knifecycle', () => {
       });
     });
 
-    it('should work with given optional dependencies', async () => {
+    test('should work with given optional dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('DEBUG', {}));
       $.register(constant('time', time));
@@ -475,7 +476,7 @@ describe('Knifecycle', () => {
       });
     });
 
-    it('should work with lacking optional dependencies', async () => {
+    test('should work with lacking optional dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV', '?DEBUG']));
@@ -489,7 +490,7 @@ describe('Knifecycle', () => {
       });
     });
 
-    it('should work with deeper dependencies', async () => {
+    test('should work with deeper dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -504,7 +505,7 @@ describe('Knifecycle', () => {
       assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
     });
 
-    it('should instanciate services once', async () => {
+    test('should instanciate services once', async () => {
       const timeServiceStub = sinon.spy(timeService);
 
       $.register(constant('ENV', ENV));
@@ -529,7 +530,7 @@ describe('Knifecycle', () => {
       assert.deepEqual(timeServiceStub.args, [[{}]]);
     });
 
-    it('should instanciate a single mapped service', async () => {
+    test('should instanciate a single mapped service', async () => {
       const providerStub = sinon.stub().returns(
         Promise.resolve({
           service: 'stub',
@@ -560,7 +561,7 @@ describe('Knifecycle', () => {
       ]);
     });
 
-    it('should instanciate several services with mappings', async () => {
+    test('should instanciate several services with mappings', async () => {
       const timeServiceStub = sinon.spy(timeService);
 
       $.register(constant('ENV', ENV));
@@ -579,7 +580,7 @@ describe('Knifecycle', () => {
       assert.deepEqual(timeServiceStub.args, [[{}]]);
     });
 
-    it('should fail with bad service', async () => {
+    test('should fail with bad service', async () => {
       $.register(service((() => undefined) as any, 'lol'));
 
       try {
@@ -591,7 +592,7 @@ describe('Knifecycle', () => {
       }
     });
 
-    it('should fail with bad provider', async () => {
+    test('should fail with bad provider', async () => {
       $.register(provider((() => undefined) as any, 'lol'));
       try {
         await $.run<Record<string, any>>(['lol']);
@@ -602,7 +603,7 @@ describe('Knifecycle', () => {
       }
     });
 
-    it('should fail with bad service in a provider', async () => {
+    test('should fail with bad service in a provider', async () => {
       $.register(provider(() => Promise.resolve() as any, 'lol'));
       try {
         await $.run<Record<string, any>>(['lol']);
@@ -613,7 +614,7 @@ describe('Knifecycle', () => {
       }
     });
 
-    it('should fail with undeclared dependencies', async () => {
+    test('should fail with undeclared dependencies', async () => {
       try {
         await $.run<Record<string, any>>(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
@@ -623,7 +624,7 @@ describe('Knifecycle', () => {
       }
     });
 
-    it('should fail with undeclared dependencies upstream', async () => {
+    test('should fail with undeclared dependencies upstream', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV', 'hash2']));
@@ -638,7 +639,7 @@ describe('Knifecycle', () => {
       }
     });
 
-    it('should provide a fatal error handler', async () => {
+    test('should provide a fatal error handler', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -691,7 +692,7 @@ describe('Knifecycle', () => {
   });
 
   describe('autoload', () => {
-    it('should work with lacking autoloaded dependencies', async () => {
+    test('should work with lacking autoloaded dependencies', async () => {
       const autoloaderInitializer = initializer(
         {
           type: 'service',
@@ -727,7 +728,7 @@ describe('Knifecycle', () => {
       });
     });
 
-    it('should work with deeper several lacking dependencies', async () => {
+    test('should work with deeper several lacking dependencies', async () => {
       $.register(
         initializer(
           {
@@ -765,7 +766,7 @@ describe('Knifecycle', () => {
       assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
     });
 
-    it('should work with various dependencies', async () => {
+    test('should work with various dependencies', async () => {
       $.register(provider(hashProvider, 'hash', ['hash2']));
       $.register(provider(hashProvider, 'hash3', ['?ENV']));
       $.register(constant('DEBUG', 1));
@@ -802,7 +803,7 @@ describe('Knifecycle', () => {
       assert.deepEqual(Object.keys(dependencies), ['hash', 'ENV']);
     });
 
-    it('should instanciate services once', async () => {
+    test('should instanciate services once', async () => {
       $.register(
         initializer(
           {
@@ -840,7 +841,7 @@ describe('Knifecycle', () => {
       assert.deepEqual(Object.keys(dependencies), ['hash', 'hash_', 'hash3']);
     });
 
-    it('should fail when autoload does not exists', async () => {
+    test('should fail when autoload does not exists', async () => {
       try {
         await $.run<Record<string, any>>(['test']);
         throw new YError('E_UNEXPECTED_SUCCESS');
@@ -849,7 +850,7 @@ describe('Knifecycle', () => {
       }
     });
 
-    it('should fail when autoloaded dependencies are not found', async () => {
+    test('should fail when autoloaded dependencies are not found', async () => {
       $.register(
         initializer(
           {
@@ -873,7 +874,7 @@ describe('Knifecycle', () => {
       }
     });
 
-    it('should fail when autoloaded dependencies are not initializers', async () => {
+    test('should fail when autoloaded dependencies are not initializers', async () => {
       $.register(
         initializer(
           {
@@ -895,7 +896,7 @@ describe('Knifecycle', () => {
       }
     });
 
-    it('should fail when autoloaded dependencies are not right initializers', async () => {
+    test('should fail when autoloaded dependencies are not right initializers', async () => {
       $.register(
         initializer(
           {
@@ -927,7 +928,7 @@ describe('Knifecycle', () => {
       }
     });
 
-    it('should fail when autoload depends on existing autoloaded dependencies', async () => {
+    test('should fail when autoload depends on existing autoloaded dependencies', async () => {
       $.register(
         initializer(
           {
@@ -959,7 +960,7 @@ describe('Knifecycle', () => {
       }
     });
 
-    it('should work when autoload depends on optional and unexisting autoloaded dependencies', async () => {
+    test('should work when autoload depends on optional and unexisting autoloaded dependencies', async () => {
       $.register(
         initializer(
           {
@@ -987,7 +988,7 @@ describe('Knifecycle', () => {
       assert.deepEqual(Object.keys(dependencies), ['test']);
     });
 
-    it.skip('should work when autoload depends on deeper optional and unexisting autoloaded dependencies', async () => {
+    test.skip('should work when autoload depends on deeper optional and unexisting autoloaded dependencies', async () => {
       $.register(
         initializer(
           {
@@ -1031,7 +1032,7 @@ describe('Knifecycle', () => {
   });
 
   describe('$injector', () => {
-    it('should work with no dependencies', async () => {
+    test('should work with no dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -1052,7 +1053,7 @@ describe('Knifecycle', () => {
       assert.deepEqual(injectDependencies, {});
     });
 
-    it('should work with same dependencies then the running silo', async () => {
+    test('should work with same dependencies then the running silo', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -1076,7 +1077,7 @@ describe('Knifecycle', () => {
       });
     });
 
-    it('should work with name mapping', async () => {
+    test('should work with name mapping', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -1103,7 +1104,7 @@ describe('Knifecycle', () => {
       });
     });
 
-    it('should work with non instanciated dependencies', async () => {
+    test('should work with non instanciated dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -1122,7 +1123,7 @@ describe('Knifecycle', () => {
       });
     });
 
-    it('should create dependencies when not declared as singletons', async () => {
+    test('should create dependencies when not declared as singletons', async () => {
       $.register(constant('ENV', ENV));
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
@@ -1138,7 +1139,7 @@ describe('Knifecycle', () => {
       assert.notEqual(hash, yaSameHash);
     });
 
-    it('should reuse dependencies when declared as singletons', async () => {
+    test('should reuse dependencies when declared as singletons', async () => {
       $.register(constant('ENV', ENV));
       $.register(provider(hashProvider, 'hash', ['ENV'], true));
       $.register(provider(hashProvider, 'hash2', ['ENV'], true));
@@ -1160,14 +1161,14 @@ describe('Knifecycle', () => {
   });
 
   describe('destroy', () => {
-    it('should work even with one silo and no dependencies', async () => {
+    test('should work even with one silo and no dependencies', async () => {
       assert.equal(typeof $.destroy, 'function');
       const dependencies = await $.run<Record<string, any>>(['$instance']);
 
       await dependencies.$instance.destroy();
     });
 
-    it('should work with several silos and dependencies', async () => {
+    test('should work with several silos and dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV'], true));
@@ -1185,7 +1186,7 @@ describe('Knifecycle', () => {
       await $.destroy();
     });
 
-    it('should work when trigered from several silos simultaneously', async () => {
+    test('should work when trigered from several silos simultaneously', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -1211,7 +1212,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should work when a silo shutdown is in progress', async () => {
+    test('should work when a silo shutdown is in progress', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -1235,7 +1236,7 @@ describe('Knifecycle', () => {
       ]);
     });
 
-    it('should disallow new runs', async () => {
+    test('should disallow new runs', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -1257,14 +1258,14 @@ describe('Knifecycle', () => {
   });
 
   describe('$dispose', () => {
-    it('should work with no dependencies', async () => {
+    test('should work with no dependencies', async () => {
       const dependencies = await $.run<Record<string, any>>(['$dispose']);
       assert.equal(typeof dependencies.$dispose, 'function');
 
       return dependencies.$dispose();
     });
 
-    it('should work with constant dependencies', async () => {
+    test('should work with constant dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
 
@@ -1278,7 +1279,7 @@ describe('Knifecycle', () => {
       await dependencies.$dispose();
     });
 
-    it('should work with simple dependencies', async () => {
+    test('should work with simple dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -1293,7 +1294,7 @@ describe('Knifecycle', () => {
       await dependencies.$dispose();
     });
 
-    it('should work with deeper dependencies', async () => {
+    test('should work with deeper dependencies', async () => {
       let shutdownCallResolve;
       let shutdownResolve;
       const shutdownCallPromise = new Promise((resolve) => {
@@ -1351,7 +1352,7 @@ describe('Knifecycle', () => {
       await finalPromise;
     });
 
-    it('should work with deeper multi used dependencies', async () => {
+    test('should work with deeper multi used dependencies', async () => {
       let shutdownCallResolve;
       let shutdownResolve;
       const shutdownCallPromise = new Promise((resolve) => {
@@ -1405,7 +1406,7 @@ describe('Knifecycle', () => {
       await finalPromise;
     });
 
-    it('should delay service shutdown to their deeper dependencies', async () => {
+    test('should delay service shutdown to their deeper dependencies', async () => {
       const servicesShutdownCalls = sinon.spy(() => Promise.resolve());
 
       $.register(
@@ -1455,7 +1456,7 @@ describe('Knifecycle', () => {
       ]);
     });
 
-    it('should not shutdown singleton dependencies if used elsewhere', async () => {
+    test('should not shutdown singleton dependencies if used elsewhere', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV'], true));
@@ -1478,7 +1479,7 @@ describe('Knifecycle', () => {
       assert.equal(newDependencies.hash, hash);
     });
 
-    it('should shutdown singleton dependencies if not used elsewhere', async () => {
+    test('should shutdown singleton dependencies if not used elsewhere', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV'], true));
@@ -1497,13 +1498,13 @@ describe('Knifecycle', () => {
   });
 
   describe('toMermaidGraph', () => {
-    it('should print nothing when no dependency', () => {
+    test('should print nothing when no dependency', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       assert.equal($.toMermaidGraph(), '');
     });
 
-    it('should print a dependency graph', () => {
+    test('should print a dependency graph', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -1524,7 +1525,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should allow custom shapes', () => {
+    test('should allow custom shapes', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -1560,7 +1561,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    it('should allow custom styles', () => {
+    test('should allow custom styles', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));

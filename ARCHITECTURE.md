@@ -89,7 +89,7 @@ The `?` flag indicates an optional dependency.
 It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.ts#L1249-L1258)
+[See in context](./src/util.ts#L1301-L1310)
 
 
 
@@ -169,5 +169,5 @@ Sadly TypeScript does not allow to add generic types
 For more details, see:
 https://stackoverflow.com/questions/64948037/generics-type-loss-while-infering/64950184#64950184
 
-[See in context](./src/util.ts#L1319-L1330)
+[See in context](./src/util.ts#L1371-L1382)
 
