@@ -1,3 +1,4 @@
+import { describe, test } from '@jest/globals';
 import assert from 'assert';
 import sinon from 'sinon';
 import {
@@ -38,7 +39,7 @@ async function aServiceInitializer() {
 }
 
 describe('reuseSpecialProps', () => {
-  it('should work', () => {
+  test('should work', () => {
     // We can safely ignore coverage here since the
     // function are here just as placeholders
     /* istanbul ignore next */
@@ -83,7 +84,7 @@ describe('reuseSpecialProps', () => {
 });
 
 describe('wrapInitializer', () => {
-  it('should work with a service initializer', async () => {
+  test('should work with a service initializer', async () => {
     async function baseServiceInitializer() {
       return () => 'test';
     }
@@ -111,7 +112,7 @@ describe('wrapInitializer', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['log', '?test']);
   });
 
-  it('should work with a provider initialzer', async () => {
+  test('should work with a provider initialzer', async () => {
     async function baseInitializer() {
       return { service: () => 'test' };
     }
@@ -145,7 +146,7 @@ describe('wrapInitializer', () => {
 });
 
 describe('inject', () => {
-  it('should allow to decorate an initializer with dependencies', () => {
+  test('should allow to decorate an initializer with dependencies', () => {
     const dependencies = ['ENV'];
     const newInitializer = inject<{ ENV: string }, string>(
       dependencies,
@@ -157,7 +158,7 @@ describe('inject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
-  it('should allow to decorate an initializer builder with dependencies', () => {
+  test('should allow to decorate an initializer builder with dependencies', () => {
     const dependencies = ['ENV'];
     const newInitializer = inject<{ ENV: string }, string>(
       dependencies,
@@ -169,7 +170,7 @@ describe('inject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
-  it('should allow to decorate an initializer with dependencies', () => {
+  test('should allow to decorate an initializer with dependencies', () => {
     const dependencies = ['ENV'];
     const newInitializer = inject<{ ENV: string }, string>(
       dependencies,
@@ -181,7 +182,7 @@ describe('inject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
-  it('should allow to decorate an initializer builder with dependencies', () => {
+  test('should allow to decorate an initializer builder with dependencies', () => {
     const dependencies = ['ENV'];
     const newInitializer = inject<{ ENV: string }, string>(
       dependencies,
@@ -193,7 +194,7 @@ describe('inject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
-  it('should allow to decorate an initializer with mapped dependencies', () => {
+  test('should allow to decorate an initializer with mapped dependencies', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const newInitializer = inject(dependencies, aProviderInitializer);
 
@@ -202,7 +203,7 @@ describe('inject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
-  it('should fail with a constant', () => {
+  test('should fail with a constant', () => {
     assert.throws(() => {
       inject(
         ['test'],
@@ -215,7 +216,7 @@ describe('inject', () => {
   });
 });
 describe('useInject', () => {
-  it('should set the right dependencies', () => {
+  test('should set the right dependencies', () => {
     const fromDependencies = ['ENV', 'CORS'];
     const fromInitializer = inject(fromDependencies, aProviderInitializer);
     const toDependencies = ['db', 'log'];
@@ -232,7 +233,7 @@ describe('useInject', () => {
 });
 
 describe('mergeInject', () => {
-  it('should amend dependencies', () => {
+  test('should amend dependencies', () => {
     const fromDependencies = ['ENV', 'CORS'];
     const fromInitializer = inject<
       {
@@ -256,7 +257,7 @@ describe('mergeInject', () => {
 });
 
 describe('autoInject', () => {
-  it('should allow to decorate an initializer with dependencies', () => {
+  test('should allow to decorate an initializer with dependencies', () => {
     const baseProvider =
       async ({ ENV, mysql: db }) =>
       async () => ({
@@ -271,7 +272,7 @@ describe('autoInject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
-  it('should allow to decorate an initializer with a function name', () => {
+  test('should allow to decorate an initializer with a function name', () => {
     async function baseProvider({ ENV, mysql: db }) {
       async () => ({
         ENV,
@@ -286,7 +287,7 @@ describe('autoInject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
-  it('should allow to decorate an initializer with optional dependencies', () => {
+  test('should allow to decorate an initializer with optional dependencies', () => {
     const noop = () => undefined;
     const baseProvider =
       async ({ ENV, log = noop, debug: aDebug = noop }) =>
@@ -303,7 +304,7 @@ describe('autoInject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
-  it('should allow to decorate an initializer with several arguments', () => {
+  test('should allow to decorate an initializer with several arguments', () => {
     const noop = () => undefined;
     const baseProvider =
       async ({ ENV, log = noop, debug: aDebug = noop }) =>
@@ -320,7 +321,7 @@ describe('autoInject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
-  it('should allow to decorate an initializer with complex arguments', () => {
+  test('should allow to decorate an initializer with complex arguments', () => {
     const noop = () => undefined;
     const baseProvider =
       async ({ ENV, log = noop, debug: aDebug = noop }) =>
@@ -337,7 +338,7 @@ describe('autoInject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
   });
 
-  it('should fail with non async initializers', () => {
+  test('should fail with non async initializers', () => {
     assert.throws(() => {
       autoInject((({ foo: bar = { bar: 'foo' } }) => {
         return bar;
@@ -345,7 +346,7 @@ describe('autoInject', () => {
     }, /E_NON_ASYNC_INITIALIZER/);
   });
 
-  it('should fail with too complex injections', () => {
+  test('should fail with too complex injections', () => {
     assert.throws(() => {
       autoInject(async ({ foo: bar = { bar: 'foo' } }) => {
         return bar;
@@ -353,7 +354,7 @@ describe('autoInject', () => {
     }, /E_AUTO_INJECTION_FAILURE/);
   });
 
-  it('should fail with no injections', () => {
+  test('should fail with no injections', () => {
     assert.throws(() => {
       autoInject(async () => undefined);
     }, /E_AUTO_INJECTION_FAILURE/);
@@ -361,7 +362,7 @@ describe('autoInject', () => {
 });
 
 describe('alsoInject', () => {
-  it('should allow to decorate an initializer with dependencies', () => {
+  test('should allow to decorate an initializer with dependencies', () => {
     const newInitializer = alsoInject(
       ['ENV'],
       inject(['TEST'], aProviderInitializer),
@@ -371,14 +372,14 @@ describe('alsoInject', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['TEST', 'ENV']);
   });
 
-  it('should allow to decorate an initializer with dependencies', () => {
+  test('should allow to decorate an initializer with dependencies', () => {
     const newInitializer = alsoInject(['ENV'], aProviderInitializer);
 
     assert.notEqual(newInitializer, aProviderInitializer);
     assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['ENV']);
   });
 
-  it('should dedupe dependencies', () => {
+  test('should dedupe dependencies', () => {
     const baseProvider = inject(['?TEST'], aProviderInitializer);
     const newInitializer = alsoInject(
       ['ENV', '?NODE_ENV', '?TEST', 'TEST2', 'db>mysql'],
@@ -396,7 +397,7 @@ describe('alsoInject', () => {
     ]);
   });
 
-  it('should preserve single optional dependencies', () => {
+  test('should preserve single optional dependencies', () => {
     const baseProvider = inject(['ENV', '?TEST'], aProviderInitializer);
     const newInitializer = alsoInject(
       ['ENV', '?TEST2'],
@@ -412,7 +413,7 @@ describe('alsoInject', () => {
     ]);
   });
 
-  it('should preserve mapped dependencies', () => {
+  test('should preserve mapped dependencies', () => {
     const baseProvider = inject(['mysql', '?sftp'], aProviderInitializer);
     const newInitializer = alsoInject(['db>mysql', '?ftp>sftp'], baseProvider);
 
@@ -425,7 +426,7 @@ describe('alsoInject', () => {
     ]);
   });
 
-  it('should solve dependencies alias name clash', () => {
+  test('should solve dependencies alias name clash', () => {
     const baseProvider = inject(['?TEST'], aProviderInitializer);
     const newInitializer = alsoInject(
       ['ENV', '?NODE_ENV', '?TEST', 'db>mysql', '?log>logly'],
@@ -445,7 +446,7 @@ describe('alsoInject', () => {
     ]);
   });
 
-  it('should solve dependencies alias name clash', () => {
+  test('should solve dependencies alias name clash', () => {
     const baseProvider = inject(['?TEST'], aProviderInitializer);
     const newInitializer = alsoInject(
       ['ENV', '?NODE_ENV', '?TEST', 'db>mysql', '?log>logly'],
@@ -467,7 +468,7 @@ describe('alsoInject', () => {
 });
 
 describe('parseInjections', () => {
-  it('should work with TypeScript dependencies', () => {
+  test('should work with TypeScript dependencies', () => {
     assert.deepEqual(
       parseInjections(`async function initNexmo({
       ENV,
@@ -482,7 +483,7 @@ describe('parseInjections', () => {
     );
   });
 
-  it('should allow to decorate an initializer with dependencies', () => {
+  test('should allow to decorate an initializer with dependencies', () => {
     const newInitializer = alsoInject(['ENV'], aProviderInitializer);
 
     assert.notEqual(newInitializer, aProviderInitializer);
@@ -491,7 +492,7 @@ describe('parseInjections', () => {
 });
 
 describe('singleton', () => {
-  it('should allow to decorate an initializer with singleton option', () => {
+  test('should allow to decorate an initializer with singleton option', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const newInitializer = inject(
       dependencies,
@@ -504,7 +505,7 @@ describe('singleton', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.SINGLETON], true);
   });
 
-  it('should allow to be used several times', () => {
+  test('should allow to be used several times', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const newInitializer = inject(
       dependencies,
@@ -519,7 +520,7 @@ describe('singleton', () => {
 });
 
 describe('name', () => {
-  it('should allow to decorate an initializer with a name', () => {
+  test('should allow to decorate an initializer with a name', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const baseName = 'hash';
     const newInitializer = inject(
@@ -535,7 +536,7 @@ describe('name', () => {
 });
 
 describe('autoName', () => {
-  it('should allow to decorate an initializer with its function name', () => {
+  test('should allow to decorate an initializer with its function name', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const baseName = 'hash';
     const newInitializer = inject(
@@ -551,7 +552,7 @@ describe('autoName', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
   });
 
-  it('should allow to decorate an initializer with its init like function name', () => {
+  test('should allow to decorate an initializer with its init like function name', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const baseName = 'hash';
     const newInitializer = inject(
@@ -567,7 +568,7 @@ describe('autoName', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
   });
 
-  it('should allow to decorate an initializer with its initialize like function name', () => {
+  test('should allow to decorate an initializer with its initialize like function name', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const baseName = 'hash';
     const newInitializer = inject(
@@ -583,7 +584,7 @@ describe('autoName', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
   });
 
-  it('should allow to decorate a bounded initializer', () => {
+  test('should allow to decorate a bounded initializer', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const baseName = 'hash';
     const newInitializer = autoName(
@@ -602,7 +603,7 @@ describe('autoName', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
   });
 
-  it('should fail with anonymous functions', () => {
+  test('should fail with anonymous functions', () => {
     assert.throws(() => {
       autoName(async () => undefined);
     }, /E_AUTO_NAMING_FAILURE/);
@@ -610,7 +611,7 @@ describe('autoName', () => {
 });
 
 describe('extra', () => {
-  it('should allow to decorate an initializer with extra infos', () => {
+  test('should allow to decorate an initializer with extra infos', () => {
     const extraInformations = { httpHandler: true };
     const newInitializer = extra(extraInformations, aProviderInitializer);
 
@@ -619,7 +620,7 @@ describe('extra', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraInformations);
   });
 
-  it('should allow to decorate an initializer with extra infos', () => {
+  test('should allow to decorate an initializer with extra infos', () => {
     const extraInformations = { httpHandler: true };
     const newInitializer = extra(extraInformations, aProviderInitializer, true);
 
@@ -628,7 +629,7 @@ describe('extra', () => {
     assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraInformations);
   });
 
-  it('should allow to decorate an initializer with additional extra infos', () => {
+  test('should allow to decorate an initializer with additional extra infos', () => {
     const baseExtraInformations = { yolo: true, httpHandler: false };
     const additionalExtraInformations = { httpHandler: true };
     const newInitializer = extra(
@@ -648,7 +649,7 @@ describe('extra', () => {
 });
 
 describe('type', () => {
-  it('should allow to decorate an initializer with a type', () => {
+  test('should allow to decorate an initializer with a type', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const baseName = 'hash';
     const baseType = 'service';
@@ -666,7 +667,7 @@ describe('type', () => {
 });
 
 describe('initializer', () => {
-  it('should allow to decorate an initializer with every properties', () => {
+  test('should allow to decorate an initializer with every properties', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const baseName = 'hash';
     const baseType = 'service';
@@ -688,7 +689,7 @@ describe('initializer', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
   });
 
-  it('should fail with bad properties', () => {
+  test('should fail with bad properties', () => {
     assert.throws(() => {
       initializer(
         {
@@ -702,7 +703,7 @@ describe('initializer', () => {
 });
 
 describe('constant', () => {
-  it('should allow to create an initializer from a constant', async () => {
+  test('should allow to create an initializer from a constant', async () => {
     const baseName = 'THE_VALUE';
     const baseValue = 42;
     const constantInitializer = constant(baseName, baseValue);
@@ -712,7 +713,7 @@ describe('constant', () => {
     assert.equal(constantInitializer[SPECIAL_PROPS.VALUE], baseValue);
   });
 
-  it('should fail with dependencies since it makes no sense', () => {
+  test('should fail with dependencies since it makes no sense', () => {
     assert.throws(() => {
       constant(
         'time',
@@ -723,7 +724,7 @@ describe('constant', () => {
 });
 
 describe('service', () => {
-  it('should allow to create an initializer from a service builder', async () => {
+  test('should allow to create an initializer from a service builder', async () => {
     const aServiceBuilder = async (_services: unknown) => 'A_SERVICE';
     const dependencies = ['ANOTHER_ENV>ENV'];
     const extraData = { cool: true };
@@ -746,7 +747,7 @@ describe('service', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
   });
 
-  it('should allow to create an initializer from a generic service builder', async () => {
+  test('should allow to create an initializer from a generic service builder', async () => {
     const aServiceBuilder = async <T>(_services: T) => '';
     const dependencies = ['ANOTHER_ENV>ENV'];
     const extraData = { nice: true };
@@ -769,7 +770,7 @@ describe('service', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
   });
 
-  it('should fail with no service builder', () => {
+  test('should fail with no service builder', () => {
     assert.throws(() => {
       service(undefined as any);
     }, /E_NO_SERVICE_BUILDER/);
@@ -777,7 +778,7 @@ describe('service', () => {
 });
 
 describe('autoService', () => {
-  it('should detect the service details', () => {
+  test('should detect the service details', () => {
     const baseServiceBuilder = async function initializeMySQL({ ENV }) {
       return ENV;
     };
@@ -789,7 +790,7 @@ describe('autoService', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'service');
   });
 
-  it('should detect the service details even with no dependencies', () => {
+  test('should detect the service details even with no dependencies', () => {
     const baseServiceBuilder = async function initializeMySQL() {
       return;
     };
@@ -803,7 +804,7 @@ describe('autoService', () => {
 });
 
 describe('provider', () => {
-  it('should allow to create an initializer from a provider builder', async () => {
+  test('should allow to create an initializer from a provider builder', async () => {
     const aProviderInitializerBuilder = async () => ({ service: 'A_SERVICE' });
     const dependencies = ['ANOTHER_ENV>ENV'];
     const extraData = { singleton: true };
@@ -826,7 +827,7 @@ describe('provider', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
   });
 
-  it('should allow to create an initializer from a provider builder', async () => {
+  test('should allow to create an initializer from a provider builder', async () => {
     const aServiceBuilder = async (_services: unknown) => ({
       service: 'A_SERVICE',
     });
@@ -850,7 +851,7 @@ describe('provider', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
   });
 
-  it('should fail with no provider builder', () => {
+  test('should fail with no provider builder', () => {
     assert.throws(() => {
       provider(undefined as any);
     }, /E_NO_PROVIDER_BUILDER/);
@@ -858,7 +859,7 @@ describe('provider', () => {
 });
 
 describe('autoProvider', () => {
-  it('should detect the provider details', () => {
+  test('should detect the provider details', () => {
     const baseInitializer = async function initializeMySQL({
       ENV,
     }: {
@@ -874,7 +875,7 @@ describe('autoProvider', () => {
     assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'provider');
   });
 
-  it('should detect the provider details even with no dependencies', () => {
+  test('should detect the provider details even with no dependencies', () => {
     const baseInitializer = async function initializeMySQL() {
       return { service: 'A_SERVICE' };
     };
@@ -888,7 +889,7 @@ describe('autoProvider', () => {
 });
 
 describe('handler', () => {
-  it('should work', async () => {
+  test('should work', async () => {
     const baseName = 'sampleHandler';
     const injectedServices = ['kikooo', 'lol'];
     const services = {
@@ -912,7 +913,7 @@ describe('handler', () => {
     }
   });
 
-  it('should fail with no name', () => {
+  test('should fail with no name', () => {
     assert.throws(() => {
       handler(async () => undefined);
     }, /E_NO_HANDLER_NAME/);
@@ -920,7 +921,7 @@ describe('handler', () => {
 });
 
 describe('autoHandler', () => {
-  it('should work', async () => {
+  test('should work', async () => {
     const services = {
       kikooo: 'kikooo',
       lol: 'lol',
@@ -942,7 +943,7 @@ describe('autoHandler', () => {
     }
   });
 
-  it('should work with spread services', async () => {
+  test('should work with spread services', async () => {
     const services = {
       kikooo: 'kikooo',
       lol: 'lol',
@@ -964,7 +965,7 @@ describe('autoHandler', () => {
     }
   });
 
-  it('should fail for anonymous functions', () => {
+  test('should fail for anonymous functions', () => {
     assert.throws(() => {
       autoHandler(async () => undefined);
     }, /E_AUTO_NAMING_FAILURE/);
@@ -972,7 +973,7 @@ describe('autoHandler', () => {
 });
 
 describe('parseDependencyDeclaration', () => {
-  it('should work', () => {
+  test('should work', () => {
     assert.deepEqual(parseDependencyDeclaration('db>pgsql'), {
       serviceName: 'db',
       mappedName: 'pgsql',
@@ -980,7 +981,7 @@ describe('parseDependencyDeclaration', () => {
     });
   });
 
-  it('should work with unmapped names', () => {
+  test('should work with unmapped names', () => {
     assert.deepEqual(parseDependencyDeclaration('?pgsql'), {
       serviceName: 'pgsql',
       mappedName: 'pgsql',
