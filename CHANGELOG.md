@@ -1,3 +1,7 @@
+## [15.0.1](https://github.com/nfroidure/knifecycle/compare/v15.0.0...v15.0.1) (2023-05-28)
+
+
+
 # [15.0.0](https://github.com/nfroidure/knifecycle/compare/v14.1.0...v15.0.0) (2023-05-28)
 
 
