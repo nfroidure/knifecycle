@@ -136,34 +136,33 @@ export async function initialize(services = {}) {${batches
         (batch, index) => `
   // Initialization batch #${index}
   const batch${index} = {${batch
-          .map((name) => {
-            if (
-              'constant' ===
-              dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE]
-            ) {
-              return `
+    .map((name) => {
+      if (
+        'constant' === dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE]
+      ) {
+        return `
     ${name}: Promise.resolve(${name}),`;
-            }
-            return `
+      }
+      return `
     ${name}: ${dependenciesHash[name].__initializerName}({${
-              dependenciesHash[name].__inject
-                ? `${dependenciesHash[name].__inject
-                    .map(parseDependencyDeclaration)
-                    .map(
-                      ({ serviceName, mappedName }) =>
-                        `
+      dependenciesHash[name].__inject
+        ? `${dependenciesHash[name].__inject
+            .map(parseDependencyDeclaration)
+            .map(
+              ({ serviceName, mappedName }) =>
+                `
       ${serviceName}: services['${mappedName}'],`,
-                    )
-                    .join('')}`
-                : ''
-            }
+            )
+            .join('')}`
+        : ''
+    }
     })${
       'provider' === dependenciesHash[name].__type
         ? '.then(provider => provider.service)'
         : ''
     },`;
-          })
-          .join('')}
+    })
+    .join('')}
   };
 
   await Promise.all(

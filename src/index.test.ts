@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint max-nested-callbacks:0 */
 import { describe, beforeEach, test } from '@jest/globals';
 import assert from 'assert';

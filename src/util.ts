@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint @typescript-eslint/ban-types:0 */
 
 import { YError } from 'yerror';

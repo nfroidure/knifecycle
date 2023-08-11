@@ -34,7 +34,7 @@ It is designed to have a low footprint on services code.
  at all since they are just simple functions with annotations
  set as a property.
 
-[See in context](./src/index.ts#L155-L171)
+[See in context](./src/index.ts#L156-L172)
 
 
 
@@ -49,7 +49,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.ts#L173-L182)
+[See in context](./src/index.ts#L174-L183)
 
 
 
@@ -75,7 +75,7 @@ A service provider is full of state since its concern is
 `Knifecycle` provides a set of decorators that allows you to simply
  create new initializers.
 
-[See in context](./src/util.ts#L8-L29)
+[See in context](./src/util.ts#L9-L30)
 
 
 
@@ -89,7 +89,7 @@ The `?` flag indicates an optional dependency.
 It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.ts#L1301-L1310)
+[See in context](./src/util.ts#L1302-L1311)
 
 
 
@@ -117,7 +117,7 @@ Initializers can be of three types:
   executions silos using them (we will cover this
   topic later on).
 
-[See in context](./src/index.ts#L249-L272)
+[See in context](./src/index.ts#L250-L273)
 
 
 
@@ -133,7 +133,7 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.ts#L536-L546)
+[See in context](./src/index.ts#L537-L547)
 
 
 
@@ -169,5 +169,5 @@ Sadly TypeScript does not allow to add generic types
 For more details, see:
 https://stackoverflow.com/questions/64948037/generics-type-loss-while-infering/64950184#64950184
 
-[See in context](./src/util.ts#L1371-L1382)
+[See in context](./src/util.ts#L1372-L1383)
 
