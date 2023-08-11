@@ -7,8 +7,8 @@
 # knifecycle
 > Manage your NodeJS processes's lifecycle automatically with an unobtrusive dependency injection implementation.
 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nfroidure/knifecycle/blob/master/LICENSE)
-[![Coverage Status](https://coveralls.io/repos/github/nfroidure/knifecycle/badge.svg?branch=master)](https://coveralls.io/github/nfroidure/knifecycle?branch=master)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nfroidure/knifecycle/blob/main/LICENSE)
+[![Coverage Status](https://coveralls.io/repos/github/nfroidure/knifecycle/badge.svg?branch=main)](https://coveralls.io/github/nfroidure/knifecycle?branch=main)
 
 
 [//]: # (::contents:start)
@@ -901,4 +901,4 @@ stringifyDependencyDeclaration({
 - [Nicolas Froidure](http://insertafter.com/en/index.html)
 
 # License
-[MIT](https://github.com/nfroidure/knifecycle/blob/master/LICENSE)
+[MIT](https://github.com/nfroidure/knifecycle/blob/main/LICENSE)

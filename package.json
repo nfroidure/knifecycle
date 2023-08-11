@@ -80,31 +80,31 @@
   "license": "MIT",
   "devDependencies": {
     "@swc/cli": "^0.1.62",
-    "@swc/core": "^1.3.60",
+    "@swc/core": "^1.3.76",
     "@swc/helpers": "^0.5.1",
-    "@swc/jest": "^0.2.26",
-    "@typescript-eslint/eslint-plugin": "^5.59.7",
-    "@typescript-eslint/parser": "^5.59.7",
+    "@swc/jest": "^0.2.28",
+    "@typescript-eslint/eslint-plugin": "^6.3.0",
+    "@typescript-eslint/parser": "^6.3.0",
     "commitizen": "^4.3.0",
-    "conventional-changelog-cli": "^2.2.2",
+    "conventional-changelog-cli": "^3.0.0",
     "coveralls": "^3.1.1",
     "cz-conventional-changelog": "^3.3.0",
-    "eslint": "^8.41.0",
-    "eslint-config-prettier": "^8.8.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "jest": "^29.5.0",
+    "eslint": "^8.46.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "jest": "^29.6.2",
     "jsarch": "^6.0.1",
     "jsdoc-to-markdown": "^8.0.0",
-    "metapak": "^5.0.1",
-    "metapak-nfroidure": "^14.1.3",
-    "prettier": "^2.8.8",
+    "metapak": "^5.1.3",
+    "metapak-nfroidure": "^15.0.0",
+    "prettier": "^3.0.1",
     "rimraf": "^5.0.1",
     "sinon": "^14.0.0",
-    "typescript": "^5.0.4"
+    "typescript": "^5.1.6"
   },
   "dependencies": {
     "debug": "^4.3.4",
-    "yerror": "^6.2.1"
+    "yerror": "^7.0.0"
   },
   "config": {
     "commitizen": {
@@ -197,7 +197,8 @@
     },
     "extensionsToTreatAsEsm": [
       ".ts"
-    ]
+    ],
+    "prettierPath": null
   },
   "jsarch": {
     "parserOptions": {
