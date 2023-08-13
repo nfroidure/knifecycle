@@ -98,6 +98,11 @@ export type {
   BuildInitializer,
 };
 
+export const RUN_DEPENDENT_NAME = '__run__';
+export const SYSTEM_DEPENDENT_NAME = '__system__';
+export const AUTOLOAD_DEPENDENT_NAME = '__autoloader__';
+export const INJECTOR_DEPENDENT_NAME = '__injector__';
+
 export interface Injector<T extends Record<string, unknown>> {
   (dependencies: DependencyDeclaration[]): Promise<T>;
 }
@@ -109,13 +114,58 @@ export interface Autoloader<
     path: string;
   }>;
 }
-export interface SiloContext<S> {
-  name: string;
-  servicesDescriptors: Map<DependencyDeclaration, Promise<Provider<S>>>;
-  servicesSequence: DependencyDeclaration[][];
-  servicesShutdownsPromises: Map<DependencyDeclaration, Promise<void>>;
+export type SiloIndex = string;
+export type BaseInitializerStateDescriptor<S, D extends Dependencies> = {
+  dependents: {
+    silo?: SiloIndex;
+    name: ServiceName;
+    optional: boolean;
+  }[];
+  initializerLoadPromise?: Promise<Initializer<S, D>>;
+  initializer?: Initializer<S, D>;
+  autoloaded: boolean;
+};
+export type SiloedInitializerStateDescriptor<
+  S,
+  D extends Dependencies,
+> = BaseInitializerStateDescriptor<S, D> & {
+  silosInstances: Record<
+    SiloIndex,
+    {
+      dependency?: ServiceName;
+      instance?: S;
+      instanceLoadPromise?: Promise<S>;
+      instanceDisposePromise?: Promise<S>;
+      disposer?: Disposer;
+      fatalErrorPromise?: FatalErrorPromise;
+    }
+  >;
+};
+export type SingletonInitializerStateDescriptor<
+  S,
+  D extends Dependencies,
+> = BaseInitializerStateDescriptor<S, D> & {
+  singletonInstance?: S;
+  instanceLoadPromise?: Promise<S>;
+  disposer?: Disposer;
+  fatalErrorPromise?: FatalErrorPromise;
+};
+export type AutoloadedInitializerStateDescriptor<
+  S,
+  D extends Dependencies,
+> = BaseInitializerStateDescriptor<S, D> & {
+  autoloaded: true;
+};
+export type InitializerStateDescriptor<S, D extends Dependencies> =
+  | SingletonInitializerStateDescriptor<S, D>
+  | SiloedInitializerStateDescriptor<S, D>
+  | AutoloadedInitializerStateDescriptor<S, D>;
+export interface SiloContext {
+  index: SiloIndex;
+  loadingServices: ServiceName[];
+  loadingSequences: ServiceName[][];
   errorsPromises: Promise<void>[];
-  shutdownPromise?: Promise<void>;
+  _shutdownPromise?: Promise<void>;
   throwFatalError?: (err: Error) => void;
 }
 export type FatalErrorService = {
@@ -127,7 +177,7 @@ export type InternalDependencies = {
   $autoload: Autoloader<Initializer<unknown, Record<string, unknown>>>;
   $injector: Injector<Record<string, unknown>>;
   $instance: Knifecycle;
-  $siloContext: SiloContext<unknown>;
+  $siloContext: SiloContext;
   $fatalError: FatalErrorService;
 };
 
@@ -139,19 +189,6 @@ const INJECTOR = '$injector';
 const INSTANCE = '$instance';
 const SILO_CONTEXT = '$siloContext';
 const FATAL_ERROR = '$fatalError';
-
-const E_BAD_AUTOLOADED_INITIALIZER = 'E_BAD_AUTOLOADED_INITIALIZER';
-const E_AUTOLOADED_INITIALIZER_MISMATCH = 'E_AUTOLOADED_INITIALIZER_MISMATCH';
-const E_UNMATCHED_DEPENDENCY = 'E_UNMATCHED_DEPENDENCY';
-const E_CIRCULAR_DEPENDENCY = 'E_CIRCULAR_DEPENDENCY';
-const E_BAD_SERVICE_PROVIDER = 'E_BAD_SERVICE_PROVIDER';
-const E_BAD_SERVICE_PROMISE = 'E_BAD_SERVICE_PROMISE';
-const E_INSTANCE_DESTROYED = 'E_INSTANCE_DESTROYED';
-const E_AUTOLOADER_DYNAMIC_DEPENDENCY = 'E_AUTOLOADER_DYNAMIC_DEPENDENCY';
-const E_BAD_CLASS = 'E_BAD_CLASS';
-const E_UNDEFINED_CONSTANT_INITIALIZER = 'E_UNDEFINED_CONSTANT_INITIALIZER';
-const E_BAD_VALUED_NON_CONSTANT_INITIALIZER =
-  'E_BAD_VALUED_NON_CONSTANT_INITIALIZER';
 
 /* Architecture Note #1: Knifecycle
 
@@ -169,6 +206,9 @@ It is designed to have a low footprint on services code.
  can be reused elsewhere (even when not using DI) with no changes
  at all since they are just simple functions with annotations
  set as a property.
+
+In fact, the Knifecycle API is aimed to allow to statically
+ build its services load/unload code once in production.
 */
 
 /* Architecture Note #1.1: OOP
@@ -183,25 +223,12 @@ A service provider is full of state since its concern is
 */
 class Knifecycle {
   private _silosCounter: number;
-  private _silosContexts: Set<SiloContext<unknown>>;
-  private _initializers: Map<
+  private _silosContexts: Record<SiloIndex, SiloContext>;
+  private _initializersStates: Record<
     string,
-    ProviderInitializer<Record<string, unknown>, unknown>
+    InitializerStateDescriptor<unknown, Dependencies>
   >;
-  private _initializerResolvers: Map<
-    string,
-    Promise<ProviderInitializer<Record<string, unknown>, unknown>>
-  >;
-  private _singletonsServicesHandles: Map<string, Set<string>>;
-  private _singletonsServicesDescriptors: Map<
-    string,
-    {
-      promise: Promise<Provider<unknown>>;
-      preloaded: boolean;
-    }
-  >;
-  private _singletonsServicesShutdownsPromises: Map<string, Promise<void>>;
-  private shutdownPromise?: Promise<void>;
+  private _shutdownPromise?: Promise<void>;
 
   /**
    * Create a new Knifecycle instance
@@ -215,29 +242,54 @@ class Knifecycle {
    */
   constructor() {
     this._silosCounter = 0;
-    this._silosContexts = new Set();
-    this._initializers = new Map();
-    this._initializerResolvers = new Map();
-    this._singletonsServicesHandles = new Map();
-    this._singletonsServicesDescriptors = new Map();
-    this._singletonsServicesShutdownsPromises = new Map();
+    this._silosContexts = {};
+    this._initializersStates = {
+      [FATAL_ERROR]: {
+        initializer: service(async () => {
+          throw new YError('E_UNEXPECTED_INIT', FATAL_ERROR);
+        }, FATAL_ERROR),
+        autoloaded: false,
+        dependents: [],
+        silosInstances: {},
+      },
+      [SILO_CONTEXT]: {
+        initializer: service(async () => {
+          throw new YError('E_UNEXPECTED_INIT', SILO_CONTEXT);
+        }, SILO_CONTEXT),
+        autoloaded: false,
+        dependents: [],
+        silosInstances: {},
+      },
+      [DISPOSE]: {
+        initializer: service(async () => {
+          throw new YError('E_UNEXPECTED_INIT', DISPOSE);
+        }, DISPOSE),
+        autoloaded: false,
+        dependents: [],
+        silosInstances: {},
+      },
+    };
     this.register(constant(INSTANCE, this));
 
     const initInjectorProvider = provider(
-      async ({ $siloContext }: { $siloContext: SiloContext<unknown> }) => ({
-        service: async (dependenciesDeclarations: DependencyDeclaration[]) =>
-          _buildFinalHash(
-            await this._initializeDependencies(
-              $siloContext,
-              $siloContext.name,
-              dependenciesDeclarations,
-              { injectorContext: true, autoloading: false },
-            ),
+      async ({
+        $siloContext,
+        $instance,
+      }: {
+        $siloContext: SiloContext;
+        $instance: Knifecycle;
+      }) => ({
+        service: async (dependenciesDeclarations: DependencyDeclaration[]) => {
+          return $instance._loadInitializerDependencies(
+            $siloContext,
+            [INJECTOR_DEPENDENT_NAME],
             dependenciesDeclarations,
-          ),
+            [],
+          );
+        },
       }),
       INJECTOR,
-      [SILO_CONTEXT],
+      [SILO_CONTEXT, INSTANCE],
       // Despite its global definition, the injector
       // depends on the silo context and then needs
       // to be instanciated once per silo.
@@ -255,7 +307,7 @@ class Knifecycle {
 
   Initializers can be of three types:
   - constants: a `constant` initializer resolves to
-   a constant value.
+   any constant value.
   - services: a `service` initializer directly
    resolve to the actual service it builds. It can
    be objects, functions or litteral values.
@@ -264,12 +316,13 @@ class Knifecycle {
    but also an optional `dispose` property exposing a
    method to properly stop the service and a
    `fatalErrorPromise` that will be rejected if an
-   unrecoverable error happens.
+   unrecoverable error happens allowing Knifecycle
+   to terminate.
 
-   Initializers can be declared as singletons. This means
-    that they will be instanciated once for all for each
-    executions silos using them (we will cover this
-    topic later on).
+   Initializers can be declared as singletons (constants are
+    of course only singletons). This means that they will be
+    instanciated once for all for each executions silos using
+    them (we will cover this topic later on).
   */
 
   /**
@@ -280,66 +333,135 @@ class Knifecycle {
    * The Knifecycle instance (for chaining)
    */
   register<T extends Initializer<unknown, any>>(initializer: T): Knifecycle {
-    if (this.shutdownPromise) {
-      throw new YError(E_INSTANCE_DESTROYED);
+    if (this._shutdownPromise) {
+      throw new YError('E_INSTANCE_DESTROYED');
     }
 
     unwrapInitializerProperties(initializer);
 
-    // Temporary cast constants into providers
-    // Best would be to threat each differently
-    // at dependencies initialization level to boost performances
+    this._checkInitializerOverride(initializer[SPECIAL_PROPS.NAME]);
+
     if (initializer[SPECIAL_PROPS.TYPE] === 'constant') {
-      const value = initializer[SPECIAL_PROPS.VALUE];
-
-      if ('undefined' === typeof value) {
-        throw new YError(
-          E_UNDEFINED_CONSTANT_INITIALIZER,
-          initializer[SPECIAL_PROPS.NAME],
-        );
-      }
-
-      initializer = provider(
-        async () => ({
-          service: value,
-        }),
-        initializer[SPECIAL_PROPS.NAME],
-        [],
-        true,
-      ) as T;
-
-      // Needed for the build utils to still recognize
-      // this initializer as a constant value
-      initializer[SPECIAL_PROPS.VALUE] = value;
-      initializer[SPECIAL_PROPS.TYPE] = 'constant';
-    } else if ('undefined' !== typeof initializer[SPECIAL_PROPS.VALUE]) {
-      throw new YError(
-        E_BAD_VALUED_NON_CONSTANT_INITIALIZER,
-        initializer[SPECIAL_PROPS.NAME],
-      );
-    }
-
-    // Temporary cast service initializers into
-    // providers. Best would be to threat each differently
-    // at dependencies initialization level to boost performances
-    if ('service' === initializer[SPECIAL_PROPS.TYPE]) {
-      initializer = reuseSpecialProps(
+      this._initializersStates[initializer[SPECIAL_PROPS.NAME]] = {
         initializer,
-        serviceAdapter.bind(
-          null,
-          initializer[SPECIAL_PROPS.NAME] as string,
-          initializer as ServiceInitializer<Record<string, unknown>, unknown>,
-        ),
-      ) as T;
-      initializer[SPECIAL_PROPS.TYPE] = 'provider';
+        singletonInstance: initializer[SPECIAL_PROPS.VALUE],
+        instanceLoadPromise: Promise.resolve(initializer[SPECIAL_PROPS.VALUE]),
+        autoloaded: false,
+        dependents: [],
+      };
+    } else {
+      this._checkInitializerDependencies(initializer);
+      this._initializersStates[initializer[SPECIAL_PROPS.NAME]] = initializer[
+        SPECIAL_PROPS.SINGLETON
+      ]
+        ? {
+            initializer,
+            autoloaded: false,
+            dependents: [],
+          }
+        : {
+            initializer,
+            autoloaded: false,
+            silosInstances: {},
+            dependents: [],
+          };
     }
 
+    debug(`Registered an initializer: ${initializer[SPECIAL_PROPS.NAME]}`);
+    return this;
+  }
+
+  _checkInitializerOverride(serviceName: ServiceName) {
+    if (this._initializersStates[serviceName]) {
+      if ('initializer' in this._initializersStates[serviceName]) {
+        if (this._initializersStates[serviceName]?.dependents?.length) {
+          debug(
+            `Override attempt of an already used initializer: ${serviceName}`,
+          );
+          throw new YError('E_INITIALIZER_ALREADY_INSTANCIATED', serviceName);
+        }
+        debug(`Overridden an initializer: ${serviceName}`);
+      }
+    }
+  }
+
+  _checkInitializerDependencies(initializer: Initializer<any, any>) {
     const initializerDependsOfItself = initializer[SPECIAL_PROPS.INJECT]
-      .map(_pickServiceNameFromDeclaration)
+      .map((dependencyDeclaration) => {
+        const serviceName = _pickServiceNameFromDeclaration(
+          dependencyDeclaration,
+        );
+
+        if (
+          // TEMPFIX: Fatal Errors are global
+          ![FATAL_ERROR, INJECTOR, SILO_CONTEXT].includes(serviceName) &&
+          initializer[SPECIAL_PROPS.SINGLETON] &&
+          this._initializersStates[serviceName] &&
+          'initializer' in this._initializersStates[serviceName] &&
+          this._initializersStates[serviceName]?.initializer &&
+          !this._initializersStates[serviceName]?.initializer?.[
+            SPECIAL_PROPS.SINGLETON
+          ]
+        ) {
+          debug(
+            `Found an inconsistent singleton initializer dependency: ${
+              initializer[SPECIAL_PROPS.NAME]
+            }`,
+            serviceName,
+            initializer,
+          );
+          throw new YError(
+            'E_BAD_SINGLETON_DEPENDENCIES',
+            initializer[SPECIAL_PROPS.NAME],
+            serviceName,
+          );
+        }
+
+        return serviceName;
+      })
       .includes(initializer[SPECIAL_PROPS.NAME]);
 
+    if (!initializer[SPECIAL_PROPS.SINGLETON]) {
+      Object.keys(this._initializersStates)
+        // TEMPFIX: Fatal Errors are global
+        .filter(
+          (serviceName) =>
+            ![FATAL_ERROR, INJECTOR, SILO_CONTEXT].includes(serviceName),
+        )
+        .forEach((serviceName) => {
+          if (
+            this._initializersStates[serviceName]?.initializer &&
+            this._initializersStates[serviceName]?.initializer?.[
+              SPECIAL_PROPS.SINGLETON
+            ] &&
+            (
+              this._initializersStates[serviceName]?.initializer?.[
+                SPECIAL_PROPS.INJECT
+              ] || []
+            )
+              .map(_pickServiceNameFromDeclaration)
+              .includes(initializer[SPECIAL_PROPS.NAME])
+          ) {
+            debug(
+              `Found an inconsistent dependent initializer: ${
+                initializer[SPECIAL_PROPS.NAME]
+              }`,
+              serviceName,
+              initializer,
+            );
+            throw new YError(
+              'E_BAD_SINGLETON_DEPENDENCIES',
+              serviceName,
+              initializer[SPECIAL_PROPS.NAME],
+            );
+          }
+        });
+    }
     if (initializerDependsOfItself) {
-      throw new YError(E_CIRCULAR_DEPENDENCY, initializer[SPECIAL_PROPS.NAME]);
+      throw new YError(
+        'E_CIRCULAR_DEPENDENCY',
+        initializer[SPECIAL_PROPS.NAME],
+      );
     }
 
     initializer[SPECIAL_PROPS.INJECT].forEach((dependencyDeclaration) => {
@@ -348,58 +470,6 @@ class Knifecycle {
         dependencyDeclaration,
       );
     });
-
-    if (this._initializers.has(initializer[SPECIAL_PROPS.NAME])) {
-      const initializedAsSingleton =
-        this._singletonsServicesHandles.has(initializer[SPECIAL_PROPS.NAME]) &&
-        this._singletonsServicesDescriptors.has(
-          initializer[SPECIAL_PROPS.NAME],
-        ) &&
-        !this._singletonsServicesDescriptors.get(
-          initializer[SPECIAL_PROPS.NAME],
-        )?.preloaded;
-      const initializedAsInstance = [...this._silosContexts.values()].some(
-        (siloContext) =>
-          siloContext.servicesSequence.some((sequence) =>
-            sequence.includes(initializer[SPECIAL_PROPS.NAME]),
-          ),
-      );
-      if (initializedAsSingleton || initializedAsInstance) {
-        throw new YError(
-          'E_INITIALIZER_ALREADY_INSTANCIATED',
-          initializer[SPECIAL_PROPS.NAME],
-        );
-      }
-      debug(`Overridden an initializer: ${initializer[SPECIAL_PROPS.NAME]}`);
-    } else {
-      debug(`Registered an initializer: ${initializer[SPECIAL_PROPS.NAME]}`);
-    }
-
-    // Constants are singletons and constant so we can set it
-    // to singleton services descriptors map directly
-    if ('constant' === initializer[SPECIAL_PROPS.TYPE]) {
-      const handlesSet = new Set<string>();
-
-      this._singletonsServicesHandles.set(
-        initializer[SPECIAL_PROPS.NAME],
-        handlesSet,
-      );
-      this._singletonsServicesDescriptors.set(initializer[SPECIAL_PROPS.NAME], {
-        preloaded: true,
-        // We do not directly use initializer[SPECIAL_PROPS.VALUE] here
-        // since it looks like there is a bug with Babel build that
-        // change functions to empty litteral objects
-        promise: (
-          initializer as ProviderInitializer<Record<string, unknown>, unknown>
-        )({}),
-      });
-    }
-
-    this._initializers.set(
-      initializer[SPECIAL_PROPS.NAME],
-      initializer as ProviderInitializer<Record<string, unknown>, unknown>,
-    );
-    return this;
   }
 
   _lookupCircularDependencies(
@@ -408,13 +478,14 @@ class Knifecycle {
     declarationsStacks: DependencyDeclaration[] = [],
   ): void {
     const serviceName = _pickServiceNameFromDeclaration(dependencyDeclaration);
-    const dependencyProvider = this._initializers.get(serviceName);
+    const initializersState = this._initializersStates[serviceName];
 
-    if (!dependencyProvider) {
+    if (!initializersState || !initializersState.initializer) {
       return;
     }
+
     declarationsStacks = declarationsStacks.concat(dependencyDeclaration);
-    dependencyProvider[SPECIAL_PROPS.INJECT].forEach(
+    (initializersState.initializer[SPECIAL_PROPS.INJECT] || []).forEach(
       (childDependencyDeclaration) => {
         const childServiceName = _pickServiceNameFromDeclaration(
           childDependencyDeclaration,
@@ -422,7 +493,7 @@ class Knifecycle {
 
         if (rootServiceName === childServiceName) {
           throw new YError(
-            E_CIRCULAR_DEPENDENCY,
+            'E_CIRCULAR_DEPENDENCY',
             ...[rootServiceName]
               .concat(declarationsStacks)
               .concat(childDependencyDeclaration),
@@ -484,25 +555,29 @@ class Knifecycle {
       classes: {},
     },
   ): string {
-    const servicesProviders = this._initializers;
-    const links: MermaidLink[] = Array.from(servicesProviders.keys())
+    const initializersStates = this._initializersStates;
+    const links: MermaidLink[] = Object.keys(initializersStates)
       .filter((provider) => !provider.startsWith('$'))
       .reduce((links, serviceName) => {
-        const serviceProvider = servicesProviders.get(
-          serviceName,
-        ) as ProviderInitializer<Record<string, unknown>, unknown>;
+        const initializerState = initializersStates[serviceName];
 
-        if (!serviceProvider[SPECIAL_PROPS.INJECT].length) {
+        if (
+          !initializerState ||
+          !initializerState.initializer ||
+          !initializerState.initializer[SPECIAL_PROPS.INJECT]?.length
+        ) {
           return links;
         }
         return links.concat(
-          serviceProvider[SPECIAL_PROPS.INJECT].map((dependencyDeclaration) => {
-            const dependedServiceName = _pickServiceNameFromDeclaration(
-              dependencyDeclaration,
-            );
+          initializerState.initializer[SPECIAL_PROPS.INJECT].map(
+            (dependencyDeclaration) => {
+              const dependedServiceName = _pickServiceNameFromDeclaration(
+                dependencyDeclaration,
+              );
 
-            return { serviceName, dependedServiceName };
-          }),
+              return { serviceName, dependedServiceName };
+            },
+          ),
         );
       }, []);
     const classesApplications = _applyClasses(classes, styles, links);
@@ -564,151 +639,695 @@ class Knifecycle {
    *  // Here goes your code
    * })
    */
-  async run<ID extends Record<string, unknown>>(
+  async run(
     dependenciesDeclarations: DependencyDeclaration[],
-  ): Promise<ID> {
-    const _this = this;
-    const internalDependencies = [
-      ...new Set(dependenciesDeclarations.concat(DISPOSE)),
-    ];
-    const siloContext: SiloContext<unknown> = {
-      name: `silo-${this._silosCounter++}`,
-      servicesDescriptors: new Map(),
-      servicesSequence: [],
-      servicesShutdownsPromises: new Map(),
+  ): Promise<Dependencies> {
+    // const _this = this;
+    const siloIndex: SiloIndex = `silo-${this._silosCounter++}`;
+    const siloContext: SiloContext = {
+      index: siloIndex,
+      loadingServices: [],
+      loadingSequences: [],
       errorsPromises: [],
     };
 
-    if (this.shutdownPromise) {
-      throw new YError(E_INSTANCE_DESTROYED);
+    if (this._shutdownPromise) {
+      throw new YError('E_INSTANCE_DESTROYED');
     }
 
     // Create a provider for the special fatal error service
-    siloContext.servicesDescriptors.set(
-      FATAL_ERROR,
-      Promise.resolve({
-        service: {
-          promise: new Promise<void>((_resolve, reject) => {
-            siloContext.throwFatalError = (err) => {
-              debug('Handled a fatal error', err);
-              reject(err);
-            };
-          }),
-        },
-      }),
-    );
+    (
+      this._initializersStates[FATAL_ERROR] as SiloedInitializerStateDescriptor<
+        FatalErrorService,
+        Dependencies<unknown>
+      >
+    ).silosInstances[siloIndex] = {
+      instance: {
+        promise: new Promise<void>((_resolve, reject) => {
+          siloContext.throwFatalError = (err) => {
+            debug('Handled a fatal error', err);
+            reject(err);
+          };
+        }),
+      },
+    };
 
     // Make the siloContext available for internal injections
-    siloContext.servicesDescriptors.set(
-      SILO_CONTEXT,
-      Promise.resolve({
-        service: siloContext,
-      }),
-    );
+    (
+      this._initializersStates[
+        SILO_CONTEXT
+      ] as SiloedInitializerStateDescriptor<SiloContext, Dependencies<unknown>>
+    ).silosInstances[siloIndex] = {
+      instance: siloContext,
+    };
     // Create a provider for the shutdown special dependency
-    siloContext.servicesDescriptors.set(
-      DISPOSE,
-      Promise.resolve({
-        service: async () => {
-          siloContext.shutdownPromise =
-            siloContext.shutdownPromise ||
-            _shutdownNextServices(siloContext.servicesSequence);
+    (
+      this._initializersStates[DISPOSE] as SiloedInitializerStateDescriptor<
+        Disposer,
+        Dependencies<unknown>
+      >
+    ).silosInstances[siloIndex] = {
+      instance: async () => {
+        const _this = this;
+        siloContext._shutdownPromise =
+          siloContext._shutdownPromise ||
+          _shutdownNextServices(siloContext.loadingSequences.concat());
+        await siloContext._shutdownPromise;
+        delete this._silosContexts[siloContext.index];
 
-          debug('Shutting down services');
+        // Shutdown services in their instanciation order
+        async function _shutdownNextServices(
+          serviceLoadSequences: ServiceName[][],
+        ) {
+          if (0 === serviceLoadSequences.length) {
+            return;
+          }
+          const currentServiceLoadSequence = serviceLoadSequences.pop() || [];
 
-          await siloContext.shutdownPromise;
+          // First ensure to remove services that are depend on
+          // by another service loaded in the same batch (may
+          // happen depending on the load sequence)
+          const dependendedByAServiceInTheSameBatch =
+            currentServiceLoadSequence.filter((serviceName) => {
+              if (
+                currentServiceLoadSequence
+                  .filter(
+                    (anotherServiceName) => anotherServiceName !== serviceName,
+                  )
+                  .some((anotherServiceName) =>
+                    (
+                      _this._initializersStates[anotherServiceName]
+                        ?.initializer?.[SPECIAL_PROPS.INJECT] || []
+                    )
+                      .map(_pickServiceNameFromDeclaration)
+                      .includes(serviceName),
+                  )
+              ) {
+                debug(
+                  `Delaying service "${serviceName}" dependencies shutdown to a dedicated batch.'`,
+                );
+                return true;
+              }
+            });
 
-          this._silosContexts.delete(siloContext);
+          await Promise.all(
+            currentServiceLoadSequence
+              .filter(
+                (serviceName) =>
+                  !dependendedByAServiceInTheSameBatch.includes(serviceName),
+              )
+              .map(async (serviceName) => {
+                const initializeState = _this._initializersStates[serviceName];
 
-          // Shutdown services in their instanciation order
-          async function _shutdownNextServices(reversedServiceSequence) {
-            if (0 === reversedServiceSequence.length) {
-              return;
-            }
-
-            await Promise.all(
-              reversedServiceSequence.pop().map(async (serviceName) => {
-                const singletonServiceDescriptor =
-                  await _this._pickupSingletonServiceDescriptorPromise(
+                if ('silosInstances' in initializeState) {
+                  const provider = _this._getServiceProvider(
+                    siloContext,
                     serviceName,
                   );
-                const serviceDescriptor =
-                  singletonServiceDescriptor ||
-                  (await siloContext.servicesDescriptors.get(serviceName));
-                let serviceShutdownPromise: Promise<void> | undefined =
-                  _this._singletonsServicesShutdownsPromises.get(serviceName) ||
-                  siloContext.servicesShutdownsPromises.get(serviceName);
 
-                if (serviceShutdownPromise) {
-                  debug('Reusing a service shutdown promise:', serviceName);
-                  return serviceShutdownPromise;
-                }
-
-                if (
-                  reversedServiceSequence.some((servicesDeclarations) =>
-                    servicesDeclarations.includes(serviceName),
-                  )
-                ) {
-                  debug('Delaying service shutdown:', serviceName);
-                  return Promise.resolve();
-                }
-                if (singletonServiceDescriptor) {
-                  const handleSet = _this._singletonsServicesHandles.get(
-                    serviceName,
-                  ) as Set<string>;
-
-                  handleSet.delete(siloContext.name);
-                  if (handleSet.size) {
+                  if (
+                    serviceLoadSequences.some((servicesLoadSequence) =>
+                      servicesLoadSequence.includes(serviceName),
+                    )
+                  ) {
                     debug(
-                      'Singleton is used elsewhere:',
+                      'Delaying service shutdown to another batch:',
                       serviceName,
-                      handleSet,
                     );
                     return Promise.resolve();
                   }
-                  _this._singletonsServicesDescriptors.delete(serviceName);
+                  if (
+                    !initializeState.silosInstances[siloContext.index]
+                      .instanceDisposePromise
+                  ) {
+                    debug('Shutting down a service:', serviceName);
+                    initializeState.silosInstances[
+                      siloContext.index
+                    ].instanceDisposePromise =
+                      provider && 'dispose' in provider && provider.dispose
+                        ? provider.dispose()
+                        : Promise.resolve();
+                  } else {
+                    debug('Reusing a service shutdown promise:', serviceName);
+                  }
+                  await initializeState.silosInstances[siloContext.index]
+                    .instanceDisposePromise;
+                } else if ('singletonInstance' in initializeState) {
+                  initializeState.dependents =
+                    initializeState.dependents.filter(
+                      ({ silo }) => silo !== siloContext.index,
+                    );
+
+                  if (initializeState.dependents.length) {
+                    debug(
+                      `Will not shut down the ${serviceName} singleton service (still used ${initializeState.dependents.length} times).`,
+                      initializeState.dependents,
+                    );
+                  } else {
+                    const provider = _this._getServiceProvider(
+                      siloContext,
+                      serviceName,
+                    );
+                    debug('Shutting down a singleton service:', serviceName);
+                    delete initializeState.instanceLoadPromise;
+                    delete initializeState.singletonInstance;
+                    return provider && 'dispose' in provider && provider.dispose
+                      ? provider.dispose()
+                      : Promise.resolve();
+                  }
                 }
-                debug('Shutting down a service:', serviceName);
-                serviceShutdownPromise = serviceDescriptor?.dispose
-                  ? serviceDescriptor.dispose()
-                  : Promise.resolve();
-                if (singletonServiceDescriptor) {
-                  _this._singletonsServicesShutdownsPromises.set(
-                    serviceName,
-                    serviceShutdownPromise,
-                  );
-                }
-                siloContext.servicesShutdownsPromises.set(
-                  serviceName,
-                  serviceShutdownPromise,
-                );
-                return serviceShutdownPromise;
               }),
-            );
-
-            await _shutdownNextServices(reversedServiceSequence);
+          );
+          if (dependendedByAServiceInTheSameBatch.length) {
+            serviceLoadSequences.unshift(dependendedByAServiceInTheSameBatch);
           }
-        },
-        dispose: Promise.resolve.bind(Promise),
-      }),
-    );
+          await _shutdownNextServices(serviceLoadSequences);
+        }
+      },
+      disposer: Promise.resolve.bind(Promise),
+    };
+    this._silosContexts[siloContext.index] = siloContext;
 
-    this._silosContexts.add(siloContext);
-
-    const servicesHash = await this._initializeDependencies(
+    const services = await this._loadInitializerDependencies(
       siloContext,
-      siloContext.name,
-      internalDependencies,
-      { injectorContext: false, autoloading: false },
+      [RUN_DEPENDENT_NAME],
+      dependenciesDeclarations,
+      [DISPOSE],
     );
 
+    // TODO: recreate error promise when autoloaded/injected things?
     debug('Handling fatal errors:', siloContext.errorsPromises);
     Promise.all(siloContext.errorsPromises).catch(siloContext.throwFatalError);
 
-    return _buildFinalHash(
-      servicesHash,
-      dependenciesDeclarations,
-    ) as unknown as ID;
+    debug('All dependencies now loaded:', siloContext.loadingSequences);
+
+    return services;
+  }
+
+  // TODO: ensure undefined/null services works
+  _getInitializer(
+    serviceName: ServiceName,
+  ): Initializer<unknown, Dependencies> | undefined {
+    return this._initializersStates[serviceName]?.initializer;
+  }
+
+  _getServiceProvider<S extends Service>(
+    siloContext: SiloContext,
+    serviceName: ServiceName,
+  ): Provider<S> | undefined {
+    const initializerState = this._initializersStates[serviceName];
+
+    // This method expect the initialized to have a state
+    // so failing early if not to avoid programming errors
+    if (!initializerState) {
+      throw new YError('E_UNEXPECTED_SERVICE_READ');
+    }
+    if ('initializer' in initializerState) {
+      if ('singletonInstance' in initializerState) {
+        return {
+          service: initializerState.singletonInstance as S,
+        };
+      }
+
+      if (
+        'silosInstances' in initializerState &&
+        initializerState.silosInstances &&
+        initializerState.silosInstances[siloContext.index] &&
+        'instance' in initializerState.silosInstances[siloContext.index]
+      ) {
+        return {
+          service: initializerState.silosInstances[siloContext.index]
+            .instance as S,
+          dispose: initializerState.silosInstances[siloContext.index].disposer,
+          fatalErrorPromise:
+            initializerState.silosInstances[siloContext.index]
+              .fatalErrorPromise,
+        };
+      }
+    }
+
+    return;
+  }
+
+  async _loadInitializerDependencies(
+    siloContext: SiloContext,
+    parentsNames: ServiceName[],
+    dependenciesDeclarations: DependencyDeclaration[],
+    additionalDeclarations: DependencyDeclaration[],
+  ): Promise<Dependencies> {
+    debug(
+      `${[...parentsNames].join(
+        '->',
+      )}: Gathering the dependencies (${dependenciesDeclarations.join(', ')}).`,
+    );
+    const allDependenciesDeclarations = [
+      ...new Set(dependenciesDeclarations.concat(additionalDeclarations)),
+    ];
+    const dependencies: ServiceName[] = [];
+    const lackingDependencies: ServiceName[] = [];
+
+    for (const serviceDeclaration of allDependenciesDeclarations) {
+      const { mappedName, optional } =
+        parseDependencyDeclaration(serviceDeclaration);
+      const initializerState = this._initializersStates[mappedName] || {
+        dependents: [],
+        autoloaded: true,
+      };
+
+      this._initializersStates[mappedName] = initializerState;
+      initializerState.dependents.push({
+        silo: siloContext.index,
+        name: parentsNames[parentsNames.length - 1],
+        optional,
+      });
+
+      dependencies.push(mappedName);
+    }
+
+    do {
+      const previouslyLackingDependencies = [...lackingDependencies];
+
+      lackingDependencies.length = 0;
+
+      for (const mappedName of dependencies) {
+        if (!this._getServiceProvider(siloContext, mappedName)) {
+          lackingDependencies.push(mappedName);
+          if (!siloContext.loadingServices.includes(mappedName)) {
+            siloContext.loadingServices.push(mappedName);
+          }
+        }
+      }
+
+      if (lackingDependencies.length) {
+        await this._resolveDependencies(
+          siloContext,
+          lackingDependencies,
+          parentsNames,
+        );
+      }
+      const loadSequence = previouslyLackingDependencies.filter(
+        (previouslyLackingDependency) =>
+          !lackingDependencies.includes(previouslyLackingDependency),
+      );
+
+      if (loadSequence.length) {
+        siloContext.loadingSequences.push(loadSequence);
+      }
+    } while (lackingDependencies.length);
+
+    return dependenciesDeclarations.reduce(
+      (finalHash, dependencyDeclaration) => {
+        const { serviceName, mappedName, optional } =
+          parseDependencyDeclaration(dependencyDeclaration);
+        const provider = this._getServiceProvider(siloContext, mappedName);
+
+        // We expect a provider here since everything
+        // should be resolved
+        if (!provider) {
+          throw new YError(
+            'E_UNEXPECTED_PROVIDER_STATE',
+            serviceName,
+            parentsNames,
+          );
+        }
+
+        if (
+          !optional &&
+          (!('service' in provider) || 'undefined' === typeof provider.service)
+        ) {
+          throw new YError(
+            'E_UNMATCHED_DEPENDENCY',
+            ...parentsNames,
+            serviceName,
+          );
+        }
+
+        if (
+          !('service' in provider) ||
+          'undefined' === typeof provider.service
+        ) {
+          debug(
+            `${[...parentsNames, serviceName].join(
+              '->',
+            )}: Optional dependency not found.`,
+          );
+        }
+
+        finalHash[serviceName] = provider?.service;
+        return finalHash;
+      },
+      {},
+    );
+  }
+
+  async _loadProvider(
+    siloContext: SiloContext,
+    serviceName: ServiceName,
+    parentsNames: ServiceName[],
+  ): Promise<void> {
+    debug(
+      `${[...parentsNames, serviceName].join('->')}: Loading the provider...`,
+    );
+
+    const initializerState = this._initializersStates[serviceName];
+
+    if (!('initializer' in initializerState) || !initializerState.initializer) {
+      // At that point there should be an initialiser property
+      throw new YError('E_UNEXPECTED_INITIALIZER_STATE', serviceName);
+    }
+
+    const services = await this._loadInitializerDependencies(
+      siloContext,
+      [...parentsNames, serviceName],
+      initializerState.initializer[SPECIAL_PROPS.INJECT],
+      [],
+    );
+
+    if (initializerState.initializer[SPECIAL_PROPS.TYPE] === 'service') {
+      const servicePromise = (
+        initializerState.initializer as ServiceInitializer<
+          Dependencies,
+          Service
+        >
+      )(services);
+
+      if (!servicePromise || !servicePromise.then) {
+        debug('Service initializer did not return a promise:', serviceName);
+        throw new YError('E_BAD_SERVICE_PROMISE', serviceName);
+      }
+
+      const service = await servicePromise;
+
+      if (initializerState.initializer[SPECIAL_PROPS.SINGLETON]) {
+        (
+          initializerState as SingletonInitializerStateDescriptor<any, any>
+        ).singletonInstance = service;
+      } else {
+        (
+          initializerState as SiloedInitializerStateDescriptor<any, any>
+        ).silosInstances[siloContext.index] = { instance: service };
+      }
+    } else if (
+      initializerState.initializer[SPECIAL_PROPS.TYPE] === 'provider'
+    ) {
+      const providerPromise = (
+        initializerState.initializer as ProviderInitializer<
+          Dependencies,
+          Service
+        >
+      )(services);
+
+      if (!providerPromise || !providerPromise.then) {
+        debug('Provider initializer did not return a promise:', serviceName);
+        throw new YError('E_BAD_SERVICE_PROVIDER', serviceName);
+      }
+
+      const provider = await providerPromise;
+
+      if (
+        !provider ||
+        !(typeof provider === 'object') ||
+        !('service' in provider)
+      ) {
+        debug('Provider has no `service` property:', serviceName);
+        throw new YError('E_BAD_SERVICE_PROVIDER', serviceName);
+      }
+
+      if (provider.fatalErrorPromise) {
+        debug('Registering service descriptor error promise:', serviceName);
+        siloContext.errorsPromises.push(provider.fatalErrorPromise);
+      }
+
+      if (initializerState.initializer[SPECIAL_PROPS.SINGLETON]) {
+        (
+          initializerState as SingletonInitializerStateDescriptor<any, any>
+        ).singletonInstance = provider.service;
+        (
+          initializerState as SingletonInitializerStateDescriptor<any, any>
+        ).disposer = provider.dispose;
+        (
+          initializerState as SingletonInitializerStateDescriptor<any, any>
+        ).fatalErrorPromise = provider.fatalErrorPromise;
+      } else {
+        (
+          initializerState as SiloedInitializerStateDescriptor<any, any>
+        ).silosInstances[siloContext.index] = {
+          instance: provider.service,
+          disposer: provider.dispose,
+          fatalErrorPromise: provider.fatalErrorPromise,
+        };
+      }
+    }
+  }
+
+  async _loadInitializer(
+    siloContext: SiloContext,
+    serviceName: ServiceName,
+    parentsNames: ServiceName[],
+  ): Promise<void> {
+    debug(
+      `${[...parentsNames, serviceName].join('->')}: Loading an initializer...`,
+    );
+    if (!this._initializersStates[serviceName]) {
+      // At that point there should be an initialiser state
+      throw new YError('E_UNEXPECTED_INITIALIZER_STATE', serviceName);
+    }
+
+    // At this stage, when no initializer is in the state,
+    //  we know that we may load an autoloaded service
+    if (!('initializer' in this._initializersStates[serviceName])) {
+      debug(
+        `${[...parentsNames, serviceName].join(
+          '->',
+        )}: No registered initializer...`,
+      );
+
+      // The auto loader must only have static dependencies
+      // and we have to do this check here to avoid inifinite loop
+      if (parentsNames.includes(AUTOLOAD)) {
+        this._initializersStates[serviceName].initializer = undefined;
+        debug(
+          `${[...parentsNames, serviceName].join(
+            '->',
+          )}: Won't try to autoload autoloader dependencies...`,
+        );
+        return;
+      }
+
+      const autoloaderState: SingletonInitializerStateDescriptor<any, any> =
+        this._initializersStates[AUTOLOAD];
+
+      this._initializersStates[serviceName] = {
+        dependents: [
+          {
+            silo: siloContext.index,
+            name: RUN_DEPENDENT_NAME,
+            optional: false,
+          },
+        ],
+        autoloaded: !!autoloaderState,
+      };
+
+      if (!autoloaderState) {
+        debug(
+          `${[...parentsNames, serviceName].join(
+            '->',
+          )}: No autoloader found, leaving initializer undefined...`,
+        );
+        this._initializersStates[serviceName].initializer = undefined;
+        return;
+      } else {
+        if (!('instanceLoadPromise' in autoloaderState)) {
+          debug(
+            `${[...parentsNames, serviceName].join(
+              '->',
+            )}: Instanciating the autoloader...`,
+          );
+
+          // Trick to ensure the instanceLoadPromise is set
+          let resolve;
+          autoloaderState.instanceLoadPromise = new Promise((_resolve) => {
+            resolve = _resolve;
+          });
+
+          debug(
+            `${[...parentsNames, serviceName].join(
+              '->',
+            )}: Loaded the autoloader...`,
+          );
+
+          resolve(
+            await this._loadProvider(siloContext, AUTOLOAD, parentsNames),
+          );
+        }
+        await autoloaderState.instanceLoadPromise;
+
+        const autoloader = await this._getServiceProvider<Autoloader<any>>(
+          siloContext,
+          AUTOLOAD,
+        );
+
+        if (!autoloader) {
+          throw new YError('E_UNEXPECTED_AUTOLOADER');
+        }
+
+        try {
+          if (!this._initializersStates[serviceName].initializerLoadPromise) {
+            let resolve;
+            this._initializersStates[serviceName].initializerLoadPromise =
+              new Promise<Initializer<any, any>>((_resolve) => {
+                resolve = _resolve;
+              });
+            debug(
+              `${[...parentsNames, serviceName].join(
+                '->',
+              )}: Autoloading the service...`,
+            );
+            const result = await autoloader.service(serviceName);
+
+            if (
+              typeof result !== 'object' ||
+              !('initializer' in result) ||
+              !('path' in result)
+            ) {
+              throw new YError('E_BAD_AUTOLOADER_RESULT', serviceName, result);
+            }
+
+            const { initializer, path } = result;
+
+            debug(
+              `${[...parentsNames, serviceName].join(
+                '->',
+              )}: Loaded the initializer at path ${path}...`,
+            );
+
+            resolve(initializer);
+          }
+          const initializer = await this._initializersStates[serviceName]
+            .initializerLoadPromise;
+
+          if (initializer) {
+            unwrapInitializerProperties(initializer);
+
+            this._checkInitializerOverride(initializer[SPECIAL_PROPS.NAME]);
+
+            if (initializer[SPECIAL_PROPS.NAME] !== serviceName) {
+              throw new YError(
+                'E_AUTOLOADED_INITIALIZER_MISMATCH',
+                serviceName,
+                initializer[SPECIAL_PROPS.NAME],
+              );
+            }
+
+            if (initializer[SPECIAL_PROPS.TYPE] === 'constant') {
+              this._initializersStates[serviceName].initializer = initializer;
+              (
+                this._initializersStates[
+                  initializer[SPECIAL_PROPS.NAME]
+                ] as SingletonInitializerStateDescriptor<any, any>
+              ).singletonInstance = initializer[SPECIAL_PROPS.VALUE];
+              (
+                this._initializersStates[
+                  initializer[SPECIAL_PROPS.NAME]
+                ] as SingletonInitializerStateDescriptor<any, any>
+              ).instanceLoadPromise = Promise.resolve(
+                initializer[SPECIAL_PROPS.VALUE],
+              );
+            } else {
+              this._checkInitializerDependencies(initializer);
+              this._initializersStates[serviceName].initializer = initializer;
+              if (!initializer[SPECIAL_PROPS.SINGLETON]) {
+                (
+                  this._initializersStates[
+                    serviceName
+                  ] as SiloedInitializerStateDescriptor<any, any>
+                ).silosInstances = {};
+              }
+            }
+          } else {
+            this._initializersStates[serviceName].initializer = initializer;
+          }
+        } catch (err) {
+          if (!['E_UNMATCHED_DEPENDENCY'].includes((err as YError).code)) {
+            throw YError.wrap(
+              err as Error,
+              'E_BAD_AUTOLOADED_INITIALIZER',
+              serviceName,
+            );
+          }
+
+          debug(
+            `${[...parentsNames, serviceName].join(
+              '->',
+            )}: Could not autoload the initializer...`,
+            err,
+          );
+          this._initializersStates[serviceName].initializer = undefined;
+        }
+        return;
+      }
+    }
+
+    const initializerState = this._initializersStates[serviceName];
+
+    if (!initializerState.initializer) {
+      debug(
+        `${[...parentsNames, serviceName].join(
+          '->',
+        )}: Could not find the initializer...`,
+      );
+      initializerState.initializer = undefined;
+      (
+        initializerState as SingletonInitializerStateDescriptor<any, any>
+      ).singletonInstance = undefined;
+    } else if ('initializer' in initializerState) {
+      debug(
+        `${[...parentsNames, serviceName].join('->')}: Initializer ready...`,
+      );
+      if (initializerState.initializer[SPECIAL_PROPS.SINGLETON]) {
+        const singletonInitializerState =
+          initializerState as SingletonInitializerStateDescriptor<any, any>;
+
+        if (!('instanceLoadPromise' in singletonInitializerState)) {
+          singletonInitializerState.instanceLoadPromise = this._loadProvider(
+            siloContext,
+            serviceName,
+            parentsNames,
+          );
+        }
+        await singletonInitializerState.instanceLoadPromise;
+      } else {
+        const siloedInitializerState =
+          initializerState as SiloedInitializerStateDescriptor<any, any>;
+
+        if (!siloedInitializerState.silosInstances[siloContext.index]) {
+          siloedInitializerState.silosInstances[siloContext.index] = {
+            instanceLoadPromise: this._loadProvider(
+              siloContext,
+              serviceName,
+              parentsNames,
+            ),
+          };
+        }
+        await siloedInitializerState.silosInstances[siloContext.index]
+          .instanceLoadPromise;
+      }
+    }
+  }
+
+  async _resolveDependencies(
+    siloContext: SiloContext,
+    loadingServices: ServiceName[],
+    parentsNames: ServiceName[],
+  ): Promise<void> {
+    debug(
+      `Initiating a dependencies load round for silo "${siloContext.index}"'.`,
+    );
+
+    // TODO: add an option to switch from sequential to parallel resolve
+    for (const loadingService of loadingServices) {
+      await this._loadInitializer(siloContext, loadingService, parentsNames);
+    }
   }
 
   /**
@@ -731,12 +1350,14 @@ class Knifecycle {
    * })
    */
   async destroy(): Promise<void> {
-    this.shutdownPromise =
-      this.shutdownPromise ||
+    this._shutdownPromise =
+      this._shutdownPromise ||
       Promise.all(
-        [...this._silosContexts].map(async (siloContext) => {
-          const $dispose = (await siloContext.servicesDescriptors.get(DISPOSE))
-            ?.service as Disposer;
+        Object.keys(this._silosContexts).map(async (siloIndex) => {
+          const siloContext = this._silosContexts[siloIndex];
+          const $dispose = (
+            await this._getServiceProvider(siloContext, DISPOSE)
+          )?.service as Disposer;
 
           return $dispose();
         }),
@@ -744,409 +1365,7 @@ class Knifecycle {
 
     debug('Shutting down Knifecycle instance.');
 
-    return this.shutdownPromise;
-  }
-
-  /**
-   * Initialize or return a service descriptor
-   * @param  {Object}     siloContext
-   * Current execution silo context
-   * @param  {String}     serviceName
-   * Service name.
-   * @param  {Object}     options
-   * Options for service retrieval
-   * @param  {Boolean}    options.injectorContext
-   * Flag indicating the injection were initiated by the $injector
-   * @param  {Boolean}    options.autoloading
-   * Flag to indicating $autoload dependencies on the fly loading
-   * @param  {String}     serviceProvider
-   * Service provider.
-   * @return {Promise}
-   * Service descriptor promise.
-   */
-  async _getServiceDescriptor(
-    siloContext: SiloContext<unknown>,
-    serviceName: ServiceName,
-    {
-      injectorContext,
-      autoloading,
-    }: { injectorContext: boolean; autoloading: boolean },
-  ): Promise<Provider<unknown>> {
-    // Try to get service descriptior early from the silo context
-    let serviceDescriptorPromise =
-      siloContext.servicesDescriptors.get(serviceName);
-    if (serviceDescriptorPromise) {
-      if (autoloading) {
-        debug(
-          `⚠️ - Possible dead lock due to reusing "${serviceName}" from the silo context while autoloading.`,
-        );
-      }
-      return serviceDescriptorPromise;
-    }
-
-    const initializer = await this._findInitializer(siloContext, serviceName, {
-      injectorContext,
-      autoloading,
-    });
-
-    serviceDescriptorPromise = this._pickupSingletonServiceDescriptorPromise(
-      serviceName,
-    ) as Promise<Provider<unknown>>;
-
-    if (serviceDescriptorPromise as Promise<Provider<unknown>> | undefined) {
-      if (autoloading) {
-        debug(
-          `⚠️ - Possible dead lock due to reusing the singleton "${serviceName}" while autoloading.`,
-        );
-      }
-      (this._singletonsServicesHandles.get(serviceName) as Set<string>).add(
-        siloContext.name,
-      );
-    } else {
-      serviceDescriptorPromise =
-        siloContext.servicesDescriptors.get(serviceName);
-    }
-
-    if (serviceDescriptorPromise) {
-      return serviceDescriptorPromise;
-    }
-
-    // The $injector service is mainly intended to be used as a workaround
-    // for unavoidable circular dependencies. It rarely make sense to
-    // instanciate new services at this level so printing a warning for
-    // debug purposes
-    if (injectorContext) {
-      debug(
-        'Warning: Instantiating a new service via the $injector. It may' +
-          ' mean that you no longer need it if your worked around a circular' +
-          ' dependency.',
-      );
-    }
-
-    serviceDescriptorPromise = this._initializeServiceDescriptor(
-      siloContext,
-      serviceName,
-      initializer,
-      {
-        autoloading: autoloading || AUTOLOAD === serviceName,
-        injectorContext,
-      },
-    );
-
-    if (initializer[SPECIAL_PROPS.SINGLETON]) {
-      const handlesSet = new Set<string>();
-
-      handlesSet.add(siloContext.name);
-      this._singletonsServicesHandles.set(serviceName, handlesSet);
-      this._singletonsServicesDescriptors.set(serviceName, {
-        preloaded: false,
-        promise: serviceDescriptorPromise,
-      });
-    } else {
-      siloContext.servicesDescriptors.set(
-        serviceName,
-        serviceDescriptorPromise,
-      );
-    }
-    // Since the autoloader is a bit special it must be pushed here
-    if (AUTOLOAD === serviceName) {
-      siloContext.servicesSequence.unshift([AUTOLOAD]);
-    }
-    return serviceDescriptorPromise;
-  }
-
-  async _findInitializer(
-    siloContext: SiloContext<unknown>,
-    serviceName: ServiceName,
-    {
-      injectorContext,
-      autoloading,
-    }: { injectorContext: boolean; autoloading: boolean },
-  ): Promise<ProviderInitializer<Record<string, unknown>, unknown>> {
-    const initializer = this._initializers.get(serviceName);
-
-    if (initializer) {
-      return initializer;
-    }
-
-    // The auto loader must only have static dependencies
-    // and we have to do this check here to avoid caching
-    // non-autoloading request and then be blocked by an
-    // autoloader dep that waits for that cached load
-    if (autoloading) {
-      throw new YError(E_AUTOLOADER_DYNAMIC_DEPENDENCY, serviceName);
-    }
-
-    debug('No service provider:', serviceName);
-
-    let initializerPromise = this._initializerResolvers.get(serviceName);
-
-    if (initializerPromise) {
-      return await initializerPromise;
-    }
-
-    initializerPromise = (async () => {
-      if (!this._initializers.get(AUTOLOAD)) {
-        throw new YError(E_UNMATCHED_DEPENDENCY, serviceName);
-      }
-      debug(`Loading the $autoload service to lookup for: ${serviceName}.`);
-      try {
-        const autoloadingDescriptor = (await this._getServiceDescriptor(
-          siloContext,
-          AUTOLOAD,
-          { injectorContext, autoloading: true },
-        )) as Provider<
-          Autoloader<Initializer<unknown, Record<string, unknown>>>
-        >;
-        const { initializer, path } = await autoloadingDescriptor.service(
-          serviceName,
-        );
-
-        if (
-          typeof initializer !== 'function' &&
-          (typeof initializer !== 'object' ||
-            initializer[SPECIAL_PROPS.TYPE] !== 'constant')
-        ) {
-          throw new YError(
-            E_BAD_AUTOLOADED_INITIALIZER,
-            serviceName,
-            initializer,
-          );
-        }
-
-        if (initializer[SPECIAL_PROPS.NAME] !== serviceName) {
-          throw new YError(
-            E_AUTOLOADED_INITIALIZER_MISMATCH,
-            serviceName,
-            initializer[SPECIAL_PROPS.NAME],
-          );
-        }
-
-        debug(`Loaded the ${serviceName} initializer at path ${path}.`);
-        this.register(initializer);
-        this._initializerResolvers.delete(serviceName);
-        // Here we need to pick-up the registered initializer to
-        // have a universally usable intitializer
-        return this._initializers.get(serviceName);
-      } catch (err) {
-        debug(`Could not load ${serviceName} via the auto loader.`);
-        throw err;
-      }
-    })() as Promise<ProviderInitializer<Record<string, unknown>, unknown>>;
-
-    this._initializerResolvers.set(
-      serviceName,
-      initializerPromise as Promise<
-        ProviderInitializer<Record<string, unknown>, unknown>
-      >,
-    );
-
-    return await (initializerPromise as Promise<
-      ProviderInitializer<Record<string, unknown>, unknown>
-    >);
-  }
-
-  _pickupSingletonServiceDescriptorPromise(
-    serviceName: ServiceName,
-  ): Promise<Provider<unknown>> | void {
-    const serviceDescriptor =
-      this._singletonsServicesDescriptors.get(serviceName);
-
-    if (!serviceDescriptor) {
-      return;
-    }
-
-    serviceDescriptor.preloaded = false;
-
-    return serviceDescriptor.promise;
-  }
-
-  /**
-   * Initialize a service descriptor
-   * @param  {Object}     siloContext
-   * Current execution silo context
-   * @param  {String}     serviceName
-   * Service name.
-   * @param  {Object}     options
-   * Options for service retrieval
-   * @param  {Boolean}    options.injectorContext
-   * Flag indicating the injection were initiated by the $injector
-   * @param  {Boolean}    options.autoloading
-   * Flag to indicating $autoload dependendencies on the fly loading.
-   * @return {Promise}
-   * Service dependencies hash promise.
-   */
-  async _initializeServiceDescriptor(
-    siloContext: SiloContext<unknown>,
-    serviceName: ServiceName,
-    initializer: ProviderInitializer<Record<string, unknown>, unknown>,
-    {
-      autoloading,
-      injectorContext,
-    }: { autoloading: boolean; injectorContext: boolean },
-  ): Promise<Provider<unknown>> {
-    let serviceDescriptor: Provider<unknown>;
-
-    debug('Initializing a service descriptor:', serviceName);
-
-    try {
-      // A singleton service may use a reserved resource
-      // like a TCP socket. This is why we have to be aware
-      // of singleton services full shutdown before creating
-      // a new one
-
-      await (this._singletonsServicesShutdownsPromises.get(serviceName) ||
-        Promise.resolve());
-      // Anyway delete any shutdown promise before instanciating
-      // a new service
-      this._singletonsServicesShutdownsPromises.delete(serviceName);
-      siloContext.servicesShutdownsPromises.delete(serviceName);
-
-      const servicesHash = await this._initializeDependencies(
-        siloContext,
-        serviceName,
-        initializer[SPECIAL_PROPS.INJECT],
-        { injectorContext, autoloading },
-      );
-
-      debug('Successfully gathered service dependencies:', serviceName);
-
-      serviceDescriptor = await initializer(
-        initializer[SPECIAL_PROPS.INJECT].reduce(
-          (finalHash, dependencyDeclaration) => {
-            const { serviceName, mappedName } = parseDependencyDeclaration(
-              dependencyDeclaration,
-            );
-
-            finalHash[serviceName] = servicesHash[mappedName];
-            return finalHash;
-          },
-          {},
-        ),
-      );
-
-      if (!serviceDescriptor) {
-        debug('Provider did not return a descriptor:', serviceName);
-        return Promise.reject(new YError(E_BAD_SERVICE_PROVIDER, serviceName));
-      }
-      debug('Successfully initialized a service descriptor:', serviceName);
-      if (serviceDescriptor.fatalErrorPromise) {
-        debug('Registering service descriptor error promise:', serviceName);
-        siloContext.errorsPromises.push(serviceDescriptor.fatalErrorPromise);
-      }
-      siloContext.servicesDescriptors.set(
-        serviceName,
-        Promise.resolve(serviceDescriptor),
-      );
-    } catch (err) {
-      debug(
-        'Error initializing a service descriptor:',
-        serviceName,
-        (err as Error).stack || 'no_stack_trace',
-      );
-      if (E_UNMATCHED_DEPENDENCY === (err as YError).code) {
-        throw YError.wrap(
-          err as Error,
-          E_UNMATCHED_DEPENDENCY,
-          ...[serviceName].concat((err as YError).params),
-        );
-      }
-      throw err;
-    }
-    return serviceDescriptor;
-  }
-
-  /**
-   * Initialize a service dependencies
-   * @param  {Object}     siloContext
-   * Current execution silo siloContext
-   * @param  {String}     serviceName
-   * Service name.
-   * @param  {String}     servicesDeclarations
-   * Dependencies declarations.
-   * @param  {Object}     options
-   * Options for service retrieval
-   * @param  {Boolean}    options.injectorContext
-   * Flag indicating the injection were initiated by the $injector
-   * @param  {Boolean}    options.autoloading
-   * Flag to indicating $autoload dependendencies on the fly loading.
-   * @return {Promise}
-   * Service dependencies hash promise.
-   */
-  async _initializeDependencies(
-    siloContext: SiloContext<unknown>,
-    serviceName: ServiceName,
-    servicesDeclarations: DependencyDeclaration[],
-    {
-      injectorContext = false,
-      autoloading = false,
-    }: { autoloading: boolean; injectorContext: boolean },
-  ): Promise<Dependencies> {
-    debug('Initializing dependencies:', serviceName, servicesDeclarations);
-    const servicesDescriptors: (Provider<unknown> | undefined)[] =
-      await Promise.all(
-        servicesDeclarations.map(async (serviceDeclaration) => {
-          const { mappedName, optional } =
-            parseDependencyDeclaration(serviceDeclaration);
-
-          try {
-            const serviceDescriptor = await this._getServiceDescriptor(
-              siloContext,
-              mappedName,
-              {
-                injectorContext,
-                autoloading,
-              },
-            );
-            return serviceDescriptor;
-          } catch (err) {
-            if (
-              optional &&
-              [
-                'E_UNMATCHED_DEPENDENCY',
-                E_AUTOLOADER_DYNAMIC_DEPENDENCY,
-              ].includes((err as YError).code)
-            ) {
-              debug(
-                'Optional dependency not found:',
-                serviceDeclaration,
-                (err as Error).stack || 'no_stack_trace',
-              );
-              return;
-            }
-            throw err;
-          }
-        }),
-      );
-    debug(
-      'Initialized dependencies descriptors:',
-      serviceName,
-      servicesDeclarations,
-      servicesDescriptors,
-    );
-    siloContext.servicesSequence.push(
-      servicesDeclarations
-        .filter((_, index) => servicesDescriptors[index])
-        .map(_pickMappedNameFromDeclaration),
-    );
-
-    const services = await Promise.all(
-      servicesDescriptors.map(async (serviceDescriptor) => {
-        if (!serviceDescriptor) {
-          return undefined;
-        }
-        return serviceDescriptor.service;
-      }),
-    );
-
-    return services.reduce<Record<string, unknown>>((hash, service, index) => {
-      const mappedName = _pickMappedNameFromDeclaration(
-        servicesDeclarations[index],
-      );
-
-      hash[mappedName] = service;
-      return hash;
-    }, {});
+    return this._shutdownPromise;
   }
 }
 
@@ -1193,14 +1412,6 @@ function _pickServiceNameFromDeclaration(
   const { serviceName } = parseDependencyDeclaration(dependencyDeclaration);
 
   return serviceName;
-}
-
-function _pickMappedNameFromDeclaration(
-  dependencyDeclaration: DependencyDeclaration,
-): ServiceName {
-  const { mappedName } = parseDependencyDeclaration(dependencyDeclaration);
-
-  return mappedName;
 }
 
 function _applyShapes(shapes, serviceName) {
@@ -1257,7 +1468,7 @@ function _applyStyles(
   return styles.reduce((classesApplications, style) => {
     if (style.pattern.test(serviceName) && !classesApplications[serviceName]) {
       if (!classes[style.className]) {
-        throw new YError(E_BAD_CLASS, style.className, serviceName);
+        throw new YError('E_BAD_CLASS', style.className, serviceName);
       }
       classesApplications[serviceName] = style.className;
     }
@@ -1266,43 +1477,10 @@ function _applyStyles(
       !classesApplications[dependedServiceName]
     ) {
       if (!classes[style.className]) {
-        throw new YError(E_BAD_CLASS, style.className, dependedServiceName);
+        throw new YError('E_BAD_CLASS', style.className, dependedServiceName);
       }
       classesApplications[dependedServiceName] = style.className;
     }
     return classesApplications;
-  }, {});
-}
-
-function serviceAdapter<
-  S,
-  T extends ServiceInitializer<Record<string, unknown>, S>,
->(
-  serviceName: ServiceName,
-  initializer: T,
-  dependenciesHash: T extends ServiceInitializer<infer D, unknown> ? D : never,
-): Promise<Provider<S>> {
-  const servicePromise = initializer(dependenciesHash);
-
-  if (!servicePromise || !servicePromise.then) {
-    throw new YError(E_BAD_SERVICE_PROMISE, serviceName);
-  }
-
-  return servicePromise.then((_service_) => ({
-    service: _service_,
-  }));
-}
-
-function _buildFinalHash(
-  servicesHash: { [name: string]: unknown },
-  dependenciesDeclarations: DependencyDeclaration[],
-): { [name: string]: unknown } {
-  return dependenciesDeclarations.reduce((finalHash, dependencyDeclaration) => {
-    const { serviceName, mappedName } = parseDependencyDeclaration(
-      dependencyDeclaration,
-    );
-
-    finalHash[serviceName] = servicesHash[mappedName];
-    return finalHash;
   }, {});
 }

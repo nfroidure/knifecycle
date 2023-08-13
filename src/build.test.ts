@@ -3,7 +3,6 @@ import assert from 'assert';
 import { YError } from 'yerror';
 import initInitializerBuilder from './build.js';
 import { Knifecycle, initializer, constant } from './index.js';
-import type { BuildInitializer } from './build.js';
 
 describe('buildInitializer', () => {
   async function aProvider() {
@@ -64,11 +63,96 @@ describe('buildInitializer', () => {
     $.register(initAutoloader);
     $.register(initInitializerBuilder);
 
-    const { buildInitializer } = await $.run<{
-      buildInitializer: BuildInitializer;
-    }>(['buildInitializer']);
+    const { buildInitializer } = await $.run(['buildInitializer']);
 
     const content = await buildInitializer(['dep1', 'finalMappedDep>dep3']);
+    assert.equal(
+      content,
+      `
+// Definition batch #0
+import initDep1 from './services/dep1';
+const NODE_ENV = "development";
+
+// Definition batch #1
+import initDep2 from './services/dep2';
+
+// Definition batch #2
+import initDep3 from './services/dep3';
+
+export async function initialize(services = {}) {
+  // Initialization batch #0
+  const batch0 = {
+    dep1: initDep1({
+    }),
+    NODE_ENV: Promise.resolve(NODE_ENV),
+  };
+
+  await Promise.all(
+    Object.keys(batch0)
+    .map(key => batch0[key])
+  );
+
+  services['dep1'] = await batch0['dep1'];
+  services['NODE_ENV'] = await batch0['NODE_ENV'];
+
+  // Initialization batch #1
+  const batch1 = {
+    dep2: initDep2({
+      dep1: services['dep1'],
+      NODE_ENV: services['NODE_ENV'],
+    }).then(provider => provider.service),
+  };
+
+  await Promise.all(
+    Object.keys(batch1)
+    .map(key => batch1[key])
+  );
+
+  services['dep2'] = await batch1['dep2'];
+
+  // Initialization batch #2
+  const batch2 = {
+    dep3: initDep3({
+      dep2: services['dep2'],
+      dep1: services['dep1'],
+      depOpt: services['depOpt'],
+    }),
+  };
+
+  await Promise.all(
+    Object.keys(batch2)
+    .map(key => batch2[key])
+  );
+
+  services['dep3'] = await batch2['dep3'];
+
+  return {
+    dep1: services['dep1'],
+    finalMappedDep: services['dep3'],
+  };
+}
+`,
+    );
+  });
+
+  // TODO: allow building with internal dependencies
+  test.skip('should work with simple internal services dependencies', async () => {
+    const $ = new Knifecycle();
+
+    $.register(constant('PWD', '~/my-project'));
+    $.register(initAutoloader);
+    $.register(initInitializerBuilder);
+    $.register(constant('$fatalError', {}));
+
+    const { buildInitializer } = await $.run(['buildInitializer']);
+
+    const content = await buildInitializer([
+      'dep1',
+      'finalMappedDep>dep3',
+      '$fatalError',
+      '$dispose',
+      '$siloContext',
+    ]);
     assert.equal(
       content,
       `

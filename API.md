@@ -57,9 +57,6 @@
     * [.toMermaidGraph(options)](#Knifecycle+toMermaidGraph) ⇒ <code>String</code>
     * [.run(dependenciesDeclarations)](#Knifecycle+run) ⇒ <code>Promise</code>
     * [.destroy()](#Knifecycle+destroy) ⇒ <code>Promise</code>
-    * [._getServiceDescriptor(siloContext, serviceName, options, serviceProvider)](#Knifecycle+_getServiceDescriptor) ⇒ <code>Promise</code>
-    * [._initializeServiceDescriptor(siloContext, serviceName, options)](#Knifecycle+_initializeServiceDescriptor) ⇒ <code>Promise</code>
-    * [._initializeDependencies(siloContext, serviceName, servicesDeclarations, options)](#Knifecycle+_initializeDependencies) ⇒ <code>Promise</code>
 
 <a name="new_Knifecycle_new"></a>
 
@@ -164,56 +161,6 @@ $.run(['ENV'])
    $.destroy()
 })
 ```
-<a name="Knifecycle+_getServiceDescriptor"></a>
-
-### knifecycle.\_getServiceDescriptor(siloContext, serviceName, options, serviceProvider) ⇒ <code>Promise</code>
-Initialize or return a service descriptor
-
-**Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
-**Returns**: <code>Promise</code> - Service descriptor promise.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| siloContext | <code>Object</code> | Current execution silo context |
-| serviceName | <code>String</code> | Service name. |
-| options | <code>Object</code> | Options for service retrieval |
-| options.injectorContext | <code>Boolean</code> | Flag indicating the injection were initiated by the $injector |
-| options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependencies on the fly loading |
-| serviceProvider | <code>String</code> | Service provider. |
-
-<a name="Knifecycle+_initializeServiceDescriptor"></a>
-
-### knifecycle.\_initializeServiceDescriptor(siloContext, serviceName, options) ⇒ <code>Promise</code>
-Initialize a service descriptor
-
-**Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
-**Returns**: <code>Promise</code> - Service dependencies hash promise.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| siloContext | <code>Object</code> | Current execution silo context |
-| serviceName | <code>String</code> | Service name. |
-| options | <code>Object</code> | Options for service retrieval |
-| options.injectorContext | <code>Boolean</code> | Flag indicating the injection were initiated by the $injector |
-| options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependendencies on the fly loading. |
-
-<a name="Knifecycle+_initializeDependencies"></a>
-
-### knifecycle.\_initializeDependencies(siloContext, serviceName, servicesDeclarations, options) ⇒ <code>Promise</code>
-Initialize a service dependencies
-
-**Kind**: instance method of [<code>Knifecycle</code>](#Knifecycle)  
-**Returns**: <code>Promise</code> - Service dependencies hash promise.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| siloContext | <code>Object</code> | Current execution silo siloContext |
-| serviceName | <code>String</code> | Service name. |
-| servicesDeclarations | <code>String</code> | Dependencies declarations. |
-| options | <code>Object</code> | Options for service retrieval |
-| options.injectorContext | <code>Boolean</code> | Flag indicating the injection were initiated by the $injector |
-| options.autoloading | <code>Boolean</code> | Flag to indicating $autoload dependendencies on the fly loading. |
-
 <a name="initInitializerBuilder"></a>
 
 ## initInitializerBuilder(services) ⇒ <code>Promise.&lt;function()&gt;</code>
