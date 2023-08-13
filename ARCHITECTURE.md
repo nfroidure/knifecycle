@@ -34,7 +34,10 @@ It is designed to have a low footprint on services code.
  at all since they are just simple functions with annotations
  set as a property.
 
-[See in context](./src/index.ts#L156-L172)
+In fact, the Knifecycle API is aimed to allow to statically
+ build its services load/unload code once in production.
+
+[See in context](./src/index.ts#L193-L212)
 
 
 
@@ -49,7 +52,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.ts#L174-L183)
+[See in context](./src/index.ts#L214-L223)
 
 
 
@@ -101,7 +104,7 @@ The first step to use `knifecycle` is to create a new
 
 Initializers can be of three types:
 - constants: a `constant` initializer resolves to
- a constant value.
+ any constant value.
 - services: a `service` initializer directly
  resolve to the actual service it builds. It can
  be objects, functions or litteral values.
@@ -110,14 +113,15 @@ Initializers can be of three types:
  but also an optional `dispose` property exposing a
  method to properly stop the service and a
  `fatalErrorPromise` that will be rejected if an
- unrecoverable error happens.
+ unrecoverable error happens allowing Knifecycle
+ to terminate.
 
- Initializers can be declared as singletons. This means
-  that they will be instanciated once for all for each
-  executions silos using them (we will cover this
-  topic later on).
+ Initializers can be declared as singletons (constants are
+  of course only singletons). This means that they will be
+  instanciated once for all for each executions silos using
+  them (we will cover this topic later on).
 
-[See in context](./src/index.ts#L250-L273)
+[See in context](./src/index.ts#L302-L326)
 
 
 
@@ -133,7 +137,7 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.ts#L537-L547)
+[See in context](./src/index.ts#L612-L622)
 
 
 
