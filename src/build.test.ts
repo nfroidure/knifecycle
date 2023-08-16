@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test } from '@jest/globals';
 import assert from 'assert';
 import { YError } from 'yerror';
@@ -63,7 +64,7 @@ describe('buildInitializer', () => {
     $.register(initAutoloader);
     $.register(initInitializerBuilder);
 
-    const { buildInitializer } = await $.run(['buildInitializer']);
+    const { buildInitializer } = await $.run<any>(['buildInitializer']);
 
     const content = await buildInitializer(['dep1', 'finalMappedDep>dep3']);
     assert.equal(
@@ -144,7 +145,7 @@ export async function initialize(services = {}) {
     $.register(initInitializerBuilder);
     $.register(constant('$fatalError', {}));
 
-    const { buildInitializer } = await $.run(['buildInitializer']);
+    const { buildInitializer } = await $.run<any>(['buildInitializer']);
 
     const content = await buildInitializer([
       'dep1',
