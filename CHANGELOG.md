@@ -1,3 +1,12 @@
+# [16.0.0](https://github.com/nfroidure/knifecycle/compare/v15.0.1...v16.0.0) (2023-08-16)
+
+
+### Bug Fixes
+
+* **build:** fix deps lock file ([ab9114e](https://github.com/nfroidure/knifecycle/commit/ab9114e2f6d89cffbcf442c1a0199d920a3dc438))
+
+
+
 ## [15.0.1](https://github.com/nfroidure/knifecycle/compare/v15.0.0...v15.0.1) (2023-05-28)
 
 
