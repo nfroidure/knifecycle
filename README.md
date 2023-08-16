@@ -449,7 +449,7 @@ is maybe the best feature of this library ;).
 **Kind**: global class  
 
 * [Knifecycle](#Knifecycle)
-    * [new Knifecycle()](#new_Knifecycle_new)
+    * [new Knifecycle(options)](#new_Knifecycle_new)
     * [.register(initializer)](#Knifecycle+register) ⇒ [<code>Knifecycle</code>](#Knifecycle)
     * [.toMermaidGraph(options)](#Knifecycle+toMermaidGraph) ⇒ <code>String</code>
     * [.run(dependenciesDeclarations)](#Knifecycle+run) ⇒ <code>Promise</code>
@@ -457,10 +457,16 @@ is maybe the best feature of this library ;).
 
 <a name="new_Knifecycle_new"></a>
 
-### new Knifecycle()
+### new Knifecycle(options)
 Create a new Knifecycle instance
 
 **Returns**: [<code>Knifecycle</code>](#Knifecycle) - The Knifecycle instance  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| options | <code>Object</code> | An object with options |
+| options.sequential | <code>boolean</code> | Allows to load dependencies sequentially (usefull for debugging) |
+
 **Example**  
 ```js
 import Knifecycle from 'knifecycle'

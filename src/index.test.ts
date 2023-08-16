@@ -14,8 +14,8 @@ import {
   service,
   provider,
   singleton,
-  FatalErrorService,
 } from './index.js';
+import type { Provider, FatalErrorService } from './index.js';
 import { ALLOWED_INITIALIZER_TYPES } from './util.js';
 
 describe('Knifecycle', () => {
@@ -35,6 +35,55 @@ describe('Knifecycle', () => {
     };
   }
 
+  const nullService = service<{ time: any }, null>(
+    async function nullService({ time }: { time: any }): Promise<null> {
+      // service run for its side effect only
+      time();
+      return null;
+    },
+    'nullService',
+    ['time'],
+  );
+  const undefinedService = service<{ time: any }, undefined>(
+    async function undefinedService({
+      time,
+    }: {
+      time: any;
+    }): Promise<undefined> {
+      // service run for its side effect only
+      time();
+      return undefined;
+    },
+    'undefinedService',
+    ['time'],
+  );
+  const nullProvider = provider<{ time: any }, null>(
+    async function nullProvider({
+      time,
+    }: {
+      time: any;
+    }): Promise<Provider<null>> {
+      // provider run for its side effect only
+      time();
+      return { service: null };
+    },
+    'nullProvider',
+    ['time'],
+  );
+  const undefinedProvider = provider<{ time: any }, undefined>(
+    async function undefinedProvider({
+      time,
+    }: {
+      time: any;
+    }): Promise<Provider<undefined>> {
+      // service run for its side effect only
+      time();
+      return { service: undefined };
+    },
+    'undefinedProvider',
+    ['time'],
+  );
+
   beforeEach(() => {
     $ = new Knifecycle();
   });
@@ -52,14 +101,14 @@ describe('Knifecycle', () => {
       test('should work when overriding a previously set constant', async () => {
         $.register(constant('TEST', 1));
         $.register(constant('TEST', 2));
-        assert.deepEqual(await $.run(['TEST']), {
+        assert.deepEqual(await $.run<any>(['TEST']), {
           TEST: 2,
         });
       });
 
       test('should fail when overriding an initialized constant', async () => {
         $.register(constant('TEST', 1));
-        assert.deepEqual(await $.run(['TEST']), {
+        assert.deepEqual(await $.run<any>(['TEST']), {
           TEST: 1,
         });
 
@@ -84,13 +133,13 @@ describe('Knifecycle', () => {
         $.register(service(async () => () => 1, 'test'));
         $.register(service(async () => () => 2, 'test'));
 
-        const { test } = await $.run(['test']);
+        const { test } = await $.run<any>(['test']);
         assert.deepEqual(test(), 2);
       });
 
       test('should fail when overriding an initialized service', async () => {
         $.register(service(async () => () => 1, 'test'));
-        const { test } = await $.run(['test']);
+        const { test } = await $.run<any>(['test']);
         assert.deepEqual(test(), 1);
 
         try {
@@ -136,7 +185,7 @@ describe('Knifecycle', () => {
           ),
         );
 
-        const { test } = await $.run(['test']);
+        const { test } = await $.run<any>(['test']);
         assert.deepEqual(test, 2);
       });
 
@@ -167,7 +216,7 @@ describe('Knifecycle', () => {
           ),
         );
 
-        const { test } = await $.run(['test']);
+        const { test } = await $.run<any>(['test']);
         assert.deepEqual(test, 2);
       });
 
@@ -186,7 +235,7 @@ describe('Knifecycle', () => {
           ),
         );
 
-        const { test } = await $.run(['test']);
+        const { test } = await $.run<any>(['test']);
         assert.deepEqual(test, 1);
 
         try {
@@ -446,7 +495,7 @@ describe('Knifecycle', () => {
 
   describe('run', () => {
     test('should work with no dependencies', async () => {
-      const dependencies = await $.run([]);
+      const dependencies = await $.run<any>([]);
 
       assert.deepEqual(dependencies, {});
     });
@@ -455,7 +504,7 @@ describe('Knifecycle', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
 
-      const dependencies = await $.run(['time', 'ENV']);
+      const dependencies = await $.run<any>(['time', 'ENV']);
 
       assert.deepEqual(Object.keys(dependencies), ['time', 'ENV']);
       assert.deepEqual(dependencies, {
@@ -474,7 +523,7 @@ describe('Knifecycle', () => {
       $.register(service(wrappedSampleService, 'sample'));
       $.register(constant('time', time));
 
-      const dependencies = await $.run(['sample']);
+      const dependencies = await $.run<any>(['sample']);
 
       assert.deepEqual(Object.keys(dependencies), ['sample']);
       assert.deepEqual(dependencies, {
@@ -485,19 +534,10 @@ describe('Knifecycle', () => {
     test('should work with null service dependencies', async () => {
       const time = jest.fn();
 
-      const nullService = service<{ time: any }, null>(
-        async function nullService({ time }: { time: any }): Promise<null> {
-          // service run for its side effect only
-          time();
-          return null;
-        },
-        'nullService',
-        ['time'],
-      );
-      $.register(service(nullService, 'nullService'));
+      $.register(nullService);
       $.register(constant('time', time));
 
-      const dependencies = await $.run(['nullService']);
+      const dependencies = await $.run<any>(['nullService']);
 
       assert.deepEqual(Object.keys(dependencies), ['nullService']);
       assert.deepEqual(dependencies, {
@@ -505,30 +545,39 @@ describe('Knifecycle', () => {
       });
     });
 
-    test('should work with undefined service dependencies', async () => {
+    test('should work with null provider dependencies', async () => {
       const time = jest.fn();
 
-      const undefinedService = service<{ time: any }, undefined>(
-        async function undefinedService({
-          time,
-        }: {
-          time: any;
-        }): Promise<undefined> {
-          // service run for its side effect only
-          time();
-          return undefined;
-        },
-        'undefinedService',
-        ['time'],
-      );
-      $.register(service(undefinedService, 'undefinedService'));
+      $.register(nullProvider);
       $.register(constant('time', time));
 
-      const dependencies = await $.run(['undefinedService']);
+      const dependencies = await $.run<any>(['nullProvider']);
 
-      assert.deepEqual(Object.keys(dependencies), ['undefinedService']);
+      assert.deepEqual(Object.keys(dependencies), ['nullProvider']);
+      assert.deepEqual(dependencies, {
+        nullProvider: null,
+      });
+    });
+
+    test('should work with undefined dependencies', async () => {
+      const time = jest.fn();
+
+      $.register(undefinedService);
+      $.register(undefinedProvider);
+      $.register(constant('time', time));
+
+      const dependencies = await $.run<any>([
+        'undefinedService',
+        'undefinedProvider',
+      ]);
+
+      assert.deepEqual(Object.keys(dependencies), [
+        'undefinedService',
+        'undefinedProvider',
+      ]);
       assert.deepEqual(dependencies, {
         undefinedService: undefined,
+        undefinedProvider: undefined,
       });
     });
 
@@ -537,7 +586,7 @@ describe('Knifecycle', () => {
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
-      const dependencies = await $.run(['time', 'hash']);
+      const dependencies = await $.run<any>(['time', 'hash']);
 
       assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
       assert.deepEqual(dependencies, {
@@ -552,7 +601,7 @@ describe('Knifecycle', () => {
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV', '?DEBUG']));
 
-      const dependencies = await $.run(['time', 'hash']);
+      const dependencies = await $.run<any>(['time', 'hash']);
 
       assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
       assert.deepEqual(dependencies, {
@@ -566,7 +615,7 @@ describe('Knifecycle', () => {
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV', '?DEBUG']));
 
-      const dependencies = await $.run(['time', 'hash']);
+      const dependencies = await $.run<any>(['time', 'hash']);
 
       assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
       assert.deepEqual(dependencies, {
@@ -585,7 +634,7 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash4', ['hash3']));
       $.register(provider(hashProvider, 'hash5', ['hash4']));
 
-      const dependencies = await $.run(['hash5', 'time']);
+      const dependencies = await $.run<any>(['hash5', 'time']);
 
       assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
     });
@@ -599,7 +648,7 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash2', ['ENV', 'time']));
       $.register(provider(hashProvider, 'hash3', ['ENV', 'time']));
 
-      const dependencies = await $.run(['hash', 'hash2', 'hash3', 'time']);
+      const dependencies = await $.run<any>(['hash', 'hash2', 'hash3', 'time']);
 
       assert.deepEqual(Object.keys(dependencies), [
         'hash',
@@ -625,7 +674,7 @@ describe('Knifecycle', () => {
       $.register(provider(providerStub, 'mappedStub', ['stub2>mappedStub2']));
       $.register(provider(providerStub2, 'mappedStub2'));
 
-      const dependencies = await $.run(['stub>mappedStub']);
+      const dependencies = await $.run<any>(['stub>mappedStub']);
 
       assert.deepEqual(dependencies, {
         stub: 'stub',
@@ -648,7 +697,7 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'aHash2', ['ENV', 'hash>aHash']));
       $.register(provider(hashProvider, 'aHash3', ['ENV', 'hash>aHash']));
 
-      const dependencies = await $.run([
+      const dependencies = await $.run<any>([
         'hash2>aHash2',
         'hash3>aHash3',
         'time>aTime',
@@ -662,7 +711,7 @@ describe('Knifecycle', () => {
       $.register(service((() => undefined) as any, 'lol'));
 
       try {
-        await $.run(['lol']);
+        await $.run<any>(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROMISE');
@@ -673,7 +722,7 @@ describe('Knifecycle', () => {
     test('should fail with bad provider', async () => {
       $.register(provider((() => undefined) as any, 'lol'));
       try {
-        await $.run(['lol']);
+        await $.run<any>(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROVIDER');
@@ -684,7 +733,7 @@ describe('Knifecycle', () => {
     test('should fail with bad service in a provider', async () => {
       $.register(provider(() => Promise.resolve() as any, 'lol'));
       try {
-        await $.run(['lol']);
+        await $.run<any>(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROVIDER');
@@ -694,7 +743,7 @@ describe('Knifecycle', () => {
 
     test('should fail with undeclared dependencies', async () => {
       try {
-        await $.run(['lol']);
+        await $.run<any>(['lol']);
         throw new Error('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.deepEqual((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
@@ -709,7 +758,7 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash2', ['ENV', 'lol']));
 
       try {
-        await $.run(['time', 'hash']);
+        await $.run<any>(['time', 'hash']);
         throw new Error('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.deepEqual((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
@@ -757,7 +806,12 @@ describe('Knifecycle', () => {
         };
       }
 
-      const { process, db } = await $.run(['time', 'hash', 'db', 'process']);
+      const { process, db } = await $.run<any>([
+        'time',
+        'hash',
+        'db',
+        'process',
+      ]);
 
       try {
         db.reject(new Error('E_DB_ERROR'));
@@ -770,6 +824,33 @@ describe('Knifecycle', () => {
   });
 
   describe('autoload', () => {
+    test('should work with constant dependencies', async () => {
+      const autoloaderInitializer = initializer(
+        {
+          type: 'service',
+          name: '$autoload',
+          inject: [],
+          singleton: true,
+        },
+        async () => async (serviceName) => ({
+          path: `/path/of/${serviceName}`,
+          initializer: constant(serviceName, `value_of:${serviceName}`),
+        }),
+      );
+      const wrappedProvider = provider(hashProvider, 'hash', ['ENV', '?DEBUG']);
+
+      $.register(autoloaderInitializer);
+      $.register(wrappedProvider);
+
+      const dependencies = await $.run<any>(['time', 'hash']);
+
+      assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
+      assert.deepEqual(dependencies, {
+        hash: { ENV: 'value_of:ENV', DEBUG: 'value_of:DEBUG' },
+        time: 'value_of:time',
+      });
+    });
+
     test('should work with lacking autoloaded dependencies', async () => {
       const autoloaderInitializer = initializer(
         {
@@ -797,7 +878,7 @@ describe('Knifecycle', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
 
-      const dependencies = await $.run(['time', 'hash']);
+      const dependencies = await $.run<any>(['time', 'hash']);
 
       assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
       assert.deepEqual(dependencies, {
@@ -839,7 +920,7 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash3', ['hash2']));
       $.register(provider(hashProvider, 'hash5', ['hash4']));
 
-      const dependencies = await $.run(['hash5', 'time']);
+      const dependencies = await $.run<any>(['hash5', 'time']);
 
       assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
     });
@@ -853,7 +934,7 @@ describe('Knifecycle', () => {
           {
             type: 'service',
             name: '$autoload',
-            inject: ['?ENV', 'DEBUG'],
+            inject: ['DEBUG'],
             singleton: true,
           },
           async () => async (serviceName) => {
@@ -876,7 +957,7 @@ describe('Knifecycle', () => {
         ),
       );
 
-      const dependencies = await $.run(['hash', '?ENV']);
+      const dependencies = await $.run<any>(['hash', '?ENV']);
 
       assert.deepEqual(Object.keys(dependencies), ['hash', 'ENV']);
     });
@@ -909,15 +990,106 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash', ['hash1', 'hash2', 'hash3']));
       $.register(provider(hashProvider, 'hash_', ['hash1', 'hash2', 'hash3']));
 
-      const dependencies = await $.run(['hash', 'hash_', 'hash3']);
+      const dependencies = await $.run<any>(['hash', 'hash_', 'hash3']);
 
       assert.deepEqual(timeServiceStub.args, [[{}]]);
       assert.deepEqual(Object.keys(dependencies), ['hash', 'hash_', 'hash3']);
     });
 
+    test('should work with null service dependencies', async () => {
+      const time = jest.fn();
+
+      $.register(constant('time', time));
+
+      $.register(
+        initializer(
+          {
+            name: '$autoload',
+            type: 'service',
+            singleton: true,
+          },
+          async () => async (serviceName) => ({
+            path: `/path/to/${serviceName}`,
+            initializer: nullService,
+          }),
+        ),
+      );
+
+      const dependencies = await $.run<any>(['nullService']);
+
+      assert.deepEqual(Object.keys(dependencies), ['nullService']);
+      assert.deepEqual(dependencies, {
+        nullService: null,
+      });
+    });
+
+    test('should work with null provider dependencies', async () => {
+      const time = jest.fn();
+
+      $.register(constant('time', time));
+
+      $.register(
+        initializer(
+          {
+            name: '$autoload',
+            type: 'service',
+            singleton: true,
+          },
+          async () => async (serviceName) => ({
+            path: `/path/to/${serviceName}`,
+            initializer: nullProvider,
+          }),
+        ),
+      );
+
+      const dependencies = await $.run<any>(['nullProvider']);
+
+      assert.deepEqual(Object.keys(dependencies), ['nullProvider']);
+      assert.deepEqual(dependencies, {
+        nullProvider: null,
+      });
+    });
+
+    test('should work with undefined dependencies', async () => {
+      const time = jest.fn();
+
+      $.register(
+        initializer(
+          {
+            name: '$autoload',
+            type: 'service',
+            singleton: true,
+          },
+          async () => async (serviceName) => ({
+            path: `/path/to/${serviceName}`,
+            initializer:
+              serviceName === 'undefinedService'
+                ? undefinedService
+                : undefinedProvider,
+          }),
+        ),
+      );
+
+      $.register(constant('time', time));
+
+      const dependencies = await $.run<any>([
+        'undefinedService',
+        'undefinedProvider',
+      ]);
+
+      assert.deepEqual(Object.keys(dependencies), [
+        'undefinedService',
+        'undefinedProvider',
+      ]);
+      assert.deepEqual(dependencies, {
+        undefinedService: undefined,
+        undefinedProvider: null,
+      });
+    });
+
     test('should fail when autoload does not exists', async () => {
       try {
-        await $.run(['test']);
+        await $.run<any>(['test']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.equal((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
@@ -940,7 +1112,7 @@ describe('Knifecycle', () => {
       );
 
       try {
-        await $.run(['test']);
+        await $.run<any>(['test']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
@@ -969,7 +1141,7 @@ describe('Knifecycle', () => {
       );
 
       try {
-        await $.run(['test']);
+        await $.run<any>(['test']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
@@ -1002,17 +1174,18 @@ describe('Knifecycle', () => {
       );
 
       try {
-        await $.run(['test']);
+        await $.run<any>(['test']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
         assert.deepEqual((err as YError).params, ['test']);
         assert.equal(
           ((err as YError).wrappedErrors[0] as YError).code,
-          'E_BAD_INITIALIZER',
+          'E_AUTOLOADED_INITIALIZER_MISMATCH',
         );
         assert.deepEqual(((err as YError).wrappedErrors[0] as YError).params, [
-          'not_an_initializer',
+          'test',
+          undefined,
         ]);
       }
     });
@@ -1041,7 +1214,7 @@ describe('Knifecycle', () => {
       );
 
       try {
-        await $.run(['test']);
+        await $.run<any>(['test']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
@@ -1081,15 +1254,11 @@ describe('Knifecycle', () => {
       );
 
       try {
-        await $.run(['test']);
+        await $.run<any>(['test']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.equal((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
-        assert.deepEqual((err as YError).params, [
-          '__run__',
-          '$autoload',
-          'ENV',
-        ]);
+        assert.deepEqual((err as YError).params, ['__run__', 'test']);
       }
     });
 
@@ -1116,7 +1285,7 @@ describe('Knifecycle', () => {
         ),
       );
 
-      const dependencies = await $.run(['test']);
+      const dependencies = await $.run<any>(['test']);
 
       assert.deepEqual(Object.keys(dependencies), ['test']);
     });
@@ -1159,7 +1328,7 @@ describe('Knifecycle', () => {
         ),
       );
 
-      const dependencies = await $.run(['test', 'log']);
+      const dependencies = await $.run<any>(['test', 'log']);
 
       assert.deepEqual(Object.keys(dependencies), ['test', 'log']);
     });
@@ -1171,7 +1340,7 @@ describe('Knifecycle', () => {
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
-      const dependencies = await $.run(['time', 'hash', '$injector']);
+      const dependencies = await $.run<any>(['time', 'hash', '$injector']);
       assert.deepEqual(Object.keys(dependencies), [
         'time',
         'hash',
@@ -1188,7 +1357,7 @@ describe('Knifecycle', () => {
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
-      const dependencies = await $.run(['time', 'hash', '$injector']);
+      const dependencies = await $.run<any>(['time', 'hash', '$injector']);
       assert.deepEqual(Object.keys(dependencies), [
         'time',
         'hash',
@@ -1208,7 +1377,7 @@ describe('Knifecycle', () => {
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
-      const dependencies = await $.run(['time', 'hash', '$injector']);
+      const dependencies = await $.run<any>(['time', 'hash', '$injector']);
       assert.deepEqual(Object.keys(dependencies), [
         'time',
         'hash',
@@ -1231,7 +1400,7 @@ describe('Knifecycle', () => {
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
-      const dependencies = await $.run(['time', '$injector']);
+      const dependencies = await $.run<any>(['time', '$injector']);
       assert.deepEqual(Object.keys(dependencies), ['time', '$injector']);
 
       const injectDependencies = await dependencies.$injector(['time', 'hash']);
@@ -1247,13 +1416,13 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
       const [{ hash }, { hash: sameHash }] = await Promise.all([
-        $.run(['hash']),
-        $.run(['hash']),
+        $.run<any>(['hash']),
+        $.run<any>(['hash']),
       ]);
 
       assert.notEqual(hash, sameHash);
 
-      const { hash: yaSameHash } = await $.run(['hash']);
+      const { hash: yaSameHash } = await $.run<any>(['hash']);
 
       assert.notEqual(hash, yaSameHash);
     });
@@ -1265,15 +1434,15 @@ describe('Knifecycle', () => {
 
       const [{ hash, hash2 }, { hash: sameHash, hash2: sameHash2 }] =
         await Promise.all([
-          $.run(['hash']),
-          $.run(['hash']),
-          $.run(['hash2']),
-          $.run(['hash2']),
+          $.run<any>(['hash']),
+          $.run<any>(['hash']),
+          $.run<any>(['hash2']),
+          $.run<any>(['hash2']),
         ]);
       assert.equal(hash, sameHash);
       assert.equal(hash2, sameHash2);
 
-      const { hash: yaSameHash } = await $.run(['hash']);
+      const { hash: yaSameHash } = await $.run<any>(['hash']);
 
       assert.equal(hash, yaSameHash);
     });
@@ -1282,7 +1451,7 @@ describe('Knifecycle', () => {
   describe('destroy', () => {
     test('should work even with one silo and no dependencies', async () => {
       assert.equal(typeof $.destroy, 'function');
-      const dependencies = await $.run(['$instance']);
+      const dependencies = await $.run<any>(['$instance']);
 
       await dependencies.$instance.destroy();
     });
@@ -1295,9 +1464,9 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash2', ['ENV']));
 
       const [dependencies] = await Promise.all([
-        $.run(['$instance']),
-        $.run(['ENV', 'hash', 'hash1', 'time']),
-        $.run(['ENV', 'hash', 'hash2']),
+        $.run<any>(['$instance']),
+        $.run<any>(['ENV', 'hash', 'hash1', 'time']),
+        $.run<any>(['ENV', 'hash', 'hash2']),
       ]);
 
       assert.equal(typeof dependencies.$instance.destroy, 'function');
@@ -1313,9 +1482,9 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash2', ['ENV']));
 
       const dependenciesBuckets = await Promise.all([
-        $.run(['$instance']),
-        $.run(['$instance', 'ENV', 'hash', 'hash1', 'time']),
-        $.run(['$instance', 'ENV', 'hash', 'hash2']),
+        $.run<any>(['$instance']),
+        $.run<any>(['$instance', 'ENV', 'hash', 'hash1', 'time']),
+        $.run<any>(['$instance', 'ENV', 'hash', 'hash2']),
       ]);
 
       await Promise.all(
@@ -1333,9 +1502,9 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash2', ['ENV']));
 
       const [dependencies1, dependencies2] = await Promise.all([
-        $.run(['$instance']),
-        $.run(['$dispose', 'ENV', 'hash', 'hash1', 'time']),
-        $.run(['ENV', 'hash', 'hash2']),
+        $.run<any>(['$instance']),
+        $.run<any>(['$dispose', 'ENV', 'hash', 'hash1', 'time']),
+        $.run<any>(['ENV', 'hash', 'hash2']),
       ]);
 
       await Promise.all([
@@ -1350,14 +1519,14 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash', ['ENV']));
       $.register(provider(hashProvider, 'hash1', ['ENV']));
 
-      const dependencies = await $.run(['$instance']);
+      const dependencies = await $.run<any>(['$instance']);
 
       assert.equal(typeof dependencies.$instance.destroy, 'function');
 
       await dependencies.$instance.destroy();
 
       try {
-        await $.run(['ENV', 'hash', 'hash1']);
+        await $.run<any>(['ENV', 'hash', 'hash1']);
         throw new YError('E_UNEXPECTED_SUCCES');
       } catch (err) {
         assert.equal((err as YError).code, 'E_INSTANCE_DESTROYED');
@@ -1367,7 +1536,7 @@ describe('Knifecycle', () => {
 
   describe('$dispose', () => {
     test('should work with no dependencies', async () => {
-      const dependencies = await $.run(['$dispose']);
+      const dependencies = await $.run<any>(['$dispose']);
       assert.equal(typeof dependencies.$dispose, 'function');
 
       return dependencies.$dispose();
@@ -1377,7 +1546,7 @@ describe('Knifecycle', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
 
-      const dependencies = await $.run(['time', 'ENV', '$dispose']);
+      const dependencies = await $.run<any>(['time', 'ENV', '$dispose']);
       assert.deepEqual(Object.keys(dependencies), ['time', 'ENV', '$dispose']);
 
       await dependencies.$dispose();
@@ -1388,7 +1557,7 @@ describe('Knifecycle', () => {
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
-      const dependencies = await $.run(['time', 'hash', '$dispose']);
+      const dependencies = await $.run<any>(['time', 'hash', '$dispose']);
       assert.deepEqual(Object.keys(dependencies), ['time', 'hash', '$dispose']);
 
       await dependencies.$dispose();
@@ -1430,7 +1599,7 @@ describe('Knifecycle', () => {
         ),
       );
 
-      const dependencies = await $.run([
+      const dependencies = await $.run<any>([
         'hash5',
         'time',
         '$dispose',
@@ -1483,7 +1652,7 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash1', ['shutdownChecker']));
       $.register(provider(hashProvider, 'hash2', ['shutdownChecker']));
 
-      const dependencies = await $.run([
+      const dependencies = await $.run<any>([
         'hash1',
         'hash2',
         '$dispose',
@@ -1541,7 +1710,7 @@ describe('Knifecycle', () => {
         ),
       );
 
-      const dependencies = await $.run(['hash2', '$dispose']);
+      const dependencies = await $.run<any>(['hash2', '$dispose']);
       assert.deepEqual(Object.keys(dependencies), ['hash2', '$dispose']);
       await dependencies.$dispose();
 
@@ -1557,14 +1726,14 @@ describe('Knifecycle', () => {
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV'], true));
 
-      const { hash } = await $.run(['time', 'hash']);
-      const dependencies = await $.run(['time', 'hash', '$dispose']);
+      const { hash } = await $.run<any>(['time', 'hash']);
+      const dependencies = await $.run<any>(['time', 'hash', '$dispose']);
 
       assert.equal(dependencies.hash, hash);
 
       await dependencies.$dispose();
 
-      const newDependencies = await $.run(['time', 'hash']);
+      const newDependencies = await $.run<any>(['time', 'hash']);
       assert.equal(newDependencies.hash, hash);
     });
 
@@ -1573,11 +1742,11 @@ describe('Knifecycle', () => {
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV'], true));
 
-      const { hash, $dispose } = await $.run(['time', 'hash', '$dispose']);
+      const { hash, $dispose } = await $.run<any>(['time', 'hash', '$dispose']);
 
       await $dispose();
 
-      const dependencies = await $.run(['time', 'hash']);
+      const dependencies = await $.run<any>(['time', 'hash']);
       assert.notEqual(dependencies.hash, hash);
     });
   });
