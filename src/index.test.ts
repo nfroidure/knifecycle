@@ -494,705 +494,347 @@ describe('Knifecycle', () => {
   });
 
   describe('run', () => {
-    test('should work with no dependencies', async () => {
-      const dependencies = await $.run<any>([]);
+    describe('should work', () => {
+      test('with no dependencies', async () => {
+        const dependencies = await $.run<any>([]);
 
-      assert.deepEqual(dependencies, {});
-    });
-
-    test('should work with constant dependencies', async () => {
-      $.register(constant('ENV', ENV));
-      $.register(constant('time', time));
-
-      const dependencies = await $.run<any>(['time', 'ENV']);
-
-      assert.deepEqual(Object.keys(dependencies), ['time', 'ENV']);
-      assert.deepEqual(dependencies, {
-        ENV,
-        time,
+        assert.deepEqual(dependencies, {});
       });
-    });
 
-    test('should work with service dependencies', async () => {
-      const wrappedSampleService = inject<{ time: any }, string>(
-        ['time'],
-        async function sampleService({ time }: { time: any }) {
-          return Promise.resolve(typeof time);
-        },
-      );
-      $.register(service(wrappedSampleService, 'sample'));
-      $.register(constant('time', time));
+      test('with constant dependencies', async () => {
+        $.register(constant('ENV', ENV));
+        $.register(constant('time', time));
 
-      const dependencies = await $.run<any>(['sample']);
+        const dependencies = await $.run<any>(['time', 'ENV']);
 
-      assert.deepEqual(Object.keys(dependencies), ['sample']);
-      assert.deepEqual(dependencies, {
-        sample: 'function',
+        assert.deepEqual(Object.keys(dependencies), ['time', 'ENV']);
+        assert.deepEqual(dependencies, {
+          ENV,
+          time,
+        });
       });
-    });
 
-    test('should work with null service dependencies', async () => {
-      const time = jest.fn();
-
-      $.register(nullService);
-      $.register(constant('time', time));
-
-      const dependencies = await $.run<any>(['nullService']);
-
-      assert.deepEqual(Object.keys(dependencies), ['nullService']);
-      assert.deepEqual(dependencies, {
-        nullService: null,
-      });
-    });
-
-    test('should work with null provider dependencies', async () => {
-      const time = jest.fn();
-
-      $.register(nullProvider);
-      $.register(constant('time', time));
-
-      const dependencies = await $.run<any>(['nullProvider']);
-
-      assert.deepEqual(Object.keys(dependencies), ['nullProvider']);
-      assert.deepEqual(dependencies, {
-        nullProvider: null,
-      });
-    });
-
-    test('should work with undefined dependencies', async () => {
-      const time = jest.fn();
-
-      $.register(undefinedService);
-      $.register(undefinedProvider);
-      $.register(constant('time', time));
-
-      const dependencies = await $.run<any>([
-        'undefinedService',
-        'undefinedProvider',
-      ]);
-
-      assert.deepEqual(Object.keys(dependencies), [
-        'undefinedService',
-        'undefinedProvider',
-      ]);
-      assert.deepEqual(dependencies, {
-        undefinedService: undefined,
-        undefinedProvider: undefined,
-      });
-    });
-
-    test('should work with simple dependencies', async () => {
-      $.register(constant('ENV', ENV));
-      $.register(constant('time', time));
-      $.register(provider(hashProvider, 'hash', ['ENV']));
-
-      const dependencies = await $.run<any>(['time', 'hash']);
-
-      assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-      assert.deepEqual(dependencies, {
-        hash: { ENV },
-        time,
-      });
-    });
-
-    test('should work with given optional dependencies', async () => {
-      $.register(constant('ENV', ENV));
-      $.register(constant('DEBUG', {}));
-      $.register(constant('time', time));
-      $.register(provider(hashProvider, 'hash', ['ENV', '?DEBUG']));
-
-      const dependencies = await $.run<any>(['time', 'hash']);
-
-      assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-      assert.deepEqual(dependencies, {
-        hash: { ENV, DEBUG: {} },
-        time,
-      });
-    });
-
-    test('should work with lacking optional dependencies', async () => {
-      $.register(constant('ENV', ENV));
-      $.register(constant('time', time));
-      $.register(provider(hashProvider, 'hash', ['ENV', '?DEBUG']));
-
-      const dependencies = await $.run<any>(['time', 'hash']);
-
-      assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-      assert.deepEqual(dependencies, {
-        hash: { ENV, DEBUG: undefined },
-        time,
-      });
-    });
-
-    test('should work with deeper dependencies', async () => {
-      $.register(constant('ENV', ENV));
-      $.register(constant('time', time));
-      $.register(provider(hashProvider, 'hash', ['ENV']));
-      $.register(provider(hashProvider, 'hash1', ['hash']));
-      $.register(provider(hashProvider, 'hash2', ['hash1']));
-      $.register(provider(hashProvider, 'hash3', ['hash2']));
-      $.register(provider(hashProvider, 'hash4', ['hash3']));
-      $.register(provider(hashProvider, 'hash5', ['hash4']));
-
-      const dependencies = await $.run<any>(['hash5', 'time']);
-
-      assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
-    });
-
-    test('should instanciate services once', async () => {
-      const timeServiceStub = sinon.spy(timeService);
-
-      $.register(constant('ENV', ENV));
-      $.register(service(timeServiceStub, 'time'));
-      $.register(provider(hashProvider, 'hash', ['ENV', 'time']));
-      $.register(provider(hashProvider, 'hash2', ['ENV', 'time']));
-      $.register(provider(hashProvider, 'hash3', ['ENV', 'time']));
-
-      const dependencies = await $.run<any>(['hash', 'hash2', 'hash3', 'time']);
-
-      assert.deepEqual(Object.keys(dependencies), [
-        'hash',
-        'hash2',
-        'hash3',
-        'time',
-      ]);
-      assert.deepEqual(timeServiceStub.args, [[{}]]);
-    });
-
-    test('should instanciate a single mapped service', async () => {
-      const providerStub = sinon.stub().returns(
-        Promise.resolve({
-          service: 'stub',
-        }),
-      );
-      const providerStub2 = sinon.stub().returns(
-        Promise.resolve({
-          service: 'stub2',
-        }),
-      );
-
-      $.register(provider(providerStub, 'mappedStub', ['stub2>mappedStub2']));
-      $.register(provider(providerStub2, 'mappedStub2'));
-
-      const dependencies = await $.run<any>(['stub>mappedStub']);
-
-      assert.deepEqual(dependencies, {
-        stub: 'stub',
-      });
-      assert.deepEqual(providerStub.args, [
-        [
-          {
-            stub2: 'stub2',
+      test('with service dependencies', async () => {
+        const wrappedSampleService = inject<{ time: any }, string>(
+          ['time'],
+          async function sampleService({ time }: { time: any }) {
+            return Promise.resolve(typeof time);
           },
-        ],
-      ]);
-    });
+        );
+        $.register(service(wrappedSampleService, 'sample'));
+        $.register(constant('time', time));
 
-    test('should instanciate several services with mappings', async () => {
-      const timeServiceStub = sinon.spy(timeService);
+        const dependencies = await $.run<any>(['sample']);
 
-      $.register(constant('ENV', ENV));
-      $.register(singleton(service(timeServiceStub, 'aTime')));
-      $.register(provider(hashProvider, 'aHash', ['ENV', 'time>aTime']));
-      $.register(provider(hashProvider, 'aHash2', ['ENV', 'hash>aHash']));
-      $.register(provider(hashProvider, 'aHash3', ['ENV', 'hash>aHash']));
+        assert.deepEqual(Object.keys(dependencies), ['sample']);
+        assert.deepEqual(dependencies, {
+          sample: 'function',
+        });
+      });
 
-      const dependencies = await $.run<any>([
-        'hash2>aHash2',
-        'hash3>aHash3',
-        'time>aTime',
-      ]);
+      test('with null service dependencies', async () => {
+        const time = jest.fn();
 
-      assert.deepEqual(Object.keys(dependencies), ['hash2', 'hash3', 'time']);
-      assert.deepEqual(timeServiceStub.args, [[{}]]);
-    });
+        $.register(nullService);
+        $.register(constant('time', time));
 
-    test('should fail with bad service', async () => {
-      $.register(service((() => undefined) as any, 'lol'));
+        const dependencies = await $.run<any>(['nullService']);
 
-      try {
-        await $.run<any>(['lol']);
-        throw new Error('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROMISE');
-        assert.deepEqual((err as YError).params, ['lol']);
-      }
-    });
+        assert.deepEqual(Object.keys(dependencies), ['nullService']);
+        assert.deepEqual(dependencies, {
+          nullService: null,
+        });
+      });
 
-    test('should fail with bad provider', async () => {
-      $.register(provider((() => undefined) as any, 'lol'));
-      try {
-        await $.run<any>(['lol']);
-        throw new Error('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROVIDER');
-        assert.deepEqual((err as YError).params, ['lol']);
-      }
-    });
+      test('with null provider dependencies', async () => {
+        const time = jest.fn();
 
-    test('should fail with bad service in a provider', async () => {
-      $.register(provider(() => Promise.resolve() as any, 'lol'));
-      try {
-        await $.run<any>(['lol']);
-        throw new Error('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROVIDER');
-        assert.deepEqual((err as YError).params, ['lol']);
-      }
-    });
+        $.register(nullProvider);
+        $.register(constant('time', time));
 
-    test('should fail with undeclared dependencies', async () => {
-      try {
-        await $.run<any>(['lol']);
-        throw new Error('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.deepEqual((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
-        assert.deepEqual((err as YError).params, ['__run__', 'lol']);
-      }
-    });
+        const dependencies = await $.run<any>(['nullProvider']);
 
-    test('should fail with undeclared dependencies upstream', async () => {
-      $.register(constant('ENV', ENV));
-      $.register(constant('time', time));
-      $.register(provider(hashProvider, 'hash', ['ENV', 'hash2']));
-      $.register(provider(hashProvider, 'hash2', ['ENV', 'lol']));
+        assert.deepEqual(Object.keys(dependencies), ['nullProvider']);
+        assert.deepEqual(dependencies, {
+          nullProvider: null,
+        });
+      });
 
-      try {
-        await $.run<any>(['time', 'hash']);
-        throw new Error('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.deepEqual((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
-        assert.deepEqual((err as YError).params, [
-          '__run__',
+      test('with undefined dependencies', async () => {
+        const time = jest.fn();
+
+        $.register(undefinedService);
+        $.register(undefinedProvider);
+        $.register(constant('time', time));
+
+        const dependencies = await $.run<any>([
+          'undefinedService',
+          'undefinedProvider',
+        ]);
+
+        assert.deepEqual(Object.keys(dependencies), [
+          'undefinedService',
+          'undefinedProvider',
+        ]);
+        assert.deepEqual(dependencies, {
+          undefinedService: undefined,
+          undefinedProvider: undefined,
+        });
+      });
+
+      test('with simple dependencies', async () => {
+        $.register(constant('ENV', ENV));
+        $.register(constant('time', time));
+        $.register(provider(hashProvider, 'hash', ['ENV']));
+
+        const dependencies = await $.run<any>(['time', 'hash']);
+
+        assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
+        assert.deepEqual(dependencies, {
+          hash: { ENV },
+          time,
+        });
+      });
+
+      test('with given optional dependencies', async () => {
+        $.register(constant('ENV', ENV));
+        $.register(constant('DEBUG', {}));
+        $.register(constant('time', time));
+        $.register(provider(hashProvider, 'hash', ['ENV', '?DEBUG']));
+
+        const dependencies = await $.run<any>(['time', 'hash']);
+
+        assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
+        assert.deepEqual(dependencies, {
+          hash: { ENV, DEBUG: {} },
+          time,
+        });
+      });
+
+      test('with lacking optional dependencies', async () => {
+        $.register(constant('ENV', ENV));
+        $.register(constant('time', time));
+        $.register(provider(hashProvider, 'hash', ['ENV', '?DEBUG']));
+
+        const dependencies = await $.run<any>(['time', 'hash']);
+
+        assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
+        assert.deepEqual(dependencies, {
+          hash: { ENV, DEBUG: undefined },
+          time,
+        });
+      });
+
+      test('with deeper dependencies', async () => {
+        $.register(constant('ENV', ENV));
+        $.register(constant('time', time));
+        $.register(provider(hashProvider, 'hash', ['ENV']));
+        $.register(provider(hashProvider, 'hash1', ['hash']));
+        $.register(provider(hashProvider, 'hash2', ['hash1']));
+        $.register(provider(hashProvider, 'hash3', ['hash2']));
+        $.register(provider(hashProvider, 'hash4', ['hash3']));
+        $.register(provider(hashProvider, 'hash5', ['hash4']));
+
+        const dependencies = await $.run<any>(['hash5', 'time']);
+
+        assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
+      });
+
+      test('and instanciate services once', async () => {
+        const timeServiceStub = sinon.spy(timeService);
+
+        $.register(constant('ENV', ENV));
+        $.register(service(timeServiceStub, 'time'));
+        $.register(provider(hashProvider, 'hash', ['ENV', 'time']));
+        $.register(provider(hashProvider, 'hash2', ['ENV', 'time']));
+        $.register(provider(hashProvider, 'hash3', ['ENV', 'time']));
+
+        const dependencies = await $.run<any>([
           'hash',
           'hash2',
-          'lol',
+          'hash3',
+          'time',
         ]);
-      }
+
+        assert.deepEqual(Object.keys(dependencies), [
+          'hash',
+          'hash2',
+          'hash3',
+          'time',
+        ]);
+        assert.deepEqual(timeServiceStub.args, [[{}]]);
+      });
+
+      test('and instanciate a single mapped service', async () => {
+        const providerStub = sinon.stub().returns(
+          Promise.resolve({
+            service: 'stub',
+          }),
+        );
+        const providerStub2 = sinon.stub().returns(
+          Promise.resolve({
+            service: 'stub2',
+          }),
+        );
+
+        $.register(provider(providerStub, 'mappedStub', ['stub2>mappedStub2']));
+        $.register(provider(providerStub2, 'mappedStub2'));
+
+        const dependencies = await $.run<any>(['stub>mappedStub']);
+
+        assert.deepEqual(dependencies, {
+          stub: 'stub',
+        });
+        assert.deepEqual(providerStub.args, [
+          [
+            {
+              stub2: 'stub2',
+            },
+          ],
+        ]);
+      });
+
+      test('and instanciate several services with mappings', async () => {
+        const timeServiceStub = sinon.spy(timeService);
+
+        $.register(constant('ENV', ENV));
+        $.register(singleton(service(timeServiceStub, 'aTime')));
+        $.register(provider(hashProvider, 'aHash', ['ENV', 'time>aTime']));
+        $.register(provider(hashProvider, 'aHash2', ['ENV', 'hash>aHash']));
+        $.register(provider(hashProvider, 'aHash3', ['ENV', 'hash>aHash']));
+
+        const dependencies = await $.run<any>([
+          'hash2>aHash2',
+          'hash3>aHash3',
+          'time>aTime',
+        ]);
+
+        assert.deepEqual(Object.keys(dependencies), ['hash2', 'hash3', 'time']);
+        assert.deepEqual(timeServiceStub.args, [[{}]]);
+      });
     });
+    describe('should fail', () => {
+      test('with bad service', async () => {
+        $.register(service((() => undefined) as any, 'lol'));
 
-    test('should provide a fatal error handler', async () => {
-      $.register(constant('ENV', ENV));
-      $.register(constant('time', time));
-      $.register(provider(hashProvider, 'hash', ['ENV']));
-      $.register(provider(dbProvider, 'db', ['ENV']));
-      $.register(provider(processProvider, 'process', ['$fatalError']));
+        try {
+          await $.run<any>(['lol']);
+          throw new Error('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROMISE');
+          assert.deepEqual((err as YError).params, ['lol']);
+        }
+      });
 
-      function processProvider({
-        $fatalError,
-      }: {
-        $fatalError: FatalErrorService;
-      }) {
-        return Promise.resolve({
-          service: {
-            fatalErrorPromise: $fatalError.promise,
-          },
-        });
-      }
+      test('with bad provider', async () => {
+        $.register(provider((() => undefined) as any, 'lol'));
+        try {
+          await $.run<any>(['lol']);
+          throw new Error('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROVIDER');
+          assert.deepEqual((err as YError).params, ['lol']);
+        }
+      });
 
-      async function dbProvider({ ENV }: { ENV: Record<string, string> }) {
-        let service;
-        const fatalErrorPromise = new Promise<void>((resolve, reject) => {
-          service = {
-            resolve,
-            reject,
-            ENV,
+      test('with bad service in a provider', async () => {
+        $.register(provider(() => Promise.resolve() as any, 'lol'));
+        try {
+          await $.run<any>(['lol']);
+          throw new Error('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROVIDER');
+          assert.deepEqual((err as YError).params, ['lol']);
+        }
+      });
+
+      test('with undeclared dependencies', async () => {
+        try {
+          await $.run<any>(['lol']);
+          throw new Error('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.deepEqual((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
+          assert.deepEqual((err as YError).params, ['__run__', 'lol']);
+        }
+      });
+
+      test('with undeclared dependencies upstream', async () => {
+        $.register(constant('ENV', ENV));
+        $.register(constant('time', time));
+        $.register(provider(hashProvider, 'hash', ['ENV', 'hash2']));
+        $.register(provider(hashProvider, 'hash2', ['ENV', 'lol']));
+
+        try {
+          await $.run<any>(['time', 'hash']);
+          throw new Error('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.deepEqual((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
+          assert.deepEqual((err as YError).params, [
+            '__run__',
+            'hash',
+            'hash2',
+            'lol',
+          ]);
+        }
+      });
+
+      test('and provide a fatal error handler', async () => {
+        $.register(constant('ENV', ENV));
+        $.register(constant('time', time));
+        $.register(provider(hashProvider, 'hash', ['ENV']));
+        $.register(provider(dbProvider, 'db', ['ENV']));
+        $.register(provider(processProvider, 'process', ['$fatalError']));
+
+        function processProvider({
+          $fatalError,
+        }: {
+          $fatalError: FatalErrorService;
+        }) {
+          return Promise.resolve({
+            service: {
+              fatalErrorPromise: $fatalError.promise,
+            },
+          });
+        }
+
+        async function dbProvider({ ENV }: { ENV: Record<string, string> }) {
+          let service;
+          const fatalErrorPromise = new Promise<void>((resolve, reject) => {
+            service = {
+              resolve,
+              reject,
+              ENV,
+            };
+          });
+
+          return {
+            service,
+            fatalErrorPromise,
           };
-        });
+        }
 
-        return {
-          service,
-          fatalErrorPromise,
-        };
-      }
+        const { process, db } = await $.run<any>([
+          'time',
+          'hash',
+          'db',
+          'process',
+        ]);
 
-      const { process, db } = await $.run<any>([
-        'time',
-        'hash',
-        'db',
-        'process',
-      ]);
-
-      try {
-        db.reject(new Error('E_DB_ERROR'));
-        await process.fatalErrorPromise;
-        throw new Error('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.deepEqual((err as Error).message, 'E_DB_ERROR');
-      }
+        try {
+          db.reject(new Error('E_DB_ERROR'));
+          await process.fatalErrorPromise;
+          throw new Error('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.deepEqual((err as Error).message, 'E_DB_ERROR');
+        }
+      });
     });
   });
 
   describe('autoload', () => {
-    test('should work with constant dependencies', async () => {
-      const autoloaderInitializer = initializer(
-        {
-          type: 'service',
-          name: '$autoload',
-          inject: [],
-          singleton: true,
-        },
-        async () => async (serviceName) => ({
-          path: `/path/of/${serviceName}`,
-          initializer: constant(serviceName, `value_of:${serviceName}`),
-        }),
-      );
-      const wrappedProvider = provider(hashProvider, 'hash', ['ENV', '?DEBUG']);
-
-      $.register(autoloaderInitializer);
-      $.register(wrappedProvider);
-
-      const dependencies = await $.run<any>(['time', 'hash']);
-
-      assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-      assert.deepEqual(dependencies, {
-        hash: { ENV: 'value_of:ENV', DEBUG: 'value_of:DEBUG' },
-        time: 'value_of:time',
-      });
-    });
-
-    test('should work with lacking autoloaded dependencies', async () => {
-      const autoloaderInitializer = initializer(
-        {
-          type: 'service',
-          name: '$autoload',
-          inject: [],
-          singleton: true,
-        },
-        async () => async (serviceName) => ({
-          path: '/path/of/debug',
-          initializer: initializer(
-            {
-              type: 'service',
-              name: 'DEBUG',
-              inject: [],
-            },
-            async () => 'THE_DEBUG:' + serviceName,
-          ),
-        }),
-      );
-      const wrappedProvider = provider(hashProvider, 'hash', ['ENV', '?DEBUG']);
-
-      $.register(autoloaderInitializer);
-      $.register(wrappedProvider);
-      $.register(constant('ENV', ENV));
-      $.register(constant('time', time));
-
-      const dependencies = await $.run<any>(['time', 'hash']);
-
-      assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-      assert.deepEqual(dependencies, {
-        hash: { ENV, DEBUG: 'THE_DEBUG:DEBUG' },
-        time,
-      });
-    });
-
-    test('should work with deeper several lacking dependencies', async () => {
-      $.register(
-        initializer(
-          {
-            name: '$autoload',
-            type: 'service',
-            singleton: true,
-          },
-          async () => async (serviceName) => ({
-            path: `/path/to/${serviceName}`,
-            initializer: initializer(
-              {
-                type: 'provider',
-                name: serviceName,
-                inject:
-                  'hash2' === serviceName
-                    ? ['hash1']
-                    : 'hash4' === serviceName
-                    ? ['hash3']
-                    : [],
-              },
-              hashProvider,
-            ),
-          }),
-        ),
-      );
-      $.register(constant('ENV', ENV));
-      $.register(constant('time', time));
-      $.register(provider(hashProvider, 'hash', ['ENV']));
-      $.register(provider(hashProvider, 'hash1', ['hash']));
-      $.register(provider(hashProvider, 'hash3', ['hash2']));
-      $.register(provider(hashProvider, 'hash5', ['hash4']));
-
-      const dependencies = await $.run<any>(['hash5', 'time']);
-
-      assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
-    });
-
-    test('should work with various dependencies', async () => {
-      $.register(provider(hashProvider, 'hash', ['hash2']));
-      $.register(provider(hashProvider, 'hash3', ['?ENV']));
-      $.register(constant('DEBUG', 1));
-      $.register(
-        initializer(
-          {
-            type: 'service',
-            name: '$autoload',
-            inject: ['DEBUG'],
-            singleton: true,
-          },
-          async () => async (serviceName) => {
-            if ('ENV' === serviceName) {
-              throw new YError('E_UNMATCHED_DEPENDENCY');
-            }
-
-            return {
-              path: '/path/of/debug',
-              initializer: initializer(
-                {
-                  type: 'service',
-                  name: 'hash2',
-                  inject: ['hash3'],
-                },
-                async () => 'THE_HASH:' + serviceName,
-              ),
-            };
-          },
-        ),
-      );
-
-      const dependencies = await $.run<any>(['hash', '?ENV']);
-
-      assert.deepEqual(Object.keys(dependencies), ['hash', 'ENV']);
-    });
-
-    test('should instanciate services once', async () => {
-      $.register(
-        initializer(
-          {
-            name: '$autoload',
-            type: 'service',
-            singleton: true,
-          },
-          async () => async (serviceName) => ({
-            path: `/path/to/${serviceName}`,
-            initializer: initializer(
-              {
-                type: 'provider',
-                name: serviceName,
-                inject: ['ENV', 'time'],
-              },
-              hashProvider,
-            ),
-          }),
-        ),
-      );
-      const timeServiceStub = sinon.spy(timeService);
-
-      $.register(constant('ENV', ENV));
-      $.register(service(timeServiceStub, 'time'));
-      $.register(provider(hashProvider, 'hash', ['hash1', 'hash2', 'hash3']));
-      $.register(provider(hashProvider, 'hash_', ['hash1', 'hash2', 'hash3']));
-
-      const dependencies = await $.run<any>(['hash', 'hash_', 'hash3']);
-
-      assert.deepEqual(timeServiceStub.args, [[{}]]);
-      assert.deepEqual(Object.keys(dependencies), ['hash', 'hash_', 'hash3']);
-    });
-
-    test('should work with null service dependencies', async () => {
-      const time = jest.fn();
-
-      $.register(constant('time', time));
-
-      $.register(
-        initializer(
-          {
-            name: '$autoload',
-            type: 'service',
-            singleton: true,
-          },
-          async () => async (serviceName) => ({
-            path: `/path/to/${serviceName}`,
-            initializer: nullService,
-          }),
-        ),
-      );
-
-      const dependencies = await $.run<any>(['nullService']);
-
-      assert.deepEqual(Object.keys(dependencies), ['nullService']);
-      assert.deepEqual(dependencies, {
-        nullService: null,
-      });
-    });
-
-    test('should work with null provider dependencies', async () => {
-      const time = jest.fn();
-
-      $.register(constant('time', time));
-
-      $.register(
-        initializer(
-          {
-            name: '$autoload',
-            type: 'service',
-            singleton: true,
-          },
-          async () => async (serviceName) => ({
-            path: `/path/to/${serviceName}`,
-            initializer: nullProvider,
-          }),
-        ),
-      );
-
-      const dependencies = await $.run<any>(['nullProvider']);
-
-      assert.deepEqual(Object.keys(dependencies), ['nullProvider']);
-      assert.deepEqual(dependencies, {
-        nullProvider: null,
-      });
-    });
-
-    test('should work with undefined dependencies', async () => {
-      const time = jest.fn();
-
-      $.register(
-        initializer(
-          {
-            name: '$autoload',
-            type: 'service',
-            singleton: true,
-          },
-          async () => async (serviceName) => ({
-            path: `/path/to/${serviceName}`,
-            initializer:
-              serviceName === 'undefinedService'
-                ? undefinedService
-                : undefinedProvider,
-          }),
-        ),
-      );
-
-      $.register(constant('time', time));
-
-      const dependencies = await $.run<any>([
-        'undefinedService',
-        'undefinedProvider',
-      ]);
-
-      assert.deepEqual(Object.keys(dependencies), [
-        'undefinedService',
-        'undefinedProvider',
-      ]);
-      assert.deepEqual(dependencies, {
-        undefinedService: undefined,
-        undefinedProvider: null,
-      });
-    });
-
-    test('should fail when autoload does not exists', async () => {
-      try {
-        await $.run<any>(['test']);
-        throw new YError('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.equal((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
-      }
-    });
-
-    test('should fail when autoloaded dependencies are not found', async () => {
-      $.register(
-        initializer(
-          {
-            type: 'service',
-            name: '$autoload',
-            inject: [],
-            singleton: true,
-          },
-          async () => async (serviceName) => {
-            throw new YError('E_CANNOT_AUTOLOAD', serviceName);
-          },
-        ),
-      );
-
-      try {
-        await $.run<any>(['test']);
-        throw new YError('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
-        assert.deepEqual((err as YError).params, ['test']);
-        assert.equal(
-          ((err as YError).wrappedErrors[0] as YError).code,
-          'E_CANNOT_AUTOLOAD',
-        );
-        assert.deepEqual(((err as YError).wrappedErrors[0] as YError).params, [
-          'test',
-        ]);
-      }
-    });
-
-    test('should fail when the autoloader returns bad data', async () => {
-      $.register(
-        initializer(
-          {
-            type: 'service',
-            name: '$autoload',
-            inject: [],
-            singleton: true,
-          },
-          async () => async () => 'not_an_initializer',
-        ),
-      );
-
-      try {
-        await $.run<any>(['test']);
-        throw new YError('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
-        assert.deepEqual((err as YError).params, ['test']);
-        assert.equal(
-          ((err as YError).wrappedErrors[0] as YError).code,
-          'E_BAD_AUTOLOADER_RESULT',
-        );
-        assert.deepEqual(((err as YError).wrappedErrors[0] as YError).params, [
-          'test',
-          'not_an_initializer',
-        ]);
-      }
-    });
-
-    test('should fail when autoloaded dependencies are not initializers', async () => {
-      $.register(
-        initializer(
-          {
-            type: 'service',
-            name: '$autoload',
-            inject: [],
-            singleton: true,
-          },
-          async () => async () => ({
-            initializer: 'not_an_initializer',
-            path: '/path/to/initializer',
-          }),
-        ),
-      );
-
-      try {
-        await $.run<any>(['test']);
-        throw new YError('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
-        assert.deepEqual((err as YError).params, ['test']);
-        assert.equal(
-          ((err as YError).wrappedErrors[0] as YError).code,
-          'E_AUTOLOADED_INITIALIZER_MISMATCH',
-        );
-        assert.deepEqual(((err as YError).wrappedErrors[0] as YError).params, [
-          'test',
-          undefined,
-        ]);
-      }
-    });
-
-    test('should fail when autoloaded dependencies are not right initializers', async () => {
-      $.register(
-        initializer(
+    describe('should work', () => {
+      test('with constant dependencies', async () => {
+        const autoloaderInitializer = initializer(
           {
             type: 'service',
             name: '$autoload',
@@ -1200,43 +842,33 @@ describe('Knifecycle', () => {
             singleton: true,
           },
           async () => async (serviceName) => ({
-            path: '/path/of/debug',
-            initializer: initializer(
-              {
-                type: 'service',
-                name: 'not-' + serviceName,
-                inject: [],
-              },
-              async () => 'THE_TEST:' + serviceName,
-            ),
+            path: `/path/of/${serviceName}`,
+            initializer: constant(serviceName, `value_of:${serviceName}`),
           }),
-        ),
-      );
-
-      try {
-        await $.run<any>(['test']);
-        throw new YError('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
-        assert.deepEqual((err as YError).params, ['test']);
-        assert.equal(
-          ((err as YError).wrappedErrors[0] as YError).code,
-          'E_AUTOLOADED_INITIALIZER_MISMATCH',
         );
-        assert.deepEqual(((err as YError).wrappedErrors[0] as YError).params, [
-          'test',
-          'not-test',
+        const wrappedProvider = provider(hashProvider, 'hash', [
+          'ENV',
+          '?DEBUG',
         ]);
-      }
-    });
 
-    test('should fail when autoload depends on existing autoloaded dependencies', async () => {
-      $.register(
-        initializer(
+        $.register(autoloaderInitializer);
+        $.register(wrappedProvider);
+
+        const dependencies = await $.run<any>(['time', 'hash']);
+
+        assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
+        assert.deepEqual(dependencies, {
+          hash: { ENV: 'value_of:ENV', DEBUG: 'value_of:DEBUG' },
+          time: 'value_of:time',
+        });
+      });
+
+      test('with lacking autoloaded dependencies', async () => {
+        const autoloaderInitializer = initializer(
           {
             type: 'service',
             name: '$autoload',
-            inject: ['ENV'],
+            inject: [],
             singleton: true,
           },
           async () => async (serviceName) => ({
@@ -1250,87 +882,476 @@ describe('Knifecycle', () => {
               async () => 'THE_DEBUG:' + serviceName,
             ),
           }),
-        ),
-      );
+        );
+        const wrappedProvider = provider(hashProvider, 'hash', [
+          'ENV',
+          '?DEBUG',
+        ]);
 
-      try {
-        await $.run<any>(['test']);
-        throw new YError('E_UNEXPECTED_SUCCESS');
-      } catch (err) {
-        assert.equal((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
-        assert.deepEqual((err as YError).params, ['__run__', 'test']);
-      }
+        $.register(autoloaderInitializer);
+        $.register(wrappedProvider);
+        $.register(constant('ENV', ENV));
+        $.register(constant('time', time));
+
+        const dependencies = await $.run<any>(['time', 'hash']);
+
+        assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
+        assert.deepEqual(dependencies, {
+          hash: { ENV, DEBUG: 'THE_DEBUG:DEBUG' },
+          time,
+        });
+      });
+
+      test('with deeper several lacking dependencies', async () => {
+        $.register(
+          initializer(
+            {
+              name: '$autoload',
+              type: 'service',
+              singleton: true,
+            },
+            async () => async (serviceName) => ({
+              path: `/path/to/${serviceName}`,
+              initializer: initializer(
+                {
+                  type: 'provider',
+                  name: serviceName,
+                  inject:
+                    'hash2' === serviceName
+                      ? ['hash1']
+                      : 'hash4' === serviceName
+                      ? ['hash3']
+                      : [],
+                },
+                hashProvider,
+              ),
+            }),
+          ),
+        );
+        $.register(constant('ENV', ENV));
+        $.register(constant('time', time));
+        $.register(provider(hashProvider, 'hash', ['ENV']));
+        $.register(provider(hashProvider, 'hash1', ['hash']));
+        $.register(provider(hashProvider, 'hash3', ['hash2']));
+        $.register(provider(hashProvider, 'hash5', ['hash4']));
+
+        const dependencies = await $.run<any>(['hash5', 'time']);
+
+        assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
+      });
+
+      test('with various dependencies', async () => {
+        $.register(provider(hashProvider, 'hash', ['hash2']));
+        $.register(provider(hashProvider, 'hash3', ['?ENV']));
+        $.register(constant('DEBUG', 1));
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: ['DEBUG'],
+              singleton: true,
+            },
+            async () => async (serviceName) => {
+              if ('ENV' === serviceName) {
+                throw new YError('E_UNMATCHED_DEPENDENCY');
+              }
+
+              return {
+                path: '/path/of/debug',
+                initializer: initializer(
+                  {
+                    type: 'service',
+                    name: 'hash2',
+                    inject: ['hash3'],
+                  },
+                  async () => 'THE_HASH:' + serviceName,
+                ),
+              };
+            },
+          ),
+        );
+
+        const dependencies = await $.run<any>(['hash', '?ENV']);
+
+        assert.deepEqual(Object.keys(dependencies), ['hash', 'ENV']);
+      });
+
+      test('and instanciate services once', async () => {
+        $.register(
+          initializer(
+            {
+              name: '$autoload',
+              type: 'service',
+              singleton: true,
+            },
+            async () => async (serviceName) => ({
+              path: `/path/to/${serviceName}`,
+              initializer: initializer(
+                {
+                  type: 'provider',
+                  name: serviceName,
+                  inject: ['ENV', 'time'],
+                },
+                hashProvider,
+              ),
+            }),
+          ),
+        );
+        const timeServiceStub = sinon.spy(timeService);
+
+        $.register(constant('ENV', ENV));
+        $.register(service(timeServiceStub, 'time'));
+        $.register(provider(hashProvider, 'hash', ['hash1', 'hash2', 'hash3']));
+        $.register(
+          provider(hashProvider, 'hash_', ['hash1', 'hash2', 'hash3']),
+        );
+
+        const dependencies = await $.run<any>(['hash', 'hash_', 'hash3']);
+
+        assert.deepEqual(timeServiceStub.args, [[{}]]);
+        assert.deepEqual(Object.keys(dependencies), ['hash', 'hash_', 'hash3']);
+      });
+
+      test('with null service dependencies', async () => {
+        const time = jest.fn();
+
+        $.register(constant('time', time));
+
+        $.register(
+          initializer(
+            {
+              name: '$autoload',
+              type: 'service',
+              singleton: true,
+            },
+            async () => async (serviceName) => ({
+              path: `/path/to/${serviceName}`,
+              initializer: nullService,
+            }),
+          ),
+        );
+
+        const dependencies = await $.run<any>(['nullService']);
+
+        assert.deepEqual(Object.keys(dependencies), ['nullService']);
+        assert.deepEqual(dependencies, {
+          nullService: null,
+        });
+      });
+
+      test('with null provider dependencies', async () => {
+        const time = jest.fn();
+
+        $.register(constant('time', time));
+
+        $.register(
+          initializer(
+            {
+              name: '$autoload',
+              type: 'service',
+              singleton: true,
+            },
+            async () => async (serviceName) => ({
+              path: `/path/to/${serviceName}`,
+              initializer: nullProvider,
+            }),
+          ),
+        );
+
+        const dependencies = await $.run<any>(['nullProvider']);
+
+        assert.deepEqual(Object.keys(dependencies), ['nullProvider']);
+        assert.deepEqual(dependencies, {
+          nullProvider: null,
+        });
+      });
+
+      test('with undefined dependencies', async () => {
+        const time = jest.fn();
+
+        $.register(
+          initializer(
+            {
+              name: '$autoload',
+              type: 'service',
+              singleton: true,
+            },
+            async () => async (serviceName) => ({
+              path: `/path/to/${serviceName}`,
+              initializer:
+                serviceName === 'undefinedService'
+                  ? undefinedService
+                  : undefinedProvider,
+            }),
+          ),
+        );
+
+        $.register(constant('time', time));
+
+        const dependencies = await $.run<any>([
+          'undefinedService',
+          'undefinedProvider',
+        ]);
+
+        assert.deepEqual(Object.keys(dependencies), [
+          'undefinedService',
+          'undefinedProvider',
+        ]);
+        assert.deepEqual(dependencies, {
+          undefinedService: undefined,
+          undefinedProvider: null,
+        });
+      });
+
+      test('when autoload depends on optional and unexisting autoloaded dependencies', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: ['?ENV'],
+              singleton: true,
+            },
+            async () => async (serviceName) => ({
+              path: `/path/of/${serviceName}`,
+              initializer: initializer(
+                {
+                  type: 'service',
+                  name: serviceName,
+                  inject: [],
+                },
+                async () => `THE_${serviceName.toUpperCase()}:` + serviceName,
+              ),
+            }),
+          ),
+        );
+
+        const dependencies = await $.run<any>(['test']);
+
+        assert.deepEqual(Object.keys(dependencies), ['test']);
+      });
+
+      test('when autoload depends on deeper optional and unexisting autoloaded dependencies', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: 'log',
+              inject: ['?LOG_ROUTING', '?LOGGER', '?debug'],
+              singleton: true,
+            },
+            async () => {
+              return () => undefined;
+            },
+          ),
+        );
+        $.register(constant('LOGGER', 'LOGGER_CONSTANT'));
+        $.register(constant('debug', 'debug_value'));
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: ['?ENV', '?log'],
+              singleton: true,
+            },
+            async () => async (serviceName) => ({
+              path: `/path/of/${serviceName}`,
+              initializer: initializer(
+                {
+                  type: 'service',
+                  name: serviceName,
+                  inject: [],
+                },
+                async () => `THE_${serviceName.toUpperCase()}:` + serviceName,
+              ),
+            }),
+          ),
+        );
+
+        const dependencies = await $.run<any>(['test', 'log']);
+
+        assert.deepEqual(Object.keys(dependencies), ['test', 'log']);
+      });
     });
 
-    test('should work when autoload depends on optional and unexisting autoloaded dependencies', async () => {
-      $.register(
-        initializer(
-          {
-            type: 'service',
-            name: '$autoload',
-            inject: ['?ENV'],
-            singleton: true,
-          },
-          async () => async (serviceName) => ({
-            path: `/path/of/${serviceName}`,
-            initializer: initializer(
-              {
-                type: 'service',
-                name: serviceName,
-                inject: [],
-              },
-              async () => `THE_${serviceName.toUpperCase()}:` + serviceName,
-            ),
-          }),
-        ),
-      );
+    describe('should fail', () => {
+      test('when autoload does not exists', async () => {
+        try {
+          await $.run<any>(['test']);
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.equal((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
+        }
+      });
 
-      const dependencies = await $.run<any>(['test']);
+      test('when autoloaded dependencies are not found', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: [],
+              singleton: true,
+            },
+            async () => async (serviceName) => {
+              throw new YError('E_CANNOT_AUTOLOAD', serviceName);
+            },
+          ),
+        );
 
-      assert.deepEqual(Object.keys(dependencies), ['test']);
-    });
+        try {
+          await $.run<any>(['test']);
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
+          assert.deepEqual((err as YError).params, ['test']);
+          assert.equal(
+            ((err as YError).wrappedErrors[0] as YError).code,
+            'E_CANNOT_AUTOLOAD',
+          );
+          assert.deepEqual(
+            ((err as YError).wrappedErrors[0] as YError).params,
+            ['test'],
+          );
+        }
+      });
 
-    test('should work when autoload depends on deeper optional and unexisting autoloaded dependencies', async () => {
-      $.register(
-        initializer(
-          {
-            type: 'service',
-            name: 'log',
-            inject: ['?LOG_ROUTING', '?LOGGER', '?debug'],
-            singleton: true,
-          },
-          async () => {
-            return () => undefined;
-          },
-        ),
-      );
-      $.register(constant('LOGGER', 'LOGGER_CONSTANT'));
-      $.register(constant('debug', 'debug_value'));
-      $.register(
-        initializer(
-          {
-            type: 'service',
-            name: '$autoload',
-            inject: ['?ENV', '?log'],
-            singleton: true,
-          },
-          async () => async (serviceName) => ({
-            path: `/path/of/${serviceName}`,
-            initializer: initializer(
-              {
-                type: 'service',
-                name: serviceName,
-                inject: [],
-              },
-              async () => `THE_${serviceName.toUpperCase()}:` + serviceName,
-            ),
-          }),
-        ),
-      );
+      test('when the autoloader returns bad data', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: [],
+              singleton: true,
+            },
+            async () => async () => 'not_an_initializer',
+          ),
+        );
 
-      const dependencies = await $.run<any>(['test', 'log']);
+        try {
+          await $.run<any>(['test']);
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
+          assert.deepEqual((err as YError).params, ['test']);
+          assert.equal(
+            ((err as YError).wrappedErrors[0] as YError).code,
+            'E_BAD_AUTOLOADER_RESULT',
+          );
+          assert.deepEqual(
+            ((err as YError).wrappedErrors[0] as YError).params,
+            ['test', 'not_an_initializer'],
+          );
+        }
+      });
 
-      assert.deepEqual(Object.keys(dependencies), ['test', 'log']);
+      test('when autoloaded dependencies are not initializers', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: [],
+              singleton: true,
+            },
+            async () => async () => ({
+              initializer: 'not_an_initializer',
+              path: '/path/to/initializer',
+            }),
+          ),
+        );
+
+        try {
+          await $.run<any>(['test']);
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
+          assert.deepEqual((err as YError).params, ['test']);
+          assert.equal(
+            ((err as YError).wrappedErrors[0] as YError).code,
+            'E_AUTOLOADED_INITIALIZER_MISMATCH',
+          );
+          assert.deepEqual(
+            ((err as YError).wrappedErrors[0] as YError).params,
+            ['test', undefined],
+          );
+        }
+      });
+
+      test('when autoloaded dependencies are not right initializers', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: [],
+              singleton: true,
+            },
+            async () => async (serviceName) => ({
+              path: '/path/of/debug',
+              initializer: initializer(
+                {
+                  type: 'service',
+                  name: 'not-' + serviceName,
+                  inject: [],
+                },
+                async () => 'THE_TEST:' + serviceName,
+              ),
+            }),
+          ),
+        );
+
+        try {
+          await $.run<any>(['test']);
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
+          assert.deepEqual((err as YError).params, ['test']);
+          assert.equal(
+            ((err as YError).wrappedErrors[0] as YError).code,
+            'E_AUTOLOADED_INITIALIZER_MISMATCH',
+          );
+          assert.deepEqual(
+            ((err as YError).wrappedErrors[0] as YError).params,
+            ['test', 'not-test'],
+          );
+        }
+      });
+
+      test('when autoload depends on existing autoloaded dependencies', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: ['ENV'],
+              singleton: true,
+            },
+            async () => async (serviceName) => ({
+              path: '/path/of/debug',
+              initializer: initializer(
+                {
+                  type: 'service',
+                  name: 'DEBUG',
+                  inject: [],
+                },
+                async () => 'THE_DEBUG:' + serviceName,
+              ),
+            }),
+          ),
+        );
+
+        try {
+          await $.run<any>(['test']);
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.equal((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
+          assert.deepEqual((err as YError).params, ['__run__', 'test']);
+        }
+      });
     });
   });
 
