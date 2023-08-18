@@ -792,7 +792,7 @@ describe('Knifecycle', () => {
         }) {
           return Promise.resolve({
             service: {
-              fatalErrorPromise: $fatalError.promise,
+              fatalErrorPromise: $fatalError.errorPromise,
             },
           });
         }

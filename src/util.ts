@@ -6,6 +6,8 @@ import initDebug from 'debug';
 
 const debug = initDebug('knifecycle');
 
+export const NO_PROVIDER = Symbol('NO_PROVIDER');
+
 /* Architecture Note #1.2: Creating initializers
 
 `knifecycle` uses initializers at its a core. An initializer is basically

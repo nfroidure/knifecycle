@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint max-len: ["warn", { "ignoreComments": true }] @typescript-eslint/no-this-alias: "warn" */
 import {
+  NO_PROVIDER,
   SPECIAL_PROPS,
   SPECIAL_PROPS_PREFIX,
   DECLARATION_SEPARATOR,
@@ -34,8 +35,10 @@ import {
   stringifyDependencyDeclaration,
   unwrapInitializerProperties,
 } from './util.js';
+import initFatalError, { FATAL_ERROR } from './fatalError.js';
+import initDispose, { DISPOSE } from './dispose.js';
 import initInitializerBuilder from './build.js';
-import { YError } from 'yerror';
+import { YError, printStackTrace } from 'yerror';
 import initDebug from 'debug';
 import type {
   ServiceName,
@@ -67,6 +70,8 @@ import type {
   Parameters,
 } from './util.js';
 import type { BuildInitializer } from './build.js';
+import type { FatalErrorService } from './fatalError.js';
+export { initFatalError, initDispose };
 export type {
   ServiceName,
   Service,
@@ -96,13 +101,14 @@ export type {
   HandlerFunction,
   Parameters,
   BuildInitializer,
+  FatalErrorService,
 };
 
 export const RUN_DEPENDENT_NAME = '__run__';
 export const SYSTEM_DEPENDENT_NAME = '__system__';
 export const AUTOLOAD_DEPENDENT_NAME = '__autoloader__';
 export const INJECTOR_DEPENDENT_NAME = '__injector__';
-export const NO_PROVIDER = Symbol('NO_PROVIDER');
+export { NO_PROVIDER };
 
 export type KnifecycleOptions = {
   sequential?: boolean;
@@ -166,13 +172,8 @@ export interface SiloContext {
   index: SiloIndex;
   loadingServices: ServiceName[];
   loadingSequences: ServiceName[][];
-  errorsPromises: Promise<void>[];
   _shutdownPromise?: Promise<void>;
-  throwFatalError?: (err: Error) => void;
 }
-export type FatalErrorService = {
-  promise: Promise<void>;
-};
 
 export type InternalDependencies = {
   $dispose: Disposer;
@@ -185,12 +186,17 @@ export type InternalDependencies = {
 
 const debug = initDebug('knifecycle');
 
-const DISPOSE = '$dispose';
-const AUTOLOAD = '$autoload';
-const INJECTOR = '$injector';
-const INSTANCE = '$instance';
-const SILO_CONTEXT = '$siloContext';
-const FATAL_ERROR = '$fatalError';
+export { DISPOSE, FATAL_ERROR };
+export const AUTOLOAD = '$autoload';
+export const INJECTOR = '$injector';
+export const INSTANCE = '$instance';
+export const SILO_CONTEXT = '$siloContext';
+export const UNBUILDABLE_SERVICES = [
+  AUTOLOAD,
+  INJECTOR,
+  INSTANCE,
+  SILO_CONTEXT,
+];
 
 /* Architecture Note #1: Knifecycle
 
@@ -226,8 +232,8 @@ A service provider is full of state since its concern is
 class Knifecycle {
   private _options: KnifecycleOptions;
   private _silosCounter: number;
-  private _silosContexts: Record<SiloIndex, SiloContext>;
-  private _initializersStates: Record<
+  _silosContexts: Record<SiloIndex, SiloContext>;
+  _initializersStates: Record<
     string,
     InitializerStateDescriptor<unknown, Dependencies>
   >;
@@ -253,12 +259,9 @@ class Knifecycle {
     this._silosContexts = {};
     this._initializersStates = {
       [FATAL_ERROR]: {
-        initializer: service(async () => {
-          throw new YError('E_UNEXPECTED_INIT', FATAL_ERROR);
-        }, FATAL_ERROR),
+        initializer: initFatalError,
         autoloaded: false,
         dependents: [],
-        silosInstances: {},
       },
       [SILO_CONTEXT]: {
         initializer: service(async () => {
@@ -269,9 +272,7 @@ class Knifecycle {
         silosInstances: {},
       },
       [DISPOSE]: {
-        initializer: service(async () => {
-          throw new YError('E_UNEXPECTED_INIT', DISPOSE);
-        }, DISPOSE),
+        initializer: initDispose as any,
         autoloaded: false,
         dependents: [],
         silosInstances: {},
@@ -405,7 +406,7 @@ class Knifecycle {
   _checkInitializerDependencies(initializer: Initializer<any, any>) {
     const initializerDependsOfItself = initializer[SPECIAL_PROPS.INJECT]
       .map((dependencyDeclaration) => {
-        const serviceName = _pickServiceNameFromDeclaration(
+        const { serviceName } = parseDependencyDeclaration(
           dependencyDeclaration,
         );
 
@@ -413,7 +414,7 @@ class Knifecycle {
           // TEMPFIX: let's build
           initializer[SPECIAL_PROPS.NAME] !== 'BUILD_CONSTANTS' &&
           // TEMPFIX: Those services are special...
-          ![FATAL_ERROR, INJECTOR, SILO_CONTEXT].includes(serviceName) &&
+          ![INJECTOR, SILO_CONTEXT].includes(serviceName) &&
           initializer[SPECIAL_PROPS.SINGLETON] &&
           this._initializersStates[serviceName] &&
           'initializer' in this._initializersStates[serviceName] &&
@@ -450,7 +451,6 @@ class Knifecycle {
           (serviceName) =>
             ![
               // TEMPFIX: Those services are special...
-              FATAL_ERROR,
               INJECTOR,
               SILO_CONTEXT,
             ].includes(serviceName),
@@ -466,7 +466,10 @@ class Knifecycle {
                 SPECIAL_PROPS.INJECT
               ] || []
             )
-              .map(_pickServiceNameFromDeclaration)
+              .map(
+                (declaration) =>
+                  parseDependencyDeclaration(declaration).serviceName,
+              )
               .includes(initializer[SPECIAL_PROPS.NAME])
           ) {
             debug(
@@ -504,7 +507,9 @@ class Knifecycle {
     dependencyDeclaration: DependencyDeclaration,
     declarationsStacks: DependencyDeclaration[] = [],
   ): void {
-    const serviceName = _pickServiceNameFromDeclaration(dependencyDeclaration);
+    const serviceName = parseDependencyDeclaration(
+      dependencyDeclaration,
+    ).serviceName;
     const initializersState = this._initializersStates[serviceName];
 
     if (!initializersState || !initializersState.initializer) {
@@ -514,9 +519,9 @@ class Knifecycle {
     declarationsStacks = declarationsStacks.concat(dependencyDeclaration);
     (initializersState.initializer[SPECIAL_PROPS.INJECT] || []).forEach(
       (childDependencyDeclaration) => {
-        const childServiceName = _pickServiceNameFromDeclaration(
+        const childServiceName = parseDependencyDeclaration(
           childDependencyDeclaration,
-        );
+        ).serviceName;
 
         if (rootServiceName === childServiceName) {
           throw new YError(
@@ -598,9 +603,9 @@ class Knifecycle {
         return links.concat(
           initializerState.initializer[SPECIAL_PROPS.INJECT].map(
             (dependencyDeclaration) => {
-              const dependedServiceName = _pickServiceNameFromDeclaration(
+              const dependedServiceName = parseDependencyDeclaration(
                 dependencyDeclaration,
-              );
+              ).serviceName;
 
               return { serviceName, dependedServiceName };
             },
@@ -674,31 +679,11 @@ class Knifecycle {
       index: siloIndex,
       loadingServices: [],
       loadingSequences: [],
-      errorsPromises: [],
     };
 
     if (this._shutdownPromise) {
       throw new YError('E_INSTANCE_DESTROYED');
     }
-
-    // Create a provider for the special fatal error service
-    (
-      this._initializersStates[FATAL_ERROR] as SiloedInitializerStateDescriptor<
-        FatalErrorService,
-        Dependencies<unknown>
-      >
-    ).silosInstances[siloIndex] = {
-      provider: {
-        service: {
-          promise: new Promise<void>((_resolve, reject) => {
-            siloContext.throwFatalError = (err) => {
-              debug('Handled a fatal error', err);
-              reject(err);
-            };
-          }),
-        },
-      },
-    };
 
     // Make the siloContext available for internal injections
     (
@@ -708,154 +693,15 @@ class Knifecycle {
     ).silosInstances[siloIndex] = {
       provider: { service: siloContext },
     };
-    // Create a provider for the shutdown special dependency
-    (
-      this._initializersStates[DISPOSE] as SiloedInitializerStateDescriptor<
-        Disposer,
-        Dependencies<unknown>
-      >
-    ).silosInstances[siloIndex] = {
-      provider: {
-        service: async () => {
-          const _this = this;
-          siloContext._shutdownPromise =
-            siloContext._shutdownPromise ||
-            _shutdownNextServices(siloContext.loadingSequences.concat());
-          await siloContext._shutdownPromise;
-          delete this._silosContexts[siloContext.index];
 
-          // Shutdown services in their instanciation order
-          async function _shutdownNextServices(
-            serviceLoadSequences: ServiceName[][],
-          ) {
-            if (0 === serviceLoadSequences.length) {
-              return;
-            }
-            const currentServiceLoadSequence = serviceLoadSequences.pop() || [];
-
-            // First ensure to remove services that are depend on
-            // by another service loaded in the same batch (may
-            // happen depending on the load sequence)
-            const dependendedByAServiceInTheSameBatch =
-              currentServiceLoadSequence.filter((serviceName) => {
-                if (
-                  currentServiceLoadSequence
-                    .filter(
-                      (anotherServiceName) =>
-                        anotherServiceName !== serviceName,
-                    )
-                    .some((anotherServiceName) =>
-                      (
-                        _this._initializersStates[anotherServiceName]
-                          ?.initializer?.[SPECIAL_PROPS.INJECT] || []
-                      )
-                        .map(_pickServiceNameFromDeclaration)
-                        .includes(serviceName),
-                    )
-                ) {
-                  debug(
-                    `Delaying service "${serviceName}" dependencies shutdown to a dedicated batch.'`,
-                  );
-                  return true;
-                }
-              });
-
-            await Promise.all(
-              currentServiceLoadSequence
-                .filter(
-                  (serviceName) =>
-                    !dependendedByAServiceInTheSameBatch.includes(serviceName),
-                )
-                .map(async (serviceName) => {
-                  const initializeState =
-                    _this._initializersStates[serviceName];
-
-                  if ('silosInstances' in initializeState) {
-                    const provider = _this._getServiceProvider(
-                      siloContext,
-                      serviceName,
-                    );
-
-                    if (
-                      serviceLoadSequences.some((servicesLoadSequence) =>
-                        servicesLoadSequence.includes(serviceName),
-                      )
-                    ) {
-                      debug(
-                        'Delaying service shutdown to another batch:',
-                        serviceName,
-                      );
-                      return Promise.resolve();
-                    }
-                    if (
-                      !initializeState.silosInstances[siloContext.index]
-                        .instanceDisposePromise
-                    ) {
-                      debug('Shutting down a service:', serviceName);
-                      initializeState.silosInstances[
-                        siloContext.index
-                      ].instanceDisposePromise =
-                        provider &&
-                        provider !== NO_PROVIDER &&
-                        'dispose' in provider &&
-                        provider.dispose
-                          ? provider.dispose()
-                          : Promise.resolve();
-                    } else {
-                      debug('Reusing a service shutdown promise:', serviceName);
-                    }
-                    await initializeState.silosInstances[siloContext.index]
-                      .instanceDisposePromise;
-                  } else if ('singletonProvider' in initializeState) {
-                    initializeState.dependents =
-                      initializeState.dependents.filter(
-                        ({ silo }) => silo !== siloContext.index,
-                      );
-
-                    if (initializeState.dependents.length) {
-                      debug(
-                        `Will not shut down the ${serviceName} singleton service (still used ${initializeState.dependents.length} times).`,
-                        initializeState.dependents,
-                      );
-                    } else {
-                      const provider = _this._getServiceProvider(
-                        siloContext,
-                        serviceName,
-                      );
-                      debug('Shutting down a singleton service:', serviceName);
-                      delete initializeState.singletonProviderLoadPromise;
-                      delete initializeState.singletonProvider;
-                      return provider &&
-                        provider !== NO_PROVIDER &&
-                        'dispose' in provider &&
-                        provider.dispose
-                        ? provider.dispose()
-                        : Promise.resolve();
-                    }
-                  }
-                }),
-            );
-            if (dependendedByAServiceInTheSameBatch.length) {
-              serviceLoadSequences.unshift(dependendedByAServiceInTheSameBatch);
-            }
-            await _shutdownNextServices(serviceLoadSequences);
-          }
-        },
-        dispose: Promise.resolve.bind(Promise),
-      },
-    };
     this._silosContexts[siloContext.index] = siloContext;
 
     const services = await this._loadInitializerDependencies(
       siloContext,
       [RUN_DEPENDENT_NAME],
       dependenciesDeclarations,
-      [DISPOSE],
+      [DISPOSE, FATAL_ERROR],
     );
-
-    // TODO: recreate error promise when autoloaded/injected things?
-    debug('Handling fatal errors:', siloContext.errorsPromises);
-    Promise.all(siloContext.errorsPromises).catch(siloContext.throwFatalError);
 
     debug('All dependencies now loaded:', siloContext.loadingSequences);
 
@@ -1095,8 +941,18 @@ class Knifecycle {
     }
 
     if (provider.fatalErrorPromise) {
+      const fatalErrorInitializerState = (await this._initializersStates[
+        FATAL_ERROR
+      ]) as SingletonInitializerStateDescriptor<any, any>;
+
+      await fatalErrorInitializerState.singletonProviderLoadPromise;
+
+      const fatalError = (
+        fatalErrorInitializerState.singletonProvider as Provider<FatalErrorService>
+      ).service;
+
       debug('Registering service descriptor error promise:', serviceName);
-      siloContext.errorsPromises.push(provider.fatalErrorPromise);
+      fatalError.registerErrorPromise(provider.fatalErrorPromise);
     }
 
     if (initializerState.initializer[SPECIAL_PROPS.SINGLETON]) {
@@ -1291,7 +1147,7 @@ class Knifecycle {
             `${[...parentsNames, serviceName].join(
               '->',
             )}: Could not autoload the initializer...`,
-            err,
+            printStackTrace(err as Error),
           );
           initializerState.initializer = undefined;
           resolveInitializer(undefined);
@@ -1453,14 +1309,6 @@ export {
   unwrapInitializerProperties,
   initInitializerBuilder,
 };
-
-function _pickServiceNameFromDeclaration(
-  dependencyDeclaration: DependencyDeclaration,
-): ServiceName {
-  const { serviceName } = parseDependencyDeclaration(dependencyDeclaration);
-
-  return serviceName;
-}
 
 function _applyShapes(shapes, serviceName) {
   return shapes.reduce((shapedService, shape) => {
