@@ -70,7 +70,8 @@
     "lifecycle",
     "shutdown",
     "dependencies",
-    "service"
+    "service",
+    "knifecycle"
   ],
   "author": {
     "name": "Nicolas Froidure",

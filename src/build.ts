@@ -4,12 +4,16 @@ import {
   initializer,
 } from './util.js';
 import { buildInitializationSequence } from './sequence.js';
+import { FATAL_ERROR } from './fatalError.js';
+import { DISPOSE } from './dispose.js';
+import type { Autoloader } from './index.js';
 import type {
   DependencyDeclaration,
   Initializer,
   Dependencies,
 } from './util.js';
-import type { Autoloader } from './index.js';
+
+export const MANAGED_SERVICES = [FATAL_ERROR, DISPOSE, '$instance'];
 
 type DependencyTreeNode = {
   __name: string;
@@ -107,37 +111,62 @@ async function initInitializerBuilder({
     });
     batches.pop();
 
-    return `${batches
-      .map(
-        (batch, index) => `
+    return `
+import { initFatalError } from 'knifecycle';
+
+const batchsDisposers = [];
+
+async function $dispose() {
+  for(const batchDisposers of batchsDisposers.reverse()) {
+    await Promise.all(
+      batchDisposers
+        .map(batchDisposer => batchDisposer())
+    );
+  }
+}
+
+const $instance = {
+  destroy: $dispose,
+};
+
+${batches
+  .map(
+    (batch, index) => `
 // Definition batch #${index}${batch
-          .map((name) => {
-            if (
-              'constant' ===
-              dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE]
-            ) {
-              return `
+      .map((name) => {
+        if (MANAGED_SERVICES.includes(name)) {
+          return '';
+        }
+        if (
+          'constant' ===
+          dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE]
+        ) {
+          return `
 const ${name} = ${JSON.stringify(
-                dependenciesHash[name].__initializer[SPECIAL_PROPS.VALUE],
-                null,
-                2,
-              )};`;
-            }
+            dependenciesHash[name].__initializer[SPECIAL_PROPS.VALUE],
+            null,
+            2,
+          )};`;
+        }
 
-            return `
+        return `
 import ${dependenciesHash[name].__initializerName} from '${dependenciesHash[name].__path}';`;
-          })
-          .join('')}`,
-      )
-      .join('\n')}
+      })
+      .join('')}`,
+  )
+  .join('\n')}
 
-export async function initialize(services = {}) {${batches
-      .map(
-        (batch, index) => `
+export async function initialize(services = {}) {
+  const $fatalError = await initFatalError();
+${batches
+  .map(
+    (batch, index) => `
   // Initialization batch #${index}
+  batchsDisposers[${index}] = [];
   const batch${index} = {${batch
     .map((name) => {
       if (
+        MANAGED_SERVICES.includes(name) ||
         'constant' === dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE]
       ) {
         return `
@@ -158,7 +187,15 @@ export async function initialize(services = {}) {${batches
     }
     })${
       'provider' === dependenciesHash[name].__type
-        ? '.then(provider => provider.service)'
+        ? `.then(provider => {
+      if(provider.dispose) {
+        batchsDisposers[${index}].push(provider.dispose);
+      }
+      if(provider.fatalErrorPromise) {
+        $fatalError.registerErrorPromise(provider.fatalErrorPromise);
+      }
+      return provider.service;
+    })`
         : ''
     },`;
     })
@@ -176,8 +213,8 @@ ${batch
   })
   .join('')}
 `,
-      )
-      .join('')}
+  )
+  .join('')}
   return {${dependencies
     .map(parseDependencyDeclaration)
     .map(

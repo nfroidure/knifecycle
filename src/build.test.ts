@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, test } from '@jest/globals';
-import assert from 'assert';
+import { describe, test, expect } from '@jest/globals';
 import { YError } from 'yerror';
 import initInitializerBuilder from './build.js';
 import { Knifecycle, initializer, constant } from './index.js';
@@ -12,6 +11,10 @@ describe('buildInitializer', () => {
     };
   }
   const mockedDepsHash = {
+    $fatalError: constant('$fatalError', undefined),
+    $dispose: constant('$dispose', undefined),
+    $instance: constant('$instance', undefined),
+    $siloContext: constant('$siloContext', undefined),
     NODE_ENV: constant('NODE_ENV', 'development'),
     dep1: initializer(
       {
@@ -67,9 +70,27 @@ describe('buildInitializer', () => {
     const { buildInitializer } = await $.run<any>(['buildInitializer']);
 
     const content = await buildInitializer(['dep1', 'finalMappedDep>dep3']);
-    assert.equal(
-      content,
-      `
+
+    expect(content).toMatchInlineSnapshot(`
+"
+import { initFatalError } from 'knifecycle';
+
+const batchsDisposers = [];
+
+async function $dispose() {
+  for(const batchDisposers of batchsDisposers.reverse()) {
+    await Promise.all(
+      batchDisposers
+        .map(batchDisposer => batchDisposer())
+    );
+  }
+}
+
+const $instance = {
+  destroy: $dispose,
+};
+
+
 // Definition batch #0
 import initDep1 from './services/dep1';
 const NODE_ENV = "development";
@@ -81,7 +102,10 @@ import initDep2 from './services/dep2';
 import initDep3 from './services/dep3';
 
 export async function initialize(services = {}) {
+  const $fatalError = await initFatalError();
+
   // Initialization batch #0
+  batchsDisposers[0] = [];
   const batch0 = {
     dep1: initDep1({
     }),
@@ -97,11 +121,20 @@ export async function initialize(services = {}) {
   services['NODE_ENV'] = await batch0['NODE_ENV'];
 
   // Initialization batch #1
+  batchsDisposers[1] = [];
   const batch1 = {
     dep2: initDep2({
       dep1: services['dep1'],
       NODE_ENV: services['NODE_ENV'],
-    }).then(provider => provider.service),
+    }).then(provider => {
+      if(provider.dispose) {
+        batchsDisposers[1].push(provider.dispose);
+      }
+      if(provider.fatalErrorPromise) {
+        $fatalError.registerErrorPromise(provider.fatalErrorPromise);
+      }
+      return provider.service;
+    }),
   };
 
   await Promise.all(
@@ -112,6 +145,7 @@ export async function initialize(services = {}) {
   services['dep2'] = await batch1['dep2'];
 
   // Initialization batch #2
+  batchsDisposers[2] = [];
   const batch2 = {
     dep3: initDep3({
       dep2: services['dep2'],
@@ -132,18 +166,18 @@ export async function initialize(services = {}) {
     finalMappedDep: services['dep3'],
   };
 }
-`,
-    );
+"
+`);
   });
 
-  // TODO: allow building with internal dependencies
-  test.skip('should work with simple internal services dependencies', async () => {
+  test('should work with simple internal services dependencies', async () => {
     const $ = new Knifecycle();
 
     $.register(constant('PWD', '~/my-project'));
     $.register(initAutoloader);
     $.register(initInitializerBuilder);
     $.register(constant('$fatalError', {}));
+    $.register(constant('$instance', {}));
 
     const { buildInitializer } = await $.run<any>(['buildInitializer']);
 
@@ -152,14 +186,33 @@ export async function initialize(services = {}) {
       'finalMappedDep>dep3',
       '$fatalError',
       '$dispose',
+      '$instance',
       '$siloContext',
     ]);
-    assert.equal(
-      content,
-      `
+    expect(content).toMatchInlineSnapshot(`
+"
+import { initFatalError } from 'knifecycle';
+
+const batchsDisposers = [];
+
+async function $dispose() {
+  for(const batchDisposers of batchsDisposers.reverse()) {
+    await Promise.all(
+      batchDisposers
+        .map(batchDisposer => batchDisposer())
+    );
+  }
+}
+
+const $instance = {
+  destroy: $dispose,
+};
+
+
 // Definition batch #0
 import initDep1 from './services/dep1';
 const NODE_ENV = "development";
+const $siloContext = undefined;
 
 // Definition batch #1
 import initDep2 from './services/dep2';
@@ -168,11 +221,18 @@ import initDep2 from './services/dep2';
 import initDep3 from './services/dep3';
 
 export async function initialize(services = {}) {
+  const $fatalError = await initFatalError();
+
   // Initialization batch #0
+  batchsDisposers[0] = [];
   const batch0 = {
     dep1: initDep1({
     }),
     NODE_ENV: Promise.resolve(NODE_ENV),
+    $fatalError: Promise.resolve($fatalError),
+    $dispose: Promise.resolve($dispose),
+    $instance: Promise.resolve($instance),
+    $siloContext: Promise.resolve($siloContext),
   };
 
   await Promise.all(
@@ -182,13 +242,26 @@ export async function initialize(services = {}) {
 
   services['dep1'] = await batch0['dep1'];
   services['NODE_ENV'] = await batch0['NODE_ENV'];
+  services['$fatalError'] = await batch0['$fatalError'];
+  services['$dispose'] = await batch0['$dispose'];
+  services['$instance'] = await batch0['$instance'];
+  services['$siloContext'] = await batch0['$siloContext'];
 
   // Initialization batch #1
+  batchsDisposers[1] = [];
   const batch1 = {
     dep2: initDep2({
       dep1: services['dep1'],
       NODE_ENV: services['NODE_ENV'],
-    }).then(provider => provider.service),
+    }).then(provider => {
+      if(provider.dispose) {
+        batchsDisposers[1].push(provider.dispose);
+      }
+      if(provider.fatalErrorPromise) {
+        $fatalError.registerErrorPromise(provider.fatalErrorPromise);
+      }
+      return provider.service;
+    }),
   };
 
   await Promise.all(
@@ -199,6 +272,7 @@ export async function initialize(services = {}) {
   services['dep2'] = await batch1['dep2'];
 
   // Initialization batch #2
+  batchsDisposers[2] = [];
   const batch2 = {
     dep3: initDep3({
       dep2: services['dep2'],
@@ -217,9 +291,13 @@ export async function initialize(services = {}) {
   return {
     dep1: services['dep1'],
     finalMappedDep: services['dep3'],
+    $fatalError: services['$fatalError'],
+    $dispose: services['$dispose'],
+    $instance: services['$instance'],
+    $siloContext: services['$siloContext'],
   };
 }
-`,
-    );
+"
+`);
   });
 });
