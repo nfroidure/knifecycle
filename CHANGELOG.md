@@ -1,6 +1,7 @@
 # [17.0.0](https://github.com/nfroidure/knifecycle/compare/v16.0.1...v17.0.0) (2023-08-20)
 
-
+Enabling the build to use fatal error promises and to gracefully
+ exit.
 
 ## [16.0.1](https://github.com/nfroidure/knifecycle/compare/v16.0.0...v16.0.1) (2023-08-16)
 
