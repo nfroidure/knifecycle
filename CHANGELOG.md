@@ -1,3 +1,12 @@
+## [17.0.1](https://github.com/nfroidure/knifecycle/compare/v17.0.0...v17.0.1) (2023-08-20)
+
+
+### Features
+
+* **build:** add a banner for generated files ([97327e7](https://github.com/nfroidure/knifecycle/commit/97327e71930832e012297587e3f563afcf27530e))
+
+
+
 # [17.0.0](https://github.com/nfroidure/knifecycle/compare/v16.0.1...v17.0.0) (2023-08-20)
 
 Enabling the build to use fatal error promises and to gracefully
