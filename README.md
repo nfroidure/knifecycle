@@ -13,6 +13,7 @@
 
 [//]: # (::contents:start)
 
+![The Knifecycle logo](./knifecycle.svg)
 
 Most (maybe all) applications rely on two kinds of dependencies.
 
