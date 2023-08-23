@@ -17,6 +17,8 @@
 
 Most (maybe all) applications rely on two kinds of dependencies.
 
+![The lifecycle of most (all?) applications](./dependency-injection.svg)
+
 **The code dependencies** are fully covered by JavaScript modules in a testable
 manner (with `mockery` or `System` directly). There is no need for another
 dependency management system if those libraries are pure functions (involve no
@@ -25,7 +27,7 @@ global states at all).
 Unfortunately, applications often rely on **global states** where the JavaScript
 module system shows its limits. This is where `knifecycle` enters the game.
 
-![The app lifecycle sequence graph](https://insertafter.com/images/dependencies-graph-sequences.svg)
+![The app lifecycle sequence graph](./dependencies-graph-sequences.svg)
 
 It is largely inspired by the Angular service system except it should not
 provide code but access to global states (time, filesystem, db). It also have an
