@@ -1,3 +1,7 @@
+## [17.0.2](https://github.com/nfroidure/knifecycle/compare/v17.0.1...v17.0.2) (2024-05-28)
+
+
+
 ## [17.0.1](https://github.com/nfroidure/knifecycle/compare/v17.0.0...v17.0.1) (2023-08-20)
 
 
