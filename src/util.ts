@@ -622,6 +622,68 @@ export function inject<D extends Dependencies<any>, S>(
 }
 
 /**
+ * Decorator creating a new initializer omitting
+ * the given dependencies.
+ * @param  {Array<String>}  dependencies
+ * List of dependencies to omit (also accept dependencies
+ *  declarations but omit the destination part)
+ * @param  {Function}  initializer
+ * The initializer to tweak
+ * @return {Function}
+ * Returns a new initializer
+ * @example
+ *
+ * import Knifecycle, { unInject } from 'knifecycle'
+ * import myServiceInitializer from './service';
+ *
+ * new Knifecycle()
+ *  .register(
+ *    service(
+ *      unInject(['ENV'], myServiceInitializer)
+ *      'myService',
+ *    )
+ *   )
+ * );
+ */
+export function unInject<D extends Dependencies<any>, S>(
+  dependencies: DependencyDeclaration[],
+  initializer: ProviderInitializer<any, S>,
+): ProviderInitializer<D, S>;
+export function unInject<D extends Dependencies<any>, S>(
+  dependencies: DependencyDeclaration[],
+  initializer: ProviderInitializerBuilder<any, S>,
+): ProviderInitializerBuilder<D, S>;
+export function unInject<D extends Dependencies<any>, S>(
+  dependencies: DependencyDeclaration[],
+  initializer: ServiceInitializer<any, S>,
+): ServiceInitializer<D, S>;
+export function unInject<D extends Dependencies<any>, S>(
+  dependencies: DependencyDeclaration[],
+  initializer: ServiceInitializerBuilder<any, S>,
+): ServiceInitializerBuilder<D, S>;
+export function unInject<D extends Dependencies<any>, S>(
+  dependencies: DependencyDeclaration[],
+  initializer:
+    | ProviderInitializerBuilder<any, S>
+    | ServiceInitializerBuilder<any, S>,
+): ProviderInitializerBuilder<D, S> | ServiceInitializerBuilder<D, S> {
+  const filteredDependencies = dependencies.map(parseDependencyDeclaration);
+  const originalDependencies = (initializer[SPECIAL_PROPS.INJECT] || []).map(
+    parseDependencyDeclaration,
+  );
+
+  return inject<D, S>(
+    originalDependencies.filter(({ serviceName }) =>
+      filteredDependencies.every(
+        ({ serviceName: filteredServiceName }) =>
+          serviceName !== filteredServiceName,
+      ),
+    ).map(stringifyDependencyDeclaration),
+    initializer as ServiceInitializerBuilder<D, S>,
+  );
+}
+
+/**
  * Apply injected dependencies from the given initializer to another one
  * @param  {Function} from The initialization function in which to pick the dependencies
  * @param  {Function} to   The destination initialization function
@@ -1376,7 +1438,7 @@ export function stringifyDependencyDeclaration(
 Sadly TypeScript does not allow to add generic types
  in all cases. This is why `(Service|Provider)Initializer`
  types do not embed the `(Service|Provider)Properties`
- direclty. Instead, we use this utility function to
+ directly. Instead, we use this utility function to
  reveal it to TypeScript and, by the way, check their
  completeness at execution time.
 

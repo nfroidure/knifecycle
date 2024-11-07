@@ -27,6 +27,7 @@ import {
   handler,
   autoHandler,
   SPECIAL_PROPS,
+  unInject,
 } from './util.js';
 import type { Provider } from './util.js';
 import type { Dependencies, ServiceInitializer } from './index.js';
@@ -255,6 +256,62 @@ describe('mergeInject', () => {
       ...toDependencies,
       ...fromDependencies,
     ]);
+  });
+});
+
+describe('unInject', () => {
+  test('should work with empty dependencies', () => {
+    const baseProvider =
+      async ({ ENV, mysql: db }) =>
+      async () => ({
+        ENV,
+        db,
+      });
+    const removedDependencies = [];
+    const leftDependencies = [];
+    const dependencies = [...removedDependencies, ...leftDependencies];
+    const initializer = inject(dependencies, baseProvider);
+    const newInitializer = unInject(removedDependencies, initializer);
+
+    assert.notEqual(newInitializer, baseProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], leftDependencies);
+  });
+
+  test('should allow to remove dependencies', () => {
+    const baseProvider =
+      async ({ ENV, mysql: db }) =>
+      async () => ({
+        ENV,
+        db,
+      });
+    const removedDependencies = ['mysql'];
+    const leftDependencies = ['ENV'];
+    const dependencies = [...removedDependencies, ...leftDependencies];
+    const initializer = inject(dependencies, baseProvider);
+    const newInitializer = unInject(removedDependencies, initializer);
+
+    assert.notEqual(newInitializer, baseProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], leftDependencies);
+  });
+
+  test('should allow to remove mapped dependencies', () => {
+    const baseProvider =
+      async ({ ENV, mysql: db }) =>
+      async () => ({
+        ENV,
+        db,
+      });
+    const removedDependencies = ['mysql>myMysql'];
+    const leftDependencies = ['ENV>myENV'];
+    const dependencies = ['mysql>anotherMysql', ...leftDependencies];
+    const initializer = inject(dependencies, baseProvider);
+    const newInitializer = unInject(removedDependencies, initializer);
+
+    assert.notEqual(newInitializer, baseProvider);
+    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], leftDependencies);
   });
 });
 
