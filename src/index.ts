@@ -19,6 +19,7 @@ import {
   mergeInject,
   autoInject,
   alsoInject,
+  unInject,
   type,
   extra,
   singleton,
@@ -973,7 +974,7 @@ class Knifecycle {
     Autoloader<Initializer<unknown, Dependencies<unknown>>> | undefined
   > {
     // The auto loader must only have static dependencies
-    // and we have to do this check here to avoid inifinite loop
+    // and we have to do this check here to avoid infinite loop
     if (parentsNames.includes(AUTOLOAD)) {
       debug(
         `${parentsNames.join(
@@ -1293,6 +1294,7 @@ export {
   mergeInject,
   autoInject,
   alsoInject,
+  unInject,
   extra,
   singleton,
   reuseSpecialProps,
