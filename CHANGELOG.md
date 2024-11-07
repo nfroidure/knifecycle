@@ -1,3 +1,12 @@
+# [17.1.0](https://github.com/nfroidure/knifecycle/compare/v17.0.3...v17.1.0) (2024-11-07)
+
+
+### Features
+
+* **utils:** add a way to uninject a dependency ([7f90e65](https://github.com/nfroidure/knifecycle/commit/7f90e65482f654b2202b20177ba75c3e3160ab26))
+
+
+
 ## [17.0.3](https://github.com/nfroidure/knifecycle/compare/v17.0.2...v17.0.3) (2024-07-15)
 
 
