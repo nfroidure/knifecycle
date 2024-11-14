@@ -1,3 +1,18 @@
+## [17.2.1](https://github.com/nfroidure/knifecycle/compare/v17.2.0...v17.2.1) (2024-11-14)
+
+
+### Bug Fixes
+
+* **build:** align the build with overrides ([688e5b0](https://github.com/nfroidure/knifecycle/commit/688e5b0f32f6057a2fd5b0023c03edf351c8a785))
+
+
+### BREAKING CHANGES
+
+* **build:** Some builds could break but in the real world no build were made in such a short
+time frame.
+
+
+
 # [17.2.0](https://github.com/nfroidure/knifecycle/compare/v17.1.0...v17.2.0) (2024-11-14)
 
 
