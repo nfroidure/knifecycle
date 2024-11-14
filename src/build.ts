@@ -8,12 +8,13 @@ import {
 import { buildInitializationSequence } from './sequence.js';
 import { FATAL_ERROR } from './fatalError.js';
 import { DISPOSE } from './dispose.js';
-import { type Autoloader } from './index.js';
+import { type Overrides, type Autoloader } from './index.js';
 import type {
   DependencyDeclaration,
   Initializer,
   Dependencies,
 } from './util.js';
+import { OVERRIDES, pickOverridenName } from './overrides.js';
 
 export const MANAGED_SERVICES = [FATAL_ERROR, DISPOSE, INSTANCE];
 
@@ -25,6 +26,7 @@ type DependencyTreeNode = {
   __type: 'provider' | 'constant' | 'service';
   __initializerName: string;
   __path: string;
+  __parentsNames: string[];
 };
 
 export type BuildInitializer = (
@@ -52,7 +54,7 @@ export default initializer(
   {
     name: 'buildInitializer',
     type: 'service',
-    inject: [AUTOLOAD],
+    inject: [AUTOLOAD, OVERRIDES],
   },
   initInitializerBuilder,
 );
@@ -74,8 +76,10 @@ export default initializer(
  */
 async function initInitializerBuilder({
   $autoload,
+  $overrides,
 }: {
   $autoload: Autoloader<Initializer<unknown, Record<string, unknown>>>;
+  $overrides: Overrides;
 }) {
   return buildInitializer;
 
@@ -101,7 +105,7 @@ async function initInitializerBuilder({
   ): Promise<string> {
     const dependencyTrees = await Promise.all(
       dependencies.map((dependency) =>
-        buildDependencyTree({ $autoload }, dependency),
+        buildDependencyTree({ $autoload, $overrides }, dependency, []),
       ),
     );
     const dependenciesHash = buildDependenciesHash(
@@ -183,7 +187,10 @@ ${batches
             .map(
               ({ serviceName, mappedName }) =>
                 `
-      ${serviceName}: services['${mappedName}'],`,
+      ${serviceName}: services['${pickOverridenName($overrides, [
+        ...dependenciesHash[name].__parentsNames,
+        mappedName,
+      ])}'],`,
             )
             .join('')}`
         : ''
@@ -223,7 +230,9 @@ ${batch
     .map(
       ({ serviceName, mappedName }) =>
         `
-    ${serviceName}: services['${mappedName}'],`,
+    ${serviceName}: services['${pickOverridenName($overrides, [
+      mappedName,
+    ])}'],`,
     )
     .join('')}
   };
@@ -235,17 +244,26 @@ ${batch
 async function buildDependencyTree(
   {
     $autoload,
-  }: { $autoload: Autoloader<Initializer<unknown, Record<string, unknown>>> },
-  dependencyDeclaration,
+    $overrides,
+  }: {
+    $autoload: Autoloader<Initializer<unknown, Record<string, unknown>>>;
+    $overrides: Overrides;
+  },
+  dependencyDeclaration: string,
+  parentsNames: string[],
 ): Promise<DependencyTreeNode | null> {
   const { mappedName, optional } = parseDependencyDeclaration(
     dependencyDeclaration,
   );
+  const finalName = pickOverridenName($overrides, [
+    ...parentsNames,
+    mappedName,
+  ]);
 
   try {
-    const { path, initializer } = await $autoload(mappedName);
+    const { path, initializer } = await $autoload(finalName);
     const node: DependencyTreeNode = {
-      __name: mappedName,
+      __name: finalName,
       __initializer: initializer,
       __inject:
         initializer && initializer[SPECIAL_PROPS.INJECT]
@@ -255,9 +273,10 @@ async function buildDependencyTree(
         initializer && initializer[SPECIAL_PROPS.TYPE]
           ? initializer[SPECIAL_PROPS.TYPE]
           : 'provider',
-      __initializerName: 'init' + upperCaseFirst(mappedName),
+      __initializerName: 'init' + upperCaseFirst(finalName),
       __path: path,
       __childNodes: [],
+      __parentsNames: [...parentsNames, finalName],
     };
 
     if (
@@ -266,7 +285,11 @@ async function buildDependencyTree(
     ) {
       const childNodes: DependencyTreeNode[] = await Promise.all(
         initializer[SPECIAL_PROPS.INJECT].map((childDependencyDeclaration) =>
-          buildDependencyTree({ $autoload }, childDependencyDeclaration),
+          buildDependencyTree(
+            { $autoload, $overrides },
+            childDependencyDeclaration,
+            [...parentsNames, finalName],
+          ),
         ),
       );
       node.__childNodes = childNodes.filter(identity);
