@@ -1,3 +1,12 @@
+# [17.2.0](https://github.com/nfroidure/knifecycle/compare/v17.1.0...v17.2.0) (2024-11-14)
+
+
+### Features
+
+* **core:** allow to override some services ([e17daed](https://github.com/nfroidure/knifecycle/commit/e17daed4b5ec952eae1e484d0fa7b86127045e57)), closes [#127](https://github.com/nfroidure/knifecycle/issues/127)
+
+
+
 # [17.1.0](https://github.com/nfroidure/knifecycle/compare/v17.0.3...v17.1.0) (2024-11-07)
 
 
