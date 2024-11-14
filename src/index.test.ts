@@ -1129,7 +1129,7 @@ describe('Knifecycle', () => {
         assert.deepEqual(Object.keys(dependencies), ['hash', 'ENV']);
       });
 
-      test('and instanciate services once', async () => {
+      test('and instantiate services once', async () => {
         $.register(
           initializer(
             {
@@ -1366,6 +1366,64 @@ describe('Knifecycle', () => {
           assert.deepEqual(
             ((err as YError).wrappedErrors[0] as YError).params,
             ['test'],
+          );
+        }
+      });
+
+      test('when autoloaded dependencies are circularly dependent', async () => {
+        $.register(
+          service(
+            async () => {
+              return 'mainService';
+            },
+            'mainService',
+            ['parentService1'],
+          ),
+        );
+        $.register(
+          service(
+            async () => {
+              return 'parentService1';
+            },
+            'parentService1',
+            ['parentService2'],
+          ),
+        );
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: ['?ENV', '?log'],
+              singleton: true,
+            },
+            async () => async (serviceName) => ({
+              path: `/path/of/${serviceName}`,
+              initializer: initializer(
+                {
+                  type: 'service',
+                  name: serviceName,
+                  inject: ['parentService1'],
+                },
+                async () => `THE_${serviceName.toUpperCase()}:` + serviceName,
+              ),
+            }),
+          ),
+        );
+
+        try {
+          await $.run<any>(['test', 'log']);
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
+          assert.deepEqual((err as YError).params, ['parentService2']);
+          assert.equal(
+            ((err as YError).wrappedErrors[0] as YError).code,
+            'E_CIRCULAR_DEPENDENCY',
+          );
+          assert.deepEqual(
+            ((err as YError).wrappedErrors[0] as YError).params,
+            ['parentService2', 'parentService1', 'parentService2'],
           );
         }
       });
