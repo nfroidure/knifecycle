@@ -122,6 +122,24 @@ describe('Knifecycle', () => {
           );
         }
       });
+
+      test('should fail when overriding a reserved service', async () => {
+        try {
+          $.register(constant('$dispose', 2));
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.equal((err as YError).code, 'E_IMMUTABLE_SERVICE_NAME');
+        }
+      });
+
+      test('should fail when overriding a constant service with anything else', async () => {
+        try {
+          $.register(service(timeService, '$overrides'));
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.equal((err as YError).code, 'E_CONSTANT_SERVICE_NAME');
+        }
+      });
     });
 
     describe('with services', () => {
@@ -151,6 +169,50 @@ describe('Knifecycle', () => {
             'E_INITIALIZER_ALREADY_INSTANCIATED',
           );
         }
+      });
+
+      test('should work with services names overrides', async () => {
+        $.register(
+          service(
+            async ({ test2 }) =>
+              () =>
+                test2(),
+            'test',
+            ['test2'],
+          ),
+        );
+        $.register(service(async () => () => 2, 'test2'));
+        $.register(service(async () => () => 3, 'test3'));
+        $.register(constant('$overrides', { test2: 'test3' }));
+
+        const { test } = await $.run<any>(['test']);
+
+        assert.deepEqual(test(), 3);
+      });
+
+      test('should work with complex services names overrides', async () => {
+        $.register(
+          service(
+            async ({ log }) =>
+              () =>
+                log('from debugLog'),
+            'debugLog',
+            ['log'],
+          ),
+        );
+        $.register(service(async () => (str) => 'log ' + str, 'log'));
+        $.register(
+          constant('$overrides', {
+            log: 'debugLog',
+            debugLog: {
+              log: 'log',
+            },
+          }),
+        );
+
+        const { log } = await $.run<any>(['log']);
+
+        assert.deepEqual(log(), 'log from debugLog');
       });
     });
 
@@ -259,9 +321,53 @@ describe('Knifecycle', () => {
           );
         }
       });
+
+      test('should work with provider names overrides', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'provider',
+              name: 'test',
+              inject: ['test2'],
+            },
+            async ({ test2 }) => ({
+              service: test2,
+            }),
+          ),
+        );
+        $.register(
+          initializer(
+            {
+              type: 'provider',
+              name: 'test2',
+              inject: [],
+            },
+            async () => ({
+              service: 2,
+            }),
+          ),
+        );
+        $.register(
+          initializer(
+            {
+              type: 'provider',
+              name: 'test3',
+              inject: [],
+            },
+            async () => ({
+              service: 3,
+            }),
+          ),
+        );
+        $.register(constant('$overrides', { test2: 'test3' }));
+
+        const { test } = await $.run<any>(['test']);
+
+        assert.deepEqual(test, 3);
+      });
     });
 
-    test('should fail when intitializer is no a function', () => {
+    test('should fail when initializer is no a function', () => {
       assert.throws(
         () => {
           $.register('not_a_function' as any);
@@ -347,7 +453,7 @@ describe('Knifecycle', () => {
       );
     });
 
-    test('should fail with special autoload intitializer that is not a singleton', () => {
+    test('should fail with special autoload initializer that is not a singleton', () => {
       assert.throws(
         () => {
           $.register(
@@ -713,6 +819,7 @@ describe('Knifecycle', () => {
         assert.deepEqual(timeServiceStub.args, [[{}]]);
       });
     });
+
     describe('should fail', () => {
       test('with bad service', async () => {
         $.register(service((() => undefined) as any, 'lol'));
@@ -774,6 +881,51 @@ describe('Knifecycle', () => {
             'hash',
             'hash2',
             'lol',
+          ]);
+        }
+      });
+
+      test('with indirect circular dependencies', async () => {
+        $.register(
+          service(
+            async () => {
+              return () => 'human';
+            },
+            'human',
+            ['tree'],
+          ),
+        );
+        $.register(
+          service(
+            async () => {
+              return () => 'tree';
+            },
+            'tree',
+            ['earth'],
+          ),
+        );
+        $.register(
+          service(
+            async () => {
+              return () => 'earth';
+            },
+            'earth',
+            ['person'],
+          ),
+        );
+        $.register(constant('$overrides', { person: 'human' }));
+
+        try {
+          await $.run<any>(['human']);
+          throw new Error('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          assert.deepEqual((err as YError).code, 'E_CIRCULAR_DEPENDENCY');
+          assert.deepEqual((err as YError).params, [
+            '__run__',
+            'human',
+            'tree',
+            'earth',
+            'human',
           ]);
         }
       });
@@ -1495,7 +1647,7 @@ describe('Knifecycle', () => {
       await $.destroy();
     });
 
-    test('should work when trigered from several silos simultaneously', async () => {
+    test('should work when triggered from several silos simultaneously', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -1548,7 +1700,7 @@ describe('Knifecycle', () => {
 
       try {
         await $.run<any>(['ENV', 'hash', 'hash1']);
-        throw new YError('E_UNEXPECTED_SUCCES');
+        throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         assert.equal((err as YError).code, 'E_INSTANCE_DESTROYED');
       }

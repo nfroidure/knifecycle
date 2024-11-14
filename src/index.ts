@@ -2,6 +2,9 @@
 /* eslint max-len: ["warn", { "ignoreComments": true }] @typescript-eslint/no-this-alias: "warn" */
 import {
   NO_PROVIDER,
+  INSTANCE,
+  SILO_CONTEXT,
+  AUTOLOAD,
   SPECIAL_PROPS,
   SPECIAL_PROPS_PREFIX,
   DECLARATION_SEPARATOR,
@@ -38,6 +41,7 @@ import {
 } from './util.js';
 import initFatalError, { FATAL_ERROR } from './fatalError.js';
 import initDispose, { DISPOSE } from './dispose.js';
+import { type Overrides, OVERRIDES, pickOverridenName } from './overrides.js';
 import initInitializerBuilder from './build.js';
 import { YError, printStackTrace } from 'yerror';
 import initDebug from 'debug';
@@ -103,6 +107,7 @@ export type {
   Parameters,
   BuildInitializer,
   FatalErrorService,
+  Overrides,
 };
 
 export const RUN_DEPENDENT_NAME = '__run__';
@@ -187,11 +192,8 @@ export type InternalDependencies = {
 
 const debug = initDebug('knifecycle');
 
-export { DISPOSE, FATAL_ERROR };
-export const AUTOLOAD = '$autoload';
+export { DISPOSE, FATAL_ERROR, INSTANCE, SILO_CONTEXT, AUTOLOAD, OVERRIDES };
 export const INJECTOR = '$injector';
-export const INSTANCE = '$instance';
-export const SILO_CONTEXT = '$siloContext';
 export const UNBUILDABLE_SERVICES = [
   AUTOLOAD,
   INJECTOR,
@@ -256,8 +258,6 @@ class Knifecycle {
    */
   constructor(options?: KnifecycleOptions) {
     this._options = options || {};
-    this._silosCounter = 0;
-    this._silosContexts = {};
     this._initializersStates = {
       [FATAL_ERROR]: {
         initializer: initFatalError,
@@ -280,6 +280,7 @@ class Knifecycle {
       },
     };
     this.register(constant(INSTANCE, this));
+    this.register(constant(OVERRIDES, {}));
 
     const initInjectorProvider = provider(
       async ({
@@ -307,6 +308,8 @@ class Knifecycle {
     );
 
     this.register(initInjectorProvider);
+    this._silosCounter = 0;
+    this._silosContexts = {};
   }
 
   /* Architecture Note #1.3: Registering initializers
@@ -345,6 +348,27 @@ class Knifecycle {
   register<T extends Initializer<unknown, any>>(initializer: T): Knifecycle {
     if (this._shutdownPromise) {
       throw new YError('E_INSTANCE_DESTROYED');
+    }
+    if (
+      this._silosContexts &&
+      [INSTANCE, INJECTOR, SILO_CONTEXT, DISPOSE].includes(
+        initializer[SPECIAL_PROPS.NAME],
+      )
+    ) {
+      throw new YError(
+        'E_IMMUTABLE_SERVICE_NAME',
+        initializer[SPECIAL_PROPS.NAME],
+      );
+    }
+    if (
+      initializer[SPECIAL_PROPS.NAME] === OVERRIDES &&
+      initializer[SPECIAL_PROPS.TYPE] !== 'constant'
+    ) {
+      throw new YError(
+        'E_CONSTANT_SERVICE_NAME',
+        initializer[SPECIAL_PROPS.NAME],
+        initializer[SPECIAL_PROPS.TYPE],
+      );
     }
 
     const initializerState: InitializerStateDescriptor<any, any> = {
@@ -405,6 +429,8 @@ class Knifecycle {
   }
 
   _checkInitializerDependencies(initializer: Initializer<any, any>) {
+    // Here, we do not have to take in count the overrides since it
+    // won't impact the checking
     const initializerDependsOfItself = initializer[SPECIAL_PROPS.INJECT]
       .map((dependencyDeclaration) => {
         const { serviceName } = parseDependencyDeclaration(
@@ -759,6 +785,12 @@ class Knifecycle {
     dependenciesDeclarations: DependencyDeclaration[],
     additionalDeclarations: DependencyDeclaration[],
   ): Promise<Dependencies> {
+    const overrides = (
+      this._initializersStates[OVERRIDES].initializer as ConstantInitializer<
+        Record<string, string>
+      >
+    ).$value as Overrides;
+
     debug(
       `${[...parentsNames].join(
         '->',
@@ -773,19 +805,32 @@ class Knifecycle {
     for (const serviceDeclaration of allDependenciesDeclarations) {
       const { mappedName, optional } =
         parseDependencyDeclaration(serviceDeclaration);
-      const initializerState = this._initializersStates[mappedName] || {
+      const finalName = pickOverridenName(overrides, [
+        ...parentsNames,
+        mappedName,
+      ]);
+
+      if (finalName !== mappedName) {
+        debug(
+          `${[...parentsNames, mappedName].join(
+            '->',
+          )}: Mapping a dependency (${mappedName} => ${finalName}).`,
+        );
+      }
+
+      const initializerState = this._initializersStates[finalName] || {
         dependents: [],
         autoloaded: true,
       };
 
-      this._initializersStates[mappedName] = initializerState;
+      this._initializersStates[finalName] = initializerState;
       initializerState.dependents.push({
         silo: siloContext.index,
         name: parentsNames[parentsNames.length - 1],
         optional,
       });
 
-      dependencies.push(mappedName);
+      dependencies.push(finalName);
     }
 
     do {
@@ -823,7 +868,12 @@ class Knifecycle {
       (finalHash, dependencyDeclaration) => {
         const { serviceName, mappedName, optional } =
           parseDependencyDeclaration(dependencyDeclaration);
-        const provider = this._getServiceProvider(siloContext, mappedName);
+        const finalName = pickOverridenName(overrides, [
+          ...parentsNames,
+          mappedName,
+        ]);
+
+        const provider = this._getServiceProvider(siloContext, finalName);
 
         // We expect a provider here since everything
         // should be resolved
@@ -866,6 +916,11 @@ class Knifecycle {
     debug(
       `${[...parentsNames, serviceName].join('->')}: Loading the provider...`,
     );
+
+    if (parentsNames.includes(serviceName)) {
+      // At that point there should be an initialiser property
+      throw new YError('E_CIRCULAR_DEPENDENCY', ...parentsNames, serviceName);
+    }
 
     const initializerState = this._initializersStates[serviceName];
 

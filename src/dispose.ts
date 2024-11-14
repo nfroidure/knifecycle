@@ -1,5 +1,7 @@
 import {
+  INSTANCE,
   NO_PROVIDER,
+  SILO_CONTEXT,
   SPECIAL_PROPS,
   parseDependencyDeclaration,
   service,
@@ -145,4 +147,4 @@ async function initDispose({
   };
 }
 
-export default service(initDispose, DISPOSE, ['$instance', '$siloContext']);
+export default service(initDispose, DISPOSE, [INSTANCE, SILO_CONTEXT]);

@@ -7,6 +7,9 @@ import initDebug from 'debug';
 const debug = initDebug('knifecycle');
 
 export const NO_PROVIDER = Symbol('NO_PROVIDER');
+export const INSTANCE = '$instance';
+export const SILO_CONTEXT = '$siloContext';
+export const AUTOLOAD = '$autoload';
 
 /* Architecture Note #1.2: Creating initializers
 
@@ -673,12 +676,14 @@ export function unInject<D extends Dependencies<any>, S>(
   );
 
   return inject<D, S>(
-    originalDependencies.filter(({ serviceName }) =>
-      filteredDependencies.every(
-        ({ serviceName: filteredServiceName }) =>
-          serviceName !== filteredServiceName,
-      ),
-    ).map(stringifyDependencyDeclaration),
+    originalDependencies
+      .filter(({ serviceName }) =>
+        filteredDependencies.every(
+          ({ serviceName: filteredServiceName }) =>
+            serviceName !== filteredServiceName,
+        ),
+      )
+      .map(stringifyDependencyDeclaration),
     initializer as ServiceInitializerBuilder<D, S>,
   );
 }
