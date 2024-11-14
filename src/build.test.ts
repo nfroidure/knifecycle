@@ -177,8 +177,6 @@ export async function initialize(services = {}) {
     $.register(constant('PWD', '~/my-project'));
     $.register(initAutoloader);
     $.register(initInitializerBuilder);
-    $.register(constant('$fatalError', {}));
-    $.register(constant('$instance', {}));
 
     const { buildInitializer } = await $.run<any>(['buildInitializer']);
 

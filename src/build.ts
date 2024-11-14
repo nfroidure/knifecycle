@@ -1,19 +1,21 @@
 import {
   SPECIAL_PROPS,
+  INSTANCE,
+  AUTOLOAD,
   parseDependencyDeclaration,
   initializer,
 } from './util.js';
 import { buildInitializationSequence } from './sequence.js';
 import { FATAL_ERROR } from './fatalError.js';
 import { DISPOSE } from './dispose.js';
-import type { Autoloader } from './index.js';
+import { type Autoloader } from './index.js';
 import type {
   DependencyDeclaration,
   Initializer,
   Dependencies,
 } from './util.js';
 
-export const MANAGED_SERVICES = [FATAL_ERROR, DISPOSE, '$instance'];
+export const MANAGED_SERVICES = [FATAL_ERROR, DISPOSE, INSTANCE];
 
 type DependencyTreeNode = {
   __name: string;
@@ -50,7 +52,7 @@ export default initializer(
   {
     name: 'buildInitializer',
     type: 'service',
-    inject: ['$autoload'],
+    inject: [AUTOLOAD],
   },
   initInitializerBuilder,
 );
