@@ -434,6 +434,10 @@ is maybe the best feature of this library 😉.
 <dt><a href="#initInitializerBuilder">initInitializerBuilder(services)</a> ⇒ <code>Promise.&lt;function()&gt;</code></dt>
 <dd><p>Instantiate the initializer builder service</p>
 </dd>
+<dt><a href="#initDispose">initDispose()</a></dt>
+<dd><p>Allow to dispose the services of an
+initialized silo content.</p>
+</dd>
 <dt><a href="#constant">constant(name, value)</a> ⇒ <code>function</code></dt>
 <dd><p>Decorator that creates an initializer for a constant value</p>
 </dd>
@@ -634,6 +638,13 @@ const buildInitializer = await initInitializerBuilder({
 
 const content = await buildInitializer(['entryPoint']);
 ```
+<a name="initDispose"></a>
+
+## initDispose()
+Allow to dispose the services of an
+initialized silo content.
+
+**Kind**: global function  
 <a name="constant"></a>
 
 ## constant(name, value) ⇒ <code>function</code>
@@ -677,7 +688,7 @@ Decorator that creates an initializer from a service builder
 | [name] | <code>String</code> | The service's name |
 | [dependencies] | <code>Array.&lt;String&gt;</code> | The service's injected dependencies |
 | [singleton] | <code>Boolean</code> | Whether the service is a singleton or not |
-| [extra] | <code>any</code> | Eventual extra informations |
+| [extra] | <code>any</code> | Eventual extra information |
 
 **Example**  
 ```js
@@ -725,7 +736,7 @@ Decorator that creates an initializer for a provider
 | [name] | <code>String</code> | The service's name |
 | [dependencies] | <code>Array.&lt;String&gt;</code> | The service's dependencies |
 | [singleton] | <code>Boolean</code> | Whether the service is a singleton or not |
-| [extra] | <code>any</code> | Eventual extra informations |
+| [extra] | <code>any</code> | Eventual extra information |
 
 **Example**  
 ```js

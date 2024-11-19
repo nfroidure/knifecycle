@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint max-nested-callbacks:0 */
-import { jest, describe, beforeEach, test } from '@jest/globals';
-import assert from 'assert';
-import sinon from 'sinon';
+import { jest, describe, beforeEach, test, expect } from '@jest/globals';
 import { YError } from 'yerror';
 
 import {
@@ -101,14 +99,14 @@ describe('Knifecycle', () => {
       test('should work when overriding a previously set constant', async () => {
         $.register(constant('TEST', 1));
         $.register(constant('TEST', 2));
-        assert.deepEqual(await $.run<any>(['TEST']), {
+        expect(await $.run<any>(['TEST'])).toEqual({
           TEST: 2,
         });
       });
 
       test('should fail when overriding an initialized constant', async () => {
         $.register(constant('TEST', 1));
-        assert.deepEqual(await $.run<any>(['TEST']), {
+        expect(await $.run<any>(['TEST'])).toEqual({
           TEST: 1,
         });
 
@@ -116,8 +114,7 @@ describe('Knifecycle', () => {
           $.register(constant('TEST', 2));
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal(
-            (err as YError).code,
+          expect((err as YError).code).toEqual(
             'E_INITIALIZER_ALREADY_INSTANCIATED',
           );
         }
@@ -128,7 +125,7 @@ describe('Knifecycle', () => {
           $.register(constant('$dispose', 2));
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal((err as YError).code, 'E_IMMUTABLE_SERVICE_NAME');
+          expect((err as YError).code).toEqual('E_IMMUTABLE_SERVICE_NAME');
         }
       });
 
@@ -137,7 +134,7 @@ describe('Knifecycle', () => {
           $.register(service(timeService, '$overrides'));
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal((err as YError).code, 'E_CONSTANT_SERVICE_NAME');
+          expect((err as YError).code).toEqual('E_CONSTANT_SERVICE_NAME');
         }
       });
     });
@@ -152,20 +149,19 @@ describe('Knifecycle', () => {
         $.register(service(async () => () => 2, 'test'));
 
         const { test } = await $.run<any>(['test']);
-        assert.deepEqual(test(), 2);
+        expect(test()).toEqual(2);
       });
 
       test('should fail when overriding an initialized service', async () => {
         $.register(service(async () => () => 1, 'test'));
         const { test } = await $.run<any>(['test']);
-        assert.deepEqual(test(), 1);
+        expect(test()).toEqual(1);
 
         try {
           $.register(service(async () => () => 2, 'test'));
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal(
-            (err as YError).code,
+          expect((err as YError).code).toEqual(
             'E_INITIALIZER_ALREADY_INSTANCIATED',
           );
         }
@@ -187,7 +183,7 @@ describe('Knifecycle', () => {
 
         const { test } = await $.run<any>(['test']);
 
-        assert.deepEqual(test(), 3);
+        expect(test()).toEqual(3);
       });
 
       test('should work with complex services names overrides', async () => {
@@ -212,7 +208,7 @@ describe('Knifecycle', () => {
 
         const { log } = await $.run<any>(['log']);
 
-        assert.deepEqual(log(), 'log from debugLog');
+        expect(log()).toEqual('log from debugLog');
       });
     });
 
@@ -248,7 +244,7 @@ describe('Knifecycle', () => {
         );
 
         const { test } = await $.run<any>(['test']);
-        assert.deepEqual(test, 2);
+        expect(test).toEqual(2);
       });
 
       test('should work when overriding a previously set singleton provider', async () => {
@@ -279,7 +275,7 @@ describe('Knifecycle', () => {
         );
 
         const { test } = await $.run<any>(['test']);
-        assert.deepEqual(test, 2);
+        expect(test).toEqual(2);
       });
 
       test('should fail when overriding an initialized provider', async () => {
@@ -298,7 +294,7 @@ describe('Knifecycle', () => {
         );
 
         const { test } = await $.run<any>(['test']);
-        assert.deepEqual(test, 1);
+        expect(test).toEqual(1);
 
         try {
           $.register(
@@ -315,8 +311,7 @@ describe('Knifecycle', () => {
           );
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal(
-            (err as YError).code,
+          expect((err as YError).code).toEqual(
             'E_INITIALIZER_ALREADY_INSTANCIATED',
           );
         }
@@ -363,115 +358,101 @@ describe('Knifecycle', () => {
 
         const { test } = await $.run<any>(['test']);
 
-        assert.deepEqual(test, 3);
+        expect(test).toEqual(3);
       });
     });
 
     test('should fail when initializer is no a function', () => {
-      assert.throws(
-        () => {
-          $.register('not_a_function' as any);
-        },
-        (err) => {
-          assert.deepEqual((err as YError).code, 'E_BAD_INITIALIZER');
-          assert.deepEqual((err as YError).params, ['not_a_function']);
-          return true;
-        },
-      );
+      try {
+        $.register('not_a_function' as any);
+
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual('E_BAD_INITIALIZER');
+        expect((err as YError).params).toEqual(['not_a_function']);
+      }
     });
 
     test('should fail with no service name', () => {
-      assert.throws(
-        () => {
-          $.register(async () => undefined);
-        },
-        (err) => {
-          assert.deepEqual((err as YError).code, 'E_ANONYMOUS_ANALYZER');
-          assert.deepEqual((err as YError).params, []);
-          return true;
-        },
-      );
+      try {
+        $.register(async () => undefined);
+
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual('E_ANONYMOUS_ANALYZER');
+        expect((err as YError).params).toEqual([]);
+      }
     });
 
     test('should fail with a bad service type', () => {
-      assert.throws(
-        () => {
-          const fn = async () => undefined;
-          fn[SPECIAL_PROPS.NAME] = 'test';
-          fn[SPECIAL_PROPS.TYPE] = 'not_allowed_type';
-          $.register(fn);
-        },
-        (err) => {
-          assert.deepEqual((err as YError).code, 'E_BAD_INITIALIZER_TYPE');
-          assert.deepEqual((err as YError).params, [
-            'test',
-            'not_allowed_type',
-            ALLOWED_INITIALIZER_TYPES,
-          ]);
-          return true;
-        },
-      );
+      try {
+        const fn = async () => undefined;
+        fn[SPECIAL_PROPS.NAME] = 'test';
+        fn[SPECIAL_PROPS.TYPE] = 'not_allowed_type';
+        $.register(fn);
+
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual('E_BAD_INITIALIZER_TYPE');
+        expect((err as YError).params).toEqual([
+          'test',
+          'not_allowed_type',
+          ALLOWED_INITIALIZER_TYPES,
+        ]);
+      }
     });
 
     test('should fail with an undefined constant', () => {
-      assert.throws(
-        () => {
-          const fn = async () => undefined;
-          fn[SPECIAL_PROPS.NAME] = 'THE_NUMBER';
-          fn[SPECIAL_PROPS.TYPE] = 'constant';
-          fn[SPECIAL_PROPS.VALUE] = undefined;
-          $.register(fn);
-        },
-        (err) => {
-          assert.deepEqual(
-            (err as YError).code,
-            'E_UNDEFINED_CONSTANT_INITIALIZER',
-          );
-          assert.deepEqual((err as YError).params, ['THE_NUMBER']);
-          return true;
-        },
-      );
+      try {
+        const fn = async () => undefined;
+        fn[SPECIAL_PROPS.NAME] = 'THE_NUMBER';
+        fn[SPECIAL_PROPS.TYPE] = 'constant';
+        fn[SPECIAL_PROPS.VALUE] = undefined;
+        $.register(fn);
+
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual(
+          'E_UNDEFINED_CONSTANT_INITIALIZER',
+        );
+        expect((err as YError).params).toEqual(['THE_NUMBER']);
+      }
     });
 
     test('should fail with a non constant that has a value', () => {
-      assert.throws(
-        () => {
-          const fn = async () => undefined;
-          fn[SPECIAL_PROPS.NAME] = 'myService';
-          fn[SPECIAL_PROPS.TYPE] = 'service';
-          fn[SPECIAL_PROPS.VALUE] = 42;
-          $.register(fn);
-        },
-        (err) => {
-          assert.deepEqual(
-            (err as YError).code,
-            'E_BAD_VALUED_NON_CONSTANT_INITIALIZER',
-          );
-          assert.deepEqual((err as YError).params, ['myService']);
-          return true;
-        },
-      );
+      try {
+        const fn = async () => undefined;
+        fn[SPECIAL_PROPS.NAME] = 'myService';
+        fn[SPECIAL_PROPS.TYPE] = 'service';
+        fn[SPECIAL_PROPS.VALUE] = 42;
+        $.register(fn);
+
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual(
+          'E_BAD_VALUED_NON_CONSTANT_INITIALIZER',
+        );
+        expect((err as YError).params).toEqual(['myService']);
+      }
     });
 
     test('should fail with special autoload initializer that is not a singleton', () => {
-      assert.throws(
-        () => {
-          $.register(
-            initializer(
-              {
-                name: '$autoload',
-                type: 'provider',
-              },
-              async () => ({ service: () => undefined }),
-            ),
-          );
-        },
-        (err) => {
-          assert.deepEqual((err as YError).code, 'E_BAD_AUTOLOADER');
-          assert.deepEqual((err as YError).params, [false]);
-          return true;
-        },
-      );
+      try {
+        $.register(
+          initializer(
+            {
+              name: '$autoload',
+              type: 'provider',
+            },
+            async () => ({ service: () => undefined }),
+          ),
+        );
+
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual('E_BAD_AUTOLOADER');
+        expect((err as YError).params).toEqual([false]);
+      }
     });
   });
 
@@ -481,121 +462,96 @@ describe('Knifecycle', () => {
     });
 
     test('should fail with direct circular dependencies', () => {
-      assert.throws(
-        () => {
-          $.register(provider(hashProvider, 'hash', ['hash']));
-        },
-        (err) => {
-          assert.deepEqual((err as YError).code, 'E_CIRCULAR_DEPENDENCY');
-          assert.deepEqual((err as YError).params, ['hash']);
-          return true;
-        },
-      );
+      try {
+        $.register(provider(hashProvider, 'hash', ['hash']));
+
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
+        expect((err as YError).params).toEqual(['hash']);
+      }
     });
 
     test('should fail with direct circular dependencies on mapped services', () => {
-      assert.throws(
-        () => {
-          $.register(provider(hashProvider, 'hash', ['hash>lol']));
-        },
-        (err) => {
-          assert.deepEqual((err as YError).code, 'E_CIRCULAR_DEPENDENCY');
-          assert.deepEqual((err as YError).params, ['hash']);
-          return true;
-        },
-      );
+      try {
+        $.register(provider(hashProvider, 'hash', ['hash>lol']));
+
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
+        expect((err as YError).params).toEqual(['hash']);
+      }
     });
 
     test('should fail with circular dependencies', () => {
-      assert.throws(
-        () => {
-          $.register(provider(inject(['hash3'], hashProvider), 'hash'));
-          $.register(provider(inject(['hash'], hashProvider), 'hash1'));
-          $.register(provider(inject(['hash1'], hashProvider), 'hash2'));
-          $.register(provider(inject(['hash'], hashProvider), 'hash3'));
-        },
-        (err) => {
-          assert.deepEqual((err as YError).code, 'E_CIRCULAR_DEPENDENCY');
-          assert.deepEqual((err as YError).params, ['hash3', 'hash', 'hash3']);
-          return true;
-        },
-      );
+      try {
+        $.register(provider(inject(['hash3'], hashProvider), 'hash'));
+        $.register(provider(inject(['hash'], hashProvider), 'hash1'));
+        $.register(provider(inject(['hash1'], hashProvider), 'hash2'));
+        $.register(provider(inject(['hash'], hashProvider), 'hash3'));
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
+        expect((err as YError).params).toEqual(['hash3', 'hash', 'hash3']);
+      }
     });
 
     test('should fail with deeper circular dependencies', () => {
-      assert.throws(
-        () => {
-          $.register(provider(inject(['hash1'], hashProvider), 'hash'));
-          $.register(provider(inject(['hash2'], hashProvider), 'hash1'));
-          $.register(provider(inject(['hash3'], hashProvider), 'hash2'));
-          $.register(provider(inject(['hash'], hashProvider), 'hash3'));
-        },
-        (err) => {
-          assert.deepEqual((err as YError).code, 'E_CIRCULAR_DEPENDENCY');
-          assert.deepEqual((err as YError).params, [
-            'hash3',
-            'hash',
-            'hash1',
-            'hash2',
-            'hash3',
-          ]);
-          return true;
-        },
-      );
+      try {
+        $.register(provider(inject(['hash1'], hashProvider), 'hash'));
+        $.register(provider(inject(['hash2'], hashProvider), 'hash1'));
+        $.register(provider(inject(['hash3'], hashProvider), 'hash2'));
+        $.register(provider(inject(['hash'], hashProvider), 'hash3'));
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
+        expect((err as YError).params).toEqual([
+          'hash3',
+          'hash',
+          'hash1',
+          'hash2',
+          'hash3',
+        ]);
+      }
     });
 
     test('should fail with circular dependencies on mapped services', () => {
-      assert.throws(
-        () => {
-          $.register(provider(inject(['hash3>aHash3'], hashProvider), 'hash'));
-          $.register(provider(inject(['hash>aHash'], hashProvider), 'hash1'));
-          $.register(provider(inject(['hash1>aHash1'], hashProvider), 'hash2'));
-          $.register(provider(inject(['hash>aHash'], hashProvider), 'hash3'));
-        },
-        (err) => {
-          assert.deepEqual((err as YError).code, 'E_CIRCULAR_DEPENDENCY');
-          assert.deepEqual((err as YError).params, [
-            'hash3',
-            'hash>aHash',
-            'hash3>aHash3',
-          ]);
-          return true;
-        },
-      );
+      try {
+        $.register(provider(inject(['hash3>aHash3'], hashProvider), 'hash'));
+        $.register(provider(inject(['hash>aHash'], hashProvider), 'hash1'));
+        $.register(provider(inject(['hash1>aHash1'], hashProvider), 'hash2'));
+        $.register(provider(inject(['hash>aHash'], hashProvider), 'hash3'));
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
+        expect((err as YError).params).toEqual([
+          'hash3',
+          'hash>aHash',
+          'hash3>aHash3',
+        ]);
+      }
     });
 
     test('should fail with singleton depending on siloed services', () => {
-      assert.throws(
-        () => {
-          $.register(provider(hashProvider, 'hash', [], false));
-          $.register(provider(hashProvider, 'hash1', ['hash'], true));
-        },
-        (err) => {
-          assert.deepEqual(
-            (err as YError).code,
-            'E_BAD_SINGLETON_DEPENDENCIES',
-          );
-          assert.deepEqual((err as YError).params, ['hash1', 'hash']);
-          return true;
-        },
-      );
+      try {
+        $.register(provider(hashProvider, 'hash', [], false));
+        $.register(provider(hashProvider, 'hash1', ['hash'], true));
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual('E_BAD_SINGLETON_DEPENDENCIES');
+        expect((err as YError).params).toEqual(['hash1', 'hash']);
+      }
     });
 
     test('should fail when setting siloed services depended on by a singleton', () => {
-      assert.throws(
-        () => {
-          $.register(provider(hashProvider, 'hash1', ['hash'], true));
-          $.register(provider(hashProvider, 'hash', [], false));
-        },
-        (err) => {
-          assert.deepEqual(
-            (err as YError).code,
-            'E_BAD_SINGLETON_DEPENDENCIES',
-          );
-          assert.deepEqual((err as YError).params, ['hash1', 'hash']);
-          return true;
-        },
-      );
+      try {
+        $.register(provider(hashProvider, 'hash1', ['hash'], true));
+        $.register(provider(hashProvider, 'hash', [], false));
+        throw new YError('E_UNEXPECTED_SUCCESS');
+      } catch (err) {
+        expect((err as YError).code).toEqual('E_BAD_SINGLETON_DEPENDENCIES');
+        expect((err as YError).params).toEqual(['hash1', 'hash']);
+      }
     });
   });
 
@@ -604,7 +560,7 @@ describe('Knifecycle', () => {
       test('with no dependencies', async () => {
         const dependencies = await $.run<any>([]);
 
-        assert.deepEqual(dependencies, {});
+        expect(dependencies).toEqual({});
       });
 
       test('with constant dependencies', async () => {
@@ -613,8 +569,8 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['time', 'ENV']);
 
-        assert.deepEqual(Object.keys(dependencies), ['time', 'ENV']);
-        assert.deepEqual(dependencies, {
+        expect(Object.keys(dependencies)).toEqual(['time', 'ENV']);
+        expect(dependencies).toEqual({
           ENV,
           time,
         });
@@ -632,8 +588,8 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['sample']);
 
-        assert.deepEqual(Object.keys(dependencies), ['sample']);
-        assert.deepEqual(dependencies, {
+        expect(Object.keys(dependencies)).toEqual(['sample']);
+        expect(dependencies).toEqual({
           sample: 'function',
         });
       });
@@ -646,8 +602,8 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['nullService']);
 
-        assert.deepEqual(Object.keys(dependencies), ['nullService']);
-        assert.deepEqual(dependencies, {
+        expect(Object.keys(dependencies)).toEqual(['nullService']);
+        expect(dependencies).toEqual({
           nullService: null,
         });
       });
@@ -660,8 +616,8 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['nullProvider']);
 
-        assert.deepEqual(Object.keys(dependencies), ['nullProvider']);
-        assert.deepEqual(dependencies, {
+        expect(Object.keys(dependencies)).toEqual(['nullProvider']);
+        expect(dependencies).toEqual({
           nullProvider: null,
         });
       });
@@ -678,11 +634,11 @@ describe('Knifecycle', () => {
           'undefinedProvider',
         ]);
 
-        assert.deepEqual(Object.keys(dependencies), [
+        expect(Object.keys(dependencies)).toEqual([
           'undefinedService',
           'undefinedProvider',
         ]);
-        assert.deepEqual(dependencies, {
+        expect(dependencies).toEqual({
           undefinedService: undefined,
           undefinedProvider: undefined,
         });
@@ -695,8 +651,8 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['time', 'hash']);
 
-        assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-        assert.deepEqual(dependencies, {
+        expect(Object.keys(dependencies)).toEqual(['time', 'hash']);
+        expect(dependencies).toEqual({
           hash: { ENV },
           time,
         });
@@ -710,8 +666,8 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['time', 'hash']);
 
-        assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-        assert.deepEqual(dependencies, {
+        expect(Object.keys(dependencies)).toEqual(['time', 'hash']);
+        expect(dependencies).toEqual({
           hash: { ENV, DEBUG: {} },
           time,
         });
@@ -724,8 +680,8 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['time', 'hash']);
 
-        assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-        assert.deepEqual(dependencies, {
+        expect(Object.keys(dependencies)).toEqual(['time', 'hash']);
+        expect(dependencies).toEqual({
           hash: { ENV, DEBUG: undefined },
           time,
         });
@@ -743,11 +699,11 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['hash5', 'time']);
 
-        assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
+        expect(Object.keys(dependencies)).toEqual(['hash5', 'time']);
       });
 
       test('and instanciate services once', async () => {
-        const timeServiceStub = sinon.spy(timeService);
+        const timeServiceStub = jest.fn(timeService);
 
         $.register(constant('ENV', ENV));
         $.register(service(timeServiceStub, 'time'));
@@ -762,36 +718,38 @@ describe('Knifecycle', () => {
           'time',
         ]);
 
-        assert.deepEqual(Object.keys(dependencies), [
+        expect(Object.keys(dependencies)).toEqual([
           'hash',
           'hash2',
           'hash3',
           'time',
         ]);
-        assert.deepEqual(timeServiceStub.args, [[{}]]);
+        expect(timeServiceStub.mock.calls).toEqual([[{}]]);
       });
 
       test('and instanciate a single mapped service', async () => {
-        const providerStub = sinon.stub().returns(
+        const providerStub = jest.fn().mockReturnValue(
           Promise.resolve({
             service: 'stub',
           }),
         );
-        const providerStub2 = sinon.stub().returns(
+        const providerStub2 = jest.fn().mockReturnValue(
           Promise.resolve({
             service: 'stub2',
           }),
         );
 
-        $.register(provider(providerStub, 'mappedStub', ['stub2>mappedStub2']));
-        $.register(provider(providerStub2, 'mappedStub2'));
+        $.register(
+          provider(providerStub as any, 'mappedStub', ['stub2>mappedStub2']),
+        );
+        $.register(provider(providerStub2 as any, 'mappedStub2'));
 
         const dependencies = await $.run<any>(['stub>mappedStub']);
 
-        assert.deepEqual(dependencies, {
+        expect(dependencies).toEqual({
           stub: 'stub',
         });
-        assert.deepEqual(providerStub.args, [
+        expect(providerStub.mock.calls).toEqual([
           [
             {
               stub2: 'stub2',
@@ -801,7 +759,7 @@ describe('Knifecycle', () => {
       });
 
       test('and instanciate several services with mappings', async () => {
-        const timeServiceStub = sinon.spy(timeService);
+        const timeServiceStub = jest.fn(timeService);
 
         $.register(constant('ENV', ENV));
         $.register(singleton(service(timeServiceStub, 'aTime')));
@@ -815,8 +773,8 @@ describe('Knifecycle', () => {
           'time>aTime',
         ]);
 
-        assert.deepEqual(Object.keys(dependencies), ['hash2', 'hash3', 'time']);
-        assert.deepEqual(timeServiceStub.args, [[{}]]);
+        expect(Object.keys(dependencies)).toEqual(['hash2', 'hash3', 'time']);
+        expect(timeServiceStub.mock.calls).toEqual([[{}]]);
       });
     });
 
@@ -828,8 +786,8 @@ describe('Knifecycle', () => {
           await $.run<any>(['lol']);
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROMISE');
-          assert.deepEqual((err as YError).params, ['lol']);
+          expect((err as YError).code).toEqual('E_BAD_SERVICE_PROMISE');
+          expect((err as YError).params).toEqual(['lol']);
         }
       });
 
@@ -839,8 +797,8 @@ describe('Knifecycle', () => {
           await $.run<any>(['lol']);
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROVIDER');
-          assert.deepEqual((err as YError).params, ['lol']);
+          expect((err as YError).code).toEqual('E_BAD_SERVICE_PROVIDER');
+          expect((err as YError).params).toEqual(['lol']);
         }
       });
 
@@ -850,8 +808,8 @@ describe('Knifecycle', () => {
           await $.run<any>(['lol']);
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.deepEqual((err as YError).code, 'E_BAD_SERVICE_PROVIDER');
-          assert.deepEqual((err as YError).params, ['lol']);
+          expect((err as YError).code).toEqual('E_BAD_SERVICE_PROVIDER');
+          expect((err as YError).params).toEqual(['lol']);
         }
       });
 
@@ -860,8 +818,8 @@ describe('Knifecycle', () => {
           await $.run<any>(['lol']);
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.deepEqual((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
-          assert.deepEqual((err as YError).params, ['__run__', 'lol']);
+          expect((err as YError).code).toEqual('E_UNMATCHED_DEPENDENCY');
+          expect((err as YError).params).toEqual(['__run__', 'lol']);
         }
       });
 
@@ -875,8 +833,8 @@ describe('Knifecycle', () => {
           await $.run<any>(['time', 'hash']);
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.deepEqual((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
-          assert.deepEqual((err as YError).params, [
+          expect((err as YError).code).toEqual('E_UNMATCHED_DEPENDENCY');
+          expect((err as YError).params).toEqual([
             '__run__',
             'hash',
             'hash2',
@@ -919,8 +877,8 @@ describe('Knifecycle', () => {
           await $.run<any>(['human']);
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.deepEqual((err as YError).code, 'E_CIRCULAR_DEPENDENCY');
-          assert.deepEqual((err as YError).params, [
+          expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
+          expect((err as YError).params).toEqual([
             '__run__',
             'human',
             'tree',
@@ -977,7 +935,7 @@ describe('Knifecycle', () => {
           await process.fatalErrorPromise;
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.deepEqual((err as Error).message, 'E_DB_ERROR');
+          expect((err as Error).message).toEqual('E_DB_ERROR');
         }
       });
     });
@@ -1008,8 +966,8 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['time', 'hash']);
 
-        assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-        assert.deepEqual(dependencies, {
+        expect(Object.keys(dependencies)).toEqual(['time', 'hash']);
+        expect(dependencies).toEqual({
           hash: { ENV: 'value_of:ENV', DEBUG: 'value_of:DEBUG' },
           time: 'value_of:time',
         });
@@ -1047,8 +1005,8 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['time', 'hash']);
 
-        assert.deepEqual(Object.keys(dependencies), ['time', 'hash']);
-        assert.deepEqual(dependencies, {
+        expect(Object.keys(dependencies)).toEqual(['time', 'hash']);
+        expect(dependencies).toEqual({
           hash: { ENV, DEBUG: 'THE_DEBUG:DEBUG' },
           time,
         });
@@ -1089,7 +1047,7 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['hash5', 'time']);
 
-        assert.deepEqual(Object.keys(dependencies), ['hash5', 'time']);
+        expect(Object.keys(dependencies)).toEqual(['hash5', 'time']);
       });
 
       test('with various dependencies', async () => {
@@ -1126,7 +1084,7 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['hash', '?ENV']);
 
-        assert.deepEqual(Object.keys(dependencies), ['hash', 'ENV']);
+        expect(Object.keys(dependencies)).toEqual(['hash', 'ENV']);
       });
 
       test('and instantiate services once', async () => {
@@ -1150,7 +1108,7 @@ describe('Knifecycle', () => {
             }),
           ),
         );
-        const timeServiceStub = sinon.spy(timeService);
+        const timeServiceStub = jest.fn(timeService);
 
         $.register(constant('ENV', ENV));
         $.register(service(timeServiceStub, 'time'));
@@ -1161,8 +1119,8 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['hash', 'hash_', 'hash3']);
 
-        assert.deepEqual(timeServiceStub.args, [[{}]]);
-        assert.deepEqual(Object.keys(dependencies), ['hash', 'hash_', 'hash3']);
+        expect(timeServiceStub.mock.calls).toEqual([[{}]]);
+        expect(Object.keys(dependencies)).toEqual(['hash', 'hash_', 'hash3']);
       });
 
       test('with null service dependencies', async () => {
@@ -1186,8 +1144,8 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['nullService']);
 
-        assert.deepEqual(Object.keys(dependencies), ['nullService']);
-        assert.deepEqual(dependencies, {
+        expect(Object.keys(dependencies)).toEqual(['nullService']);
+        expect(dependencies).toEqual({
           nullService: null,
         });
       });
@@ -1213,8 +1171,8 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['nullProvider']);
 
-        assert.deepEqual(Object.keys(dependencies), ['nullProvider']);
-        assert.deepEqual(dependencies, {
+        expect(Object.keys(dependencies)).toEqual(['nullProvider']);
+        expect(dependencies).toEqual({
           nullProvider: null,
         });
       });
@@ -1246,13 +1204,13 @@ describe('Knifecycle', () => {
           'undefinedProvider',
         ]);
 
-        assert.deepEqual(Object.keys(dependencies), [
+        expect(Object.keys(dependencies)).toEqual([
           'undefinedService',
           'undefinedProvider',
         ]);
-        assert.deepEqual(dependencies, {
+        expect(dependencies).toEqual({
           undefinedService: undefined,
-          undefinedProvider: null,
+          undefinedProvider: undefined,
         });
       });
 
@@ -1281,7 +1239,7 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['test']);
 
-        assert.deepEqual(Object.keys(dependencies), ['test']);
+        expect(Object.keys(dependencies)).toEqual(['test']);
       });
 
       test('when autoload depends on deeper optional and unexisting autoloaded dependencies', async () => {
@@ -1324,7 +1282,7 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['test', 'log']);
 
-        assert.deepEqual(Object.keys(dependencies), ['test', 'log']);
+        expect(Object.keys(dependencies)).toEqual(['test', 'log']);
       });
     });
 
@@ -1334,7 +1292,7 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
+          expect((err as YError).code).toEqual('E_UNMATCHED_DEPENDENCY');
         }
       });
 
@@ -1357,16 +1315,14 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
-          assert.deepEqual((err as YError).params, ['test']);
-          assert.equal(
-            ((err as YError).wrappedErrors[0] as YError).code,
+          expect((err as YError).code).toEqual('E_BAD_AUTOLOADED_INITIALIZER');
+          expect((err as YError).params).toEqual(['test']);
+          expect(((err as YError).wrappedErrors[0] as YError).code).toEqual(
             'E_CANNOT_AUTOLOAD',
           );
-          assert.deepEqual(
-            ((err as YError).wrappedErrors[0] as YError).params,
-            ['test'],
-          );
+          expect(((err as YError).wrappedErrors[0] as YError).params).toEqual([
+            'test',
+          ]);
         }
       });
 
@@ -1415,16 +1371,16 @@ describe('Knifecycle', () => {
           await $.run<any>(['test', 'log']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
-          assert.deepEqual((err as YError).params, ['parentService2']);
-          assert.equal(
-            ((err as YError).wrappedErrors[0] as YError).code,
+          expect((err as YError).code).toEqual('E_BAD_AUTOLOADED_INITIALIZER');
+          expect((err as YError).params).toEqual(['parentService2']);
+          expect(((err as YError).wrappedErrors[0] as YError).code).toEqual(
             'E_CIRCULAR_DEPENDENCY',
           );
-          assert.deepEqual(
-            ((err as YError).wrappedErrors[0] as YError).params,
-            ['parentService2', 'parentService1', 'parentService2'],
-          );
+          expect(((err as YError).wrappedErrors[0] as YError).params).toEqual([
+            'parentService2',
+            'parentService1',
+            'parentService2',
+          ]);
         }
       });
 
@@ -1445,16 +1401,15 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
-          assert.deepEqual((err as YError).params, ['test']);
-          assert.equal(
-            ((err as YError).wrappedErrors[0] as YError).code,
+          expect((err as YError).code).toEqual('E_BAD_AUTOLOADED_INITIALIZER');
+          expect((err as YError).params).toEqual(['test']);
+          expect(((err as YError).wrappedErrors[0] as YError).code).toEqual(
             'E_BAD_AUTOLOADER_RESULT',
           );
-          assert.deepEqual(
-            ((err as YError).wrappedErrors[0] as YError).params,
-            ['test', 'not_an_initializer'],
-          );
+          expect(((err as YError).wrappedErrors[0] as YError).params).toEqual([
+            'test',
+            'not_an_initializer',
+          ]);
         }
       });
 
@@ -1478,16 +1433,15 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
-          assert.deepEqual((err as YError).params, ['test']);
-          assert.equal(
-            ((err as YError).wrappedErrors[0] as YError).code,
+          expect((err as YError).code).toEqual('E_BAD_AUTOLOADED_INITIALIZER');
+          expect((err as YError).params).toEqual(['test']);
+          expect(((err as YError).wrappedErrors[0] as YError).code).toEqual(
             'E_AUTOLOADED_INITIALIZER_MISMATCH',
           );
-          assert.deepEqual(
-            ((err as YError).wrappedErrors[0] as YError).params,
-            ['test', undefined],
-          );
+          expect(((err as YError).wrappedErrors[0] as YError).params).toEqual([
+            'test',
+            undefined,
+          ]);
         }
       });
 
@@ -1518,16 +1472,15 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal((err as YError).code, 'E_BAD_AUTOLOADED_INITIALIZER');
-          assert.deepEqual((err as YError).params, ['test']);
-          assert.equal(
-            ((err as YError).wrappedErrors[0] as YError).code,
+          expect((err as YError).code).toEqual('E_BAD_AUTOLOADED_INITIALIZER');
+          expect((err as YError).params).toEqual(['test']);
+          expect(((err as YError).wrappedErrors[0] as YError).code).toEqual(
             'E_AUTOLOADED_INITIALIZER_MISMATCH',
           );
-          assert.deepEqual(
-            ((err as YError).wrappedErrors[0] as YError).params,
-            ['test', 'not-test'],
-          );
+          expect(((err as YError).wrappedErrors[0] as YError).params).toEqual([
+            'test',
+            'not-test',
+          ]);
         }
       });
 
@@ -1558,8 +1511,8 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          assert.equal((err as YError).code, 'E_UNMATCHED_DEPENDENCY');
-          assert.deepEqual((err as YError).params, ['__run__', 'test']);
+          expect((err as YError).code).toEqual('E_UNMATCHED_DEPENDENCY');
+          expect((err as YError).params).toEqual(['__run__', 'test']);
         }
       });
     });
@@ -1572,15 +1525,11 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
       const dependencies = await $.run<any>(['time', 'hash', '$injector']);
-      assert.deepEqual(Object.keys(dependencies), [
-        'time',
-        'hash',
-        '$injector',
-      ]);
+      expect(Object.keys(dependencies)).toEqual(['time', 'hash', '$injector']);
       const injectDependencies = await dependencies.$injector([]);
 
-      assert.deepEqual(Object.keys(injectDependencies), []);
-      assert.deepEqual(injectDependencies, {});
+      expect(Object.keys(injectDependencies)).toEqual([]);
+      expect(injectDependencies).toEqual({});
     });
 
     test('should work with same dependencies then the running silo', async () => {
@@ -1589,15 +1538,11 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
       const dependencies = await $.run<any>(['time', 'hash', '$injector']);
-      assert.deepEqual(Object.keys(dependencies), [
-        'time',
-        'hash',
-        '$injector',
-      ]);
+      expect(Object.keys(dependencies)).toEqual(['time', 'hash', '$injector']);
 
       const injectDependencies = await dependencies.$injector(['time', 'hash']);
-      assert.deepEqual(Object.keys(injectDependencies), ['time', 'hash']);
-      assert.deepEqual(injectDependencies, {
+      expect(Object.keys(injectDependencies)).toEqual(['time', 'hash']);
+      expect(injectDependencies).toEqual({
         hash: { ENV },
         time,
       });
@@ -1609,18 +1554,14 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
       const dependencies = await $.run<any>(['time', 'hash', '$injector']);
-      assert.deepEqual(Object.keys(dependencies), [
-        'time',
-        'hash',
-        '$injector',
-      ]);
+      expect(Object.keys(dependencies)).toEqual(['time', 'hash', '$injector']);
 
       const injectDependencies = await dependencies.$injector([
         'aTime>time',
         'aHash>hash',
       ]);
-      assert.deepEqual(Object.keys(injectDependencies), ['aTime', 'aHash']);
-      assert.deepEqual(injectDependencies, {
+      expect(Object.keys(injectDependencies)).toEqual(['aTime', 'aHash']);
+      expect(injectDependencies).toEqual({
         aHash: { ENV },
         aTime: time,
       });
@@ -1632,11 +1573,11 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
       const dependencies = await $.run<any>(['time', '$injector']);
-      assert.deepEqual(Object.keys(dependencies), ['time', '$injector']);
+      expect(Object.keys(dependencies)).toEqual(['time', '$injector']);
 
       const injectDependencies = await dependencies.$injector(['time', 'hash']);
-      assert.deepEqual(Object.keys(injectDependencies), ['time', 'hash']);
-      assert.deepEqual(injectDependencies, {
+      expect(Object.keys(injectDependencies)).toEqual(['time', 'hash']);
+      expect(injectDependencies).toEqual({
         hash: { ENV },
         time,
       });
@@ -1651,11 +1592,11 @@ describe('Knifecycle', () => {
         $.run<any>(['hash']),
       ]);
 
-      assert.notEqual(hash, sameHash);
+      expect(hash).not.toBe(sameHash);
 
       const { hash: yaSameHash } = await $.run<any>(['hash']);
 
-      assert.notEqual(hash, yaSameHash);
+      expect(hash).not.toBe(yaSameHash);
     });
 
     test('should reuse dependencies when declared as singletons', async () => {
@@ -1670,18 +1611,18 @@ describe('Knifecycle', () => {
           $.run<any>(['hash2']),
           $.run<any>(['hash2']),
         ]);
-      assert.equal(hash, sameHash);
-      assert.equal(hash2, sameHash2);
+      expect(hash).toEqual(sameHash);
+      expect(hash2).toEqual(sameHash2);
 
       const { hash: yaSameHash } = await $.run<any>(['hash']);
 
-      assert.equal(hash, yaSameHash);
+      expect(hash).toEqual(yaSameHash);
     });
   });
 
   describe('destroy', () => {
     test('should work even with one silo and no dependencies', async () => {
-      assert.equal(typeof $.destroy, 'function');
+      expect(typeof $.destroy).toEqual('function');
       const dependencies = await $.run<any>(['$instance']);
 
       await dependencies.$instance.destroy();
@@ -1700,7 +1641,7 @@ describe('Knifecycle', () => {
         $.run<any>(['ENV', 'hash', 'hash2']),
       ]);
 
-      assert.equal(typeof dependencies.$instance.destroy, 'function');
+      expect(typeof dependencies.$instance.destroy).toEqual('function');
 
       await $.destroy();
     });
@@ -1752,7 +1693,7 @@ describe('Knifecycle', () => {
 
       const dependencies = await $.run<any>(['$instance']);
 
-      assert.equal(typeof dependencies.$instance.destroy, 'function');
+      expect(typeof dependencies.$instance.destroy).toEqual('function');
 
       await dependencies.$instance.destroy();
 
@@ -1760,7 +1701,7 @@ describe('Knifecycle', () => {
         await $.run<any>(['ENV', 'hash', 'hash1']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        assert.equal((err as YError).code, 'E_INSTANCE_DESTROYED');
+        expect((err as YError).code).toEqual('E_INSTANCE_DESTROYED');
       }
     });
   });
@@ -1768,7 +1709,7 @@ describe('Knifecycle', () => {
   describe('$dispose', () => {
     test('should work with no dependencies', async () => {
       const dependencies = await $.run<any>(['$dispose']);
-      assert.equal(typeof dependencies.$dispose, 'function');
+      expect(typeof dependencies.$dispose).toEqual('function');
 
       return dependencies.$dispose();
     });
@@ -1778,7 +1719,7 @@ describe('Knifecycle', () => {
       $.register(constant('time', time));
 
       const dependencies = await $.run<any>(['time', 'ENV', '$dispose']);
-      assert.deepEqual(Object.keys(dependencies), ['time', 'ENV', '$dispose']);
+      expect(Object.keys(dependencies)).toEqual(['time', 'ENV', '$dispose']);
 
       await dependencies.$dispose();
     });
@@ -1789,7 +1730,7 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash', ['ENV']));
 
       const dependencies = await $.run<any>(['time', 'hash', '$dispose']);
-      assert.deepEqual(Object.keys(dependencies), ['time', 'hash', '$dispose']);
+      expect(Object.keys(dependencies)).toEqual(['time', 'hash', '$dispose']);
 
       await dependencies.$dispose();
     });
@@ -1800,7 +1741,7 @@ describe('Knifecycle', () => {
       const shutdownCallPromise = new Promise((resolve) => {
         shutdownCallResolve = resolve;
       });
-      const shutdownStub = sinon.spy(() => {
+      const shutdownStub = jest.fn(() => {
         shutdownCallResolve();
         return new Promise((resolve) => {
           shutdownResolve = resolve;
@@ -1824,7 +1765,7 @@ describe('Knifecycle', () => {
                 shutdownResolve,
               },
               dispose: shutdownStub,
-            }),
+            }) as any,
           'shutdownChecker',
           ['hash4'],
         ),
@@ -1836,7 +1777,7 @@ describe('Knifecycle', () => {
         '$dispose',
         'shutdownChecker',
       ]);
-      assert.deepEqual(Object.keys(dependencies), [
+      expect(Object.keys(dependencies)).toEqual([
         'hash5',
         'time',
         '$dispose',
@@ -1844,7 +1785,7 @@ describe('Knifecycle', () => {
       ]);
 
       const finalPromise = shutdownCallPromise.then(() => {
-        assert.deepEqual(shutdownStub.args, [[]]);
+        expect(shutdownStub.mock.calls).toEqual([[]]);
         shutdownResolve();
       });
       await dependencies.$dispose();
@@ -1857,7 +1798,7 @@ describe('Knifecycle', () => {
       const shutdownCallPromise = new Promise((resolve) => {
         shutdownCallResolve = resolve;
       });
-      const shutdownStub = sinon.spy(() => {
+      const shutdownStub = jest.fn(() => {
         shutdownCallResolve();
         return new Promise((resolve) => {
           shutdownResolve = resolve;
@@ -1875,7 +1816,7 @@ describe('Knifecycle', () => {
                 shutdownResolve,
               },
               dispose: shutdownStub,
-            }),
+            }) as any,
           'shutdownChecker',
           ['hash'],
         ),
@@ -1889,7 +1830,7 @@ describe('Knifecycle', () => {
         '$dispose',
         'shutdownChecker',
       ]);
-      assert.deepEqual(Object.keys(dependencies), [
+      expect(Object.keys(dependencies)).toEqual([
         'hash1',
         'hash2',
         '$dispose',
@@ -1897,7 +1838,7 @@ describe('Knifecycle', () => {
       ]);
 
       const finalPromise = shutdownCallPromise.then(() => {
-        assert.deepEqual(shutdownStub.args, [[]]);
+        expect(shutdownStub.mock.calls).toEqual([[]]);
         shutdownResolve();
       });
 
@@ -1906,7 +1847,7 @@ describe('Knifecycle', () => {
     });
 
     test('should delay service shutdown to their deeper dependencies', async () => {
-      const servicesShutdownCalls = sinon.spy(() => Promise.resolve());
+      const servicesShutdownCalls = jest.fn(() => Promise.resolve());
 
       $.register(
         provider(
@@ -1942,10 +1883,10 @@ describe('Knifecycle', () => {
       );
 
       const dependencies = await $.run<any>(['hash2', '$dispose']);
-      assert.deepEqual(Object.keys(dependencies), ['hash2', '$dispose']);
+      expect(Object.keys(dependencies)).toEqual(['hash2', '$dispose']);
       await dependencies.$dispose();
 
-      assert.deepEqual(servicesShutdownCalls.args, [
+      expect(servicesShutdownCalls.mock.calls).toEqual([
         ['hash2'],
         ['hash1'],
         ['hash'],
@@ -1960,12 +1901,12 @@ describe('Knifecycle', () => {
       const { hash } = await $.run<any>(['time', 'hash']);
       const dependencies = await $.run<any>(['time', 'hash', '$dispose']);
 
-      assert.equal(dependencies.hash, hash);
+      expect(dependencies.hash).toEqual(hash);
 
       await dependencies.$dispose();
 
       const newDependencies = await $.run<any>(['time', 'hash']);
-      assert.equal(newDependencies.hash, hash);
+      expect(newDependencies.hash).toEqual(hash);
     });
 
     test('should shutdown singleton dependencies if not used elsewhere', async () => {
@@ -1978,7 +1919,8 @@ describe('Knifecycle', () => {
       await $dispose();
 
       const dependencies = await $.run<any>(['time', 'hash']);
-      assert.notEqual(dependencies.hash, hash);
+
+      expect(dependencies.hash).not.toBe(hash);
     });
   });
 
@@ -1986,7 +1928,7 @@ describe('Knifecycle', () => {
     test('should print nothing when no dependency', () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
-      assert.equal($.toMermaidGraph(), '');
+      expect($.toMermaidGraph()).toEqual('');
     });
 
     test('should print a dependency graph', () => {
@@ -1998,8 +1940,7 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash3', ['hash2']));
       $.register(provider(hashProvider, 'hash4', ['hash3']));
       $.register(provider(hashProvider, 'hash5', ['hash4']));
-      assert.equal(
-        $.toMermaidGraph(),
+      expect($.toMermaidGraph()).toEqual(
         'graph TD\n' +
           '  hash-->ENV\n' +
           '  hash1-->hash\n' +
@@ -2019,7 +1960,7 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash3', ['hash2']));
       $.register(provider(hashProvider, 'hash4', ['hash3']));
       $.register(provider(hashProvider, 'hash5', ['hash4']));
-      assert.equal(
+      expect(
         $.toMermaidGraph({
           shapes: [
             {
@@ -2036,6 +1977,7 @@ describe('Knifecycle', () => {
             },
           ],
         }),
+      ).toEqual(
         'graph TD\n' +
           '  hash[hash]-->ENV{ENV}\n' +
           '  hash1((1))-->hash[hash]\n' +
@@ -2055,7 +1997,7 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash3', ['hash2']));
       $.register(provider(hashProvider, 'hash4', ['hash3']));
       $.register(provider(hashProvider, 'hash5', ['hash4']));
-      assert.equal(
+      expect(
         $.toMermaidGraph({
           classes: {
             exotic: 'fill:#f9f,stroke:#333,stroke-width:4px;',
@@ -2085,6 +2027,7 @@ describe('Knifecycle', () => {
             },
           ],
         }),
+      ).toEqual(
         'graph TD\n' +
           '  hash[hash]-->ENV{ENV}\n' +
           '  hash1((1))-->hash[hash]\n' +

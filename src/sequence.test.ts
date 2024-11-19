@@ -1,5 +1,4 @@
-import { describe, test } from '@jest/globals';
-import assert from 'assert';
+import { describe, test, expect } from '@jest/globals';
 import { buildInitializationSequence } from './sequence.js';
 
 describe('buildInitializationSequence()', () => {
@@ -8,7 +7,7 @@ describe('buildInitializationSequence()', () => {
       __name: 'lol',
     };
 
-    assert.deepEqual(buildInitializationSequence(tree), [['lol']]);
+    expect(buildInitializationSequence(tree)).toEqual([['lol']]);
   });
 
   test('should work with multi-level trees', () => {
@@ -58,7 +57,7 @@ describe('buildInitializationSequence()', () => {
       ],
     };
 
-    assert.deepEqual(buildInitializationSequence(tree), [
+    expect(buildInitializationSequence(tree)).toEqual([
       ['lol 1.1.1', 'lol 1.2', 'lol 2.1', 'lol 3.1.1'],
       ['lol 1.1', 'lol 2', 'lol 3.1'],
       ['lol 1', 'lol 3'],
@@ -142,7 +141,7 @@ describe('buildInitializationSequence()', () => {
       ],
     };
 
-    assert.deepEqual(buildInitializationSequence(tree), [
+    expect(buildInitializationSequence(tree)).toEqual([
       ['lol 1.1.1', 'lol 1.2', 'lol 2.1'],
       ['lol 1.1', 'lol 2'],
       ['lol 3.1'],

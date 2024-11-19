@@ -64,11 +64,11 @@ A service provider is full of state since its concern is
  referred to as another initializer dependency.
 - type: an initializer can be of three types at the moment
  (constant, service or provider). The initializer annotations
- varies accordsing to those types as we'll see later on.
+ varies according to those types as we'll see later on.
 - injected dependencies: an array of dependencies declarations that
- declares which initializer htis initializer depends on. Constants
+ declares which initializer this initializer depends on. Constants
  logically cannot have dependencies.
-- options: various options like for exemple, if the initializer
+- options: various options like for example, if the initializer
  implements the singleton pattern or not.
 - value: only used for constant, this property allows to know
  the value the initializer resolves to without actually executing it.

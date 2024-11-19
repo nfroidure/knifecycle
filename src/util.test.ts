@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, test } from '@jest/globals';
-import assert from 'assert';
-import sinon from 'sinon';
+import { describe, test, expect, jest } from '@jest/globals';
 import {
   reuseSpecialProps,
   wrapInitializer,
@@ -31,6 +29,7 @@ import {
 } from './util.js';
 import type { Provider } from './util.js';
 import type { Dependencies, ServiceInitializer } from './index.js';
+import { YError } from 'yerror';
 
 async function aProviderInitializer() {
   return {
@@ -62,27 +61,27 @@ describe('reuseSpecialProps', () => {
 
     const newFn = reuseSpecialProps(from, to);
 
-    assert.notEqual(newFn, to);
-    assert.equal((newFn as any).$name, from.$name);
-    assert.equal((newFn as any).$type, from.$type);
-    assert.notEqual((newFn as any).$inject, from.$inject);
-    assert.deepEqual((newFn as any).$inject, from.$inject);
-    assert.equal((newFn as any).$singleton, from.$singleton);
-    assert.notEqual((newFn as any).$extra, from.$extra);
-    assert.deepEqual((newFn as any).$extra, from.$extra);
+    expect(newFn).not.toEqual(to);
+    expect((newFn as any).$name).toEqual(from.$name);
+    expect((newFn as any).$type).toEqual(from.$type);
+    expect((newFn as any).$inject).not.toBe(from.$inject);
+    expect((newFn as any).$inject).toEqual(from.$inject);
+    expect((newFn as any).$singleton).toEqual(from.$singleton);
+    expect((newFn as any).$extra).not.toBe(from.$extra);
+    expect((newFn as any).$extra).toEqual(from.$extra);
 
     const newFn2 = reuseSpecialProps(from, to, {
       $name: 'yolo',
     });
 
-    assert.notEqual(newFn2, to);
-    assert.equal((newFn2 as any).$name, 'yolo');
-    assert.equal((newFn2 as any).$type, from.$type);
-    assert.notEqual((newFn2 as any).$inject, from.$inject);
-    assert.deepEqual((newFn2 as any).$inject, from.$inject);
-    assert.equal((newFn2 as any).$singleton, from.$singleton);
-    assert.notEqual((newFn as any).$extra, from.$extra);
-    assert.deepEqual((newFn as any).$extra, from.$extra);
+    expect(newFn2).not.toEqual(to);
+    expect((newFn2 as any).$name).toEqual('yolo');
+    expect((newFn2 as any).$type).toEqual(from.$type);
+    expect((newFn2 as any).$inject).not.toBe(from.$inject);
+    expect((newFn2 as any).$inject).toEqual(from.$inject);
+    expect((newFn2 as any).$singleton).toEqual(from.$singleton);
+    expect((newFn as any).$extra).not.toBe(from.$extra);
+    expect((newFn as any).$extra).toEqual(from.$extra);
   });
 });
 
@@ -92,7 +91,7 @@ describe('wrapInitializer', () => {
       return () => 'test';
     }
 
-    const log = sinon.stub();
+    const log = jest.fn();
     const newInitializer = wrapInitializer(
       async ({ log }: { log: any }, service: () => string) => {
         log('Wrapping...');
@@ -110,9 +109,9 @@ describe('wrapInitializer', () => {
     );
 
     const newService = await newInitializer({ log });
-    assert.equal(newService(), 'test-wrapped');
-    assert.deepEqual(log.args, [['Wrapping...']]);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['log', '?test']);
+    expect(newService()).toEqual('test-wrapped');
+    expect(log.mock.calls).toEqual([['Wrapping...']]);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['log', '?test']);
   });
 
   test('should work with a provider initialzer', async () => {
@@ -120,7 +119,7 @@ describe('wrapInitializer', () => {
       return { service: () => 'test' };
     }
 
-    const log = sinon.stub();
+    const log = jest.fn();
     const baseProviderInitializer = provider(
       baseInitializer,
       'baseInitializer',
@@ -142,9 +141,9 @@ describe('wrapInitializer', () => {
     );
 
     const newService = await newInitializer({ log });
-    assert.equal(newService.service(), 'test-wrapped');
-    assert.deepEqual(log.args, [['Wrapping...']]);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['log', '?test']);
+    expect(newService.service()).toEqual('test-wrapped');
+    expect(log.mock.calls).toEqual([['Wrapping...']]);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['log', '?test']);
   });
 });
 
@@ -156,9 +155,9 @@ describe('inject', () => {
       provider(aProviderInitializer, 'aProvider'),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
   });
 
   test('should allow to decorate an initializer builder with dependencies', () => {
@@ -168,9 +167,9 @@ describe('inject', () => {
       aProviderInitializer,
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
   });
 
   test('should allow to decorate an initializer with dependencies', () => {
@@ -180,9 +179,9 @@ describe('inject', () => {
       service(aServiceInitializer, 'aService'),
     );
 
-    assert.notEqual(newInitializer, aServiceInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    expect(newInitializer).not.toEqual(aServiceInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
   });
 
   test('should allow to decorate an initializer builder with dependencies', () => {
@@ -192,22 +191,22 @@ describe('inject', () => {
       aServiceInitializer,
     );
 
-    assert.notEqual(newInitializer, aServiceInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    expect(newInitializer).not.toEqual(aServiceInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
   });
 
   test('should allow to decorate an initializer with mapped dependencies', () => {
     const dependencies = ['ANOTHER_ENV>ENV'];
     const newInitializer = inject(dependencies, aProviderInitializer);
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
   });
 
   test('should fail with a constant', () => {
-    assert.throws(() => {
+    try {
       inject(
         ['test'],
         constant('test', 'test') as unknown as ServiceInitializer<
@@ -215,7 +214,10 @@ describe('inject', () => {
           unknown
         >,
       );
-    }, /E_BAD_INJECT_IN_CONSTANT/);
+      throw new YError('E_UNEXPECTED_SUCCESS');
+    } catch (err) {
+      expect((err as YError).code).toEqual('E_BAD_INJECT_IN_CONSTANT');
+    }
   });
 });
 describe('useInject', () => {
@@ -226,12 +228,10 @@ describe('useInject', () => {
     const toInitializer = inject(toDependencies, aProviderInitializer);
     const newInitializer = useInject(fromInitializer, toInitializer);
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], fromDependencies);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], toDependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
-      ...fromDependencies,
-    ]);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(fromDependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toEqual(toDependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([...fromDependencies]);
   });
 });
 
@@ -249,10 +249,10 @@ describe('mergeInject', () => {
     const toInitializer = inject(toDependencies, aProviderInitializer);
     const newInitializer = mergeInject(fromInitializer, toInitializer);
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], fromDependencies);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], toDependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(fromDependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toEqual(toDependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([
       ...toDependencies,
       ...fromDependencies,
     ]);
@@ -273,9 +273,9 @@ describe('unInject', () => {
     const initializer = inject(dependencies, baseProvider);
     const newInitializer = unInject(removedDependencies, initializer);
 
-    assert.notEqual(newInitializer, baseProvider);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], leftDependencies);
+    expect(newInitializer).not.toEqual(baseProvider);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(leftDependencies);
   });
 
   test('should allow to remove dependencies', () => {
@@ -291,9 +291,9 @@ describe('unInject', () => {
     const initializer = inject(dependencies, baseProvider);
     const newInitializer = unInject(removedDependencies, initializer);
 
-    assert.notEqual(newInitializer, baseProvider);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], leftDependencies);
+    expect(newInitializer).not.toEqual(baseProvider);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(leftDependencies);
   });
 
   test('should allow to remove mapped dependencies', () => {
@@ -309,9 +309,9 @@ describe('unInject', () => {
     const initializer = inject(dependencies, baseProvider);
     const newInitializer = unInject(removedDependencies, initializer);
 
-    assert.notEqual(newInitializer, baseProvider);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], leftDependencies);
+    expect(newInitializer).not.toEqual(baseProvider);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(leftDependencies);
   });
 });
 
@@ -326,9 +326,9 @@ describe('autoInject', () => {
     const dependencies = ['ENV', 'mysql'];
     const newInitializer = autoInject(baseProvider);
 
-    assert.notEqual(newInitializer, baseProvider);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    expect(newInitializer).not.toEqual(baseProvider);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
   });
 
   test('should allow to decorate an initializer with a function name', () => {
@@ -341,9 +341,9 @@ describe('autoInject', () => {
     const dependencies = ['ENV', 'mysql'];
     const newInitializer = autoInject(baseProvider);
 
-    assert.notEqual(newInitializer, baseProvider);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    expect(newInitializer).not.toEqual(baseProvider);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
   });
 
   test('should allow to decorate an initializer with optional dependencies', () => {
@@ -358,9 +358,9 @@ describe('autoInject', () => {
     const dependencies = ['ENV', '?log', '?debug'];
     const newInitializer = autoInject(baseProvider);
 
-    assert.notEqual(newInitializer, baseProvider);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    expect(newInitializer).not.toEqual(baseProvider);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
   });
 
   test('should allow to decorate an initializer with several arguments', () => {
@@ -375,9 +375,9 @@ describe('autoInject', () => {
     const dependencies = ['ENV', '?log', '?debug'];
     const newInitializer = autoInject(baseProvider);
 
-    assert.notEqual(newInitializer, baseProvider);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    expect(newInitializer).not.toEqual(baseProvider);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
   });
 
   test('should allow to decorate an initializer with complex arguments', () => {
@@ -392,31 +392,40 @@ describe('autoInject', () => {
     const dependencies = ['ENV', '?log', '?debug'];
     const newInitializer = autoInject(baseProvider);
 
-    assert.notEqual(newInitializer, baseProvider);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
+    expect(newInitializer).not.toEqual(baseProvider);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
   });
 
   test('should fail with non async initializers', () => {
-    assert.throws(() => {
+    try {
       autoInject((({ foo: bar = { bar: 'foo' } }) => {
         return bar;
       }) as any);
-    }, /E_NON_ASYNC_INITIALIZER/);
+      throw new YError('E_UNEXPECTED_SUCCESS');
+    } catch (err) {
+      expect((err as YError).code).toEqual('E_NON_ASYNC_INITIALIZER');
+    }
   });
 
   test('should fail with too complex injections', () => {
-    assert.throws(() => {
+    try {
       autoInject(async ({ foo: bar = { bar: 'foo' } }) => {
         return bar;
       });
-    }, /E_AUTO_INJECTION_FAILURE/);
+      throw new YError('E_UNEXPECTED_SUCCESS');
+    } catch (err) {
+      expect((err as YError).code).toEqual('E_AUTO_INJECTION_FAILURE');
+    }
   });
 
   test('should fail with no injections', () => {
-    assert.throws(() => {
+    try {
       autoInject(async () => undefined);
-    }, /E_AUTO_INJECTION_FAILURE/);
+      throw new YError('E_UNEXPECTED_SUCCESS');
+    } catch (err) {
+      expect((err as YError).code).toEqual('E_AUTO_INJECTION_FAILURE');
+    }
   });
 });
 
@@ -427,15 +436,15 @@ describe('alsoInject', () => {
       inject(['TEST'], aProviderInitializer),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['TEST', 'ENV']);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['TEST', 'ENV']);
   });
 
   test('should allow to decorate an initializer with dependencies', () => {
     const newInitializer = alsoInject(['ENV'], aProviderInitializer);
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['ENV']);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['ENV']);
   });
 
   test('should dedupe dependencies', () => {
@@ -445,8 +454,8 @@ describe('alsoInject', () => {
       alsoInject(['ENV', 'NODE_ENV', '?TEST', '?TEST2', 'mysql'], baseProvider),
     );
 
-    assert.notEqual(newInitializer, baseProvider);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+    expect(newInitializer).not.toEqual(baseProvider);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([
       'mysql',
       'ENV',
       'NODE_ENV',
@@ -463,8 +472,8 @@ describe('alsoInject', () => {
       alsoInject(['ENV', '?TEST3'], baseProvider),
     );
 
-    assert.notEqual(newInitializer, baseProvider);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+    expect(newInitializer).not.toEqual(baseProvider);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([
       '?TEST',
       '?TEST3',
       'ENV',
@@ -476,8 +485,8 @@ describe('alsoInject', () => {
     const baseProvider = inject(['mysql', '?sftp'], aProviderInitializer);
     const newInitializer = alsoInject(['db>mysql', '?ftp>sftp'], baseProvider);
 
-    assert.notEqual(newInitializer, baseProvider);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+    expect(newInitializer).not.toEqual(baseProvider);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([
       'mysql',
       '?sftp',
       'db>mysql',
@@ -495,8 +504,8 @@ describe('alsoInject', () => {
       ),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([
       'ENV',
       'NODE_ENV',
       '?TEST',
@@ -515,8 +524,8 @@ describe('alsoInject', () => {
       ),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], [
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([
       'ENV',
       'NODE_ENV',
       '?TEST',
@@ -528,7 +537,7 @@ describe('alsoInject', () => {
 
 describe('parseInjections', () => {
   test('should work with TypeScript dependencies', () => {
-    assert.deepEqual(
+    expect(
       parseInjections(`async function initNexmo({
       ENV,
       NEXMO,
@@ -538,15 +547,14 @@ describe('parseInjections', () => {
       NEXMO: any;
       log: Function;
     }): Promise<SMSService> {}`),
-      ['ENV', 'NEXMO', '?log'],
-    );
+    ).toEqual(['ENV', 'NEXMO', '?log']);
   });
 
   test('should allow to decorate an initializer with dependencies', () => {
     const newInitializer = alsoInject(['ENV'], aProviderInitializer);
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['ENV']);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['ENV']);
   });
 });
 
@@ -558,10 +566,10 @@ describe('singleton', () => {
       singleton(aProviderInitializer, true),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.SINGLETON], true);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
   });
 
   test('should allow to be used several times', () => {
@@ -571,10 +579,10 @@ describe('singleton', () => {
       singleton(singleton(aProviderInitializer), false),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.SINGLETON], false);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(false);
   });
 });
 
@@ -587,10 +595,10 @@ describe('name', () => {
       name(baseName, aProviderInitializer),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
   });
 });
 
@@ -605,10 +613,10 @@ describe('autoName', () => {
       }),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
   });
 
   test('should allow to decorate an initializer with its init like function name', () => {
@@ -621,10 +629,10 @@ describe('autoName', () => {
       }),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
   });
 
   test('should allow to decorate an initializer with its initialize like function name', () => {
@@ -637,10 +645,10 @@ describe('autoName', () => {
       }),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
   });
 
   test('should allow to decorate a bounded initializer', () => {
@@ -655,17 +663,20 @@ describe('autoName', () => {
       ),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.SINGLETON], true);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
   });
 
   test('should fail with anonymous functions', () => {
-    assert.throws(() => {
+    try {
       autoName(async () => undefined);
-    }, /E_AUTO_NAMING_FAILURE/);
+      throw new YError('E_UNEXPECTED_SUCCESS');
+    } catch (err) {
+      expect((err as YError).code).toEqual('E_AUTO_NAMING_FAILURE');
+    }
   });
 });
 
@@ -674,18 +685,18 @@ describe('extra', () => {
     const extraInformations = { httpHandler: true };
     const newInitializer = extra(extraInformations, aProviderInitializer);
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraInformations);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraInformations);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.EXTRA]).not.toBe(extraInformations);
+    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual(extraInformations);
   });
 
   test('should allow to decorate an initializer with extra infos', () => {
     const extraInformations = { httpHandler: true };
     const newInitializer = extra(extraInformations, aProviderInitializer, true);
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraInformations);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraInformations);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.EXTRA]).not.toBe(extraInformations);
+    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual(extraInformations);
   });
 
   test('should allow to decorate an initializer with additional extra infos', () => {
@@ -697,11 +708,15 @@ describe('extra', () => {
       true,
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.EXTRA], baseExtraInformations);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.EXTRA], baseExtraInformations);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], {
-      ...baseExtraInformations,
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.EXTRA]).not.toBe(
+      baseExtraInformations,
+    );
+    expect(newInitializer[SPECIAL_PROPS.EXTRA]).not.toEqual(
+      additionalExtraInformations,
+    );
+    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual({
+      ...additionalExtraInformations,
       ...baseExtraInformations,
     });
   });
@@ -717,11 +732,11 @@ describe('type', () => {
       name(baseName, type(baseType, aProviderInitializer)),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
-    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
+    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual(baseType);
   });
 });
 
@@ -740,16 +755,16 @@ describe('initializer', () => {
       aServiceInitializer,
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.SINGLETON], true);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
-    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
+    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual(baseType);
   });
 
   test('should fail with bad properties', () => {
-    assert.throws(() => {
+    try {
       initializer(
         {
           name: 'yolo',
@@ -757,7 +772,10 @@ describe('initializer', () => {
         } as any,
         async () => undefined,
       );
-    }, /E_BAD_PROPERTY/);
+      throw new YError('E_UNEXPECTED_SUCCESS');
+    } catch (err) {
+      expect((err as YError).code).toEqual('E_BAD_PROPERTY');
+    }
   });
 });
 
@@ -767,18 +785,21 @@ describe('constant', () => {
     const baseValue = 42;
     const constantInitializer = constant(baseName, baseValue);
 
-    assert.equal(constantInitializer[SPECIAL_PROPS.NAME], baseName);
-    assert.equal(constantInitializer[SPECIAL_PROPS.TYPE], 'constant');
-    assert.equal(constantInitializer[SPECIAL_PROPS.VALUE], baseValue);
+    expect(constantInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
+    expect(constantInitializer[SPECIAL_PROPS.TYPE]).toEqual('constant');
+    expect(constantInitializer[SPECIAL_PROPS.VALUE]).toEqual(baseValue);
   });
 
   test('should fail with dependencies since it makes no sense', () => {
-    assert.throws(() => {
+    try {
       constant(
         'time',
         inject(['hash3'], async () => undefined),
       );
-    }, /E_CONSTANT_INJECTION/);
+      throw new YError('E_UNEXPECTED_SUCCESS');
+    } catch (err) {
+      expect((err as YError).code).toEqual('E_CONSTANT_INJECTION');
+    }
   });
 });
 
@@ -797,13 +818,13 @@ describe('service', () => {
       extraData,
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.SINGLETON], true);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraData);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
-    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
+    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual(extraData);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
+    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual(baseType);
   });
 
   test('should allow to create an initializer from a generic service builder', async () => {
@@ -820,19 +841,22 @@ describe('service', () => {
       extraData,
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.SINGLETON], true);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraData);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
-    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
+    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual(extraData);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
+    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual(baseType);
   });
 
   test('should fail with no service builder', () => {
-    assert.throws(() => {
+    try {
       service(undefined as any);
-    }, /E_NO_SERVICE_BUILDER/);
+      throw new YError('E_UNEXPECTED_SUCCESS');
+    } catch (err) {
+      expect((err as YError).code).toEqual('E_NO_SERVICE_BUILDER');
+    }
   });
 });
 
@@ -843,10 +867,10 @@ describe('autoService', () => {
     };
     const newInitializer = autoService(baseServiceBuilder);
 
-    assert.notEqual(newInitializer, baseServiceBuilder);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['ENV']);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], 'mySQL');
-    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'service');
+    expect(newInitializer).not.toEqual(baseServiceBuilder);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['ENV']);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual('mySQL');
+    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual('service');
   });
 
   test('should detect the service details even with no dependencies', () => {
@@ -855,10 +879,10 @@ describe('autoService', () => {
     };
     const newInitializer = autoService(baseServiceBuilder);
 
-    assert.notEqual(newInitializer, baseServiceBuilder);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], []);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], 'mySQL');
-    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'service');
+    expect(newInitializer).not.toEqual(baseServiceBuilder);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([]);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual('mySQL');
+    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual('service');
   });
 });
 
@@ -877,13 +901,13 @@ describe('provider', () => {
       extraData,
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.SINGLETON], true);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraData);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
-    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
+    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual(extraData);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
+    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual(baseType);
   });
 
   test('should allow to create an initializer from a provider builder', async () => {
@@ -901,19 +925,22 @@ describe('provider', () => {
       ),
     );
 
-    assert.notEqual(newInitializer, aProviderInitializer);
-    assert.notEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], dependencies);
-    assert.equal(newInitializer[SPECIAL_PROPS.SINGLETON], true);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.EXTRA], extraData);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], baseName);
-    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], baseType);
+    expect(newInitializer).not.toEqual(aProviderInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
+    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual(extraData);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
+    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual(baseType);
   });
 
   test('should fail with no provider builder', () => {
-    assert.throws(() => {
+    try {
       provider(undefined as any);
-    }, /E_NO_PROVIDER_BUILDER/);
+      throw new YError('E_UNEXPECTED_SUCCESS');
+    } catch (err) {
+      expect((err as YError).code).toEqual('E_NO_PROVIDER_BUILDER');
+    }
   });
 });
 
@@ -928,10 +955,10 @@ describe('autoProvider', () => {
     };
     const newInitializer = autoProvider(baseInitializer);
 
-    assert.notEqual(newInitializer, baseInitializer);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], ['ENV']);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], 'mySQL');
-    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'provider');
+    expect(newInitializer).not.toEqual(baseInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['ENV']);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual('mySQL');
+    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual('provider');
   });
 
   test('should detect the provider details even with no dependencies', () => {
@@ -940,10 +967,10 @@ describe('autoProvider', () => {
     };
     const newInitializer = autoProvider(baseInitializer);
 
-    assert.notEqual(newInitializer, baseInitializer);
-    assert.deepEqual(newInitializer[SPECIAL_PROPS.INJECT], []);
-    assert.equal(newInitializer[SPECIAL_PROPS.NAME], 'mySQL');
-    assert.equal(newInitializer[SPECIAL_PROPS.TYPE], 'provider');
+    expect(newInitializer).not.toEqual(baseInitializer);
+    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([]);
+    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual('mySQL');
+    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual('provider');
   });
 });
 
@@ -957,12 +984,12 @@ describe('handler', () => {
     };
     const theInitializer = handler(sampleHandler, baseName, injectedServices);
 
-    assert.deepEqual((theInitializer as any).$name, baseName);
-    assert.deepEqual((theInitializer as any).$inject, injectedServices);
+    expect((theInitializer as any).$name).toEqual(baseName);
+    expect((theInitializer as any).$inject).toEqual(injectedServices);
 
     const theHandler = await theInitializer(services);
     const result = await theHandler('test');
-    assert.deepEqual(result, {
+    expect(result).toEqual({
       deps: services,
       args: ['test'],
     });
@@ -973,9 +1000,12 @@ describe('handler', () => {
   });
 
   test('should fail with no name', () => {
-    assert.throws(() => {
+    try {
       handler(async () => undefined);
-    }, /E_NO_HANDLER_NAME/);
+      throw new YError('E_UNEXPECTED_SUCCESS');
+    } catch (err) {
+      expect((err as YError).code).toEqual('E_NO_HANDLER_NAME');
+    }
   });
 });
 
@@ -987,12 +1017,13 @@ describe('autoHandler', () => {
     };
     const theInitializer = autoHandler(sampleHandler);
 
-    assert.deepEqual((theInitializer as any).$name, sampleHandler.name);
-    assert.deepEqual((theInitializer as any).$inject, ['kikooo', 'lol']);
+    expect((theInitializer as any).$name).toEqual(sampleHandler.name);
+    expect((theInitializer as any).$inject).toEqual(['kikooo', 'lol']);
 
     const theHandler = await theInitializer(services);
     const result = await theHandler('test');
-    assert.deepEqual(result, {
+
+    expect(result).toEqual({
       deps: services,
       args: ['test'],
     });
@@ -1009,12 +1040,13 @@ describe('autoHandler', () => {
     };
     const theInitializer = autoHandler(sampleHandler);
 
-    assert.deepEqual((theInitializer as any).$name, sampleHandler.name);
-    assert.deepEqual((theInitializer as any).$inject, ['kikooo', 'lol']);
+    expect((theInitializer as any).$name).toEqual(sampleHandler.name);
+    expect((theInitializer as any).$inject).toEqual(['kikooo', 'lol']);
 
     const theHandler = await theInitializer(services);
     const result = await theHandler('test');
-    assert.deepEqual(result, {
+
+    expect(result).toEqual({
       deps: services,
       args: ['test'],
     });
@@ -1025,15 +1057,18 @@ describe('autoHandler', () => {
   });
 
   test('should fail for anonymous functions', () => {
-    assert.throws(() => {
+    try {
       autoHandler(async () => undefined);
-    }, /E_AUTO_NAMING_FAILURE/);
+      throw new YError('E_UNEXPECTED_SUCCESS');
+    } catch (err) {
+      expect((err as YError).code).toEqual('E_AUTO_NAMING_FAILURE');
+    }
   });
 });
 
 describe('parseDependencyDeclaration', () => {
   test('should work', () => {
-    assert.deepEqual(parseDependencyDeclaration('db>pgsql'), {
+    expect(parseDependencyDeclaration('db>pgsql')).toEqual({
       serviceName: 'db',
       mappedName: 'pgsql',
       optional: false,
@@ -1041,7 +1076,7 @@ describe('parseDependencyDeclaration', () => {
   });
 
   test('should work with unmapped names', () => {
-    assert.deepEqual(parseDependencyDeclaration('?pgsql'), {
+    expect(parseDependencyDeclaration('?pgsql')).toEqual({
       serviceName: 'pgsql',
       mappedName: 'pgsql',
       optional: true,

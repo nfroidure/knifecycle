@@ -19,11 +19,11 @@ export const AUTOLOAD = '$autoload';
  referred to as another initializer dependency.
 - type: an initializer can be of three types at the moment
  (constant, service or provider). The initializer annotations
- varies accordsing to those types as we'll see later on.
+ varies according to those types as we'll see later on.
 - injected dependencies: an array of dependencies declarations that
- declares which initializer htis initializer depends on. Constants
+ declares which initializer this initializer depends on. Constants
  logically cannot have dependencies.
-- options: various options like for exemple, if the initializer
+- options: various options like for example, if the initializer
  implements the singleton pattern or not.
 - value: only used for constant, this property allows to know
  the value the initializer resolves to without actually executing it.
@@ -55,7 +55,7 @@ export type Provider<S extends Service> = {
 export type Dependencies<S extends Service = Service> = { [name: string]: S };
 export type DependencyName = string;
 export type DependencyDeclaration = string;
-export type ExtraInformations = any;
+export type ExtraInformation = any;
 export type ParsedDependencyDeclaration = {
   serviceName: string;
   mappedName: string;
@@ -82,7 +82,7 @@ export type ProviderProperties = {
   $name: DependencyName;
   $inject?: DependencyDeclaration[];
   $singleton?: boolean;
-  $extra?: ExtraInformations;
+  $extra?: ExtraInformation;
 };
 export type ProviderInitializer<D extends Dependencies, S extends Service> =
   | ((dependencies: D) => Promise<Provider<S>>)
@@ -92,7 +92,7 @@ export type ProviderInputProperties = {
   name: DependencyName;
   inject?: DependencyDeclaration[];
   singleton?: boolean;
-  extra?: ExtraInformations;
+  extra?: ExtraInformation;
 };
 
 export type ServiceInitializerBuilder<
@@ -104,7 +104,7 @@ export type ServiceProperties = {
   $name: DependencyName;
   $inject?: DependencyDeclaration[];
   $singleton?: boolean;
-  $extra?: ExtraInformations;
+  $extra?: ExtraInformation;
 };
 export type ServiceInitializer<D extends Dependencies, S extends Service> =
   | ((dependencies: D) => Promise<S>)
@@ -114,7 +114,7 @@ export type ServiceInputProperties = {
   name: DependencyName;
   inject?: DependencyDeclaration[];
   singleton?: boolean;
-  extra?: ExtraInformations;
+  extra?: ExtraInformation;
 };
 
 export type InitializerProperties =
@@ -348,7 +348,7 @@ export function constant<V extends Service>(
  * @param  {Boolean}    [singleton]
  * Whether the service is a singleton or not
  * @param  {any}    [extra]
- * Eventual extra informations
+ * Eventual extra information
  * @return {Function}
  * Returns a new initializer
  * @example
@@ -372,7 +372,7 @@ export function service<D extends Dependencies<any>, S>(
   name?: DependencyName,
   dependencies?: DependencyDeclaration[],
   singleton?: boolean,
-  extra?: ExtraInformations,
+  extra?: ExtraInformation,
 ): ServiceInitializer<D, S> {
   if (!serviceBuilder) {
     throw new YError('E_NO_SERVICE_BUILDER');
@@ -430,7 +430,7 @@ export function autoService<D extends Dependencies<any>, S>(
  * @param  {Boolean} [singleton]
  * Whether the service is a singleton or not
  * @param  {any} [extra]
- * Eventual extra informations
+ * Eventual extra information
  * @return {Function}
  * Returns a new provider initializer
  * @example
@@ -471,7 +471,7 @@ export function provider<D extends Dependencies<any>, S>(
   name?: DependencyName,
   dependencies?: DependencyDeclaration[],
   singleton?: boolean,
-  extra?: ExtraInformations,
+  extra?: ExtraInformation,
 ): ProviderInitializer<D, S> {
   if (!providerBuilder) {
     throw new YError('E_NO_PROVIDER_BUILDER');
@@ -946,12 +946,12 @@ export function alsoInject<
 
 /**
  * Decorator creating a new initializer with some
- *  extra informations appended to it. It is just
+ *  extra information appended to it. It is just
  *  a way for user to store some additional
- *  informations but has no interaction with the
+ *  information but has no interaction with the
  *  Knifecycle internals.
- * @param  {Object}  extraInformations
- * An object containing those extra informations.
+ * @param  {Object}  extraInformation
+ * An object containing those extra information.
  * @param  {Function}  initializer
  * The initializer to tweak
  * @param  {Boolean}   [merge=false]
@@ -972,25 +972,25 @@ export function alsoInject<
  */
 
 export function extra<D extends Dependencies<any>, S>(
-  extraInformations: ExtraInformations,
+  extraInformation: ExtraInformation,
   initializer: ProviderInitializer<D, S>,
   merge?: boolean,
 ): ProviderInitializer<D, S>;
 export function extra<D extends Dependencies<any>, S>(
-  extraInformations: ExtraInformations,
+  extraInformation: ExtraInformation,
   initializer: ProviderInitializerBuilder<D, S>,
   merge?: boolean,
 ): ProviderInitializerBuilder<D, S>;
 export function extra<D extends Dependencies<any>, S>(
-  extraInformations: ExtraInformations,
+  extraInformation: ExtraInformation,
   initializer: ServiceInitializer<D, S>,
 ): ServiceInitializer<D, S>;
 export function extra<D extends Dependencies<any>, S>(
-  extraInformations: ExtraInformations,
+  extraInformation: ExtraInformation,
   initializer: ServiceInitializerBuilder<D, S>,
 ): ServiceInitializerBuilder<D, S>;
 export function extra<D extends Dependencies<any>, S>(
-  extraInformations: ExtraInformations,
+  extraInformation: ExtraInformation,
   initializer:
     | ProviderInitializerBuilder<D, S>
     | ServiceInitializerBuilder<D, S>,
@@ -1003,13 +1003,13 @@ export function extra<D extends Dependencies<any>, S>(
       [SPECIAL_PROPS.EXTRA]: merge
         ? Object.assign(
             initializer[SPECIAL_PROPS.EXTRA] || {},
-            extraInformations,
+            extraInformation,
           )
-        : extraInformations,
+        : extraInformation,
     },
   );
 
-  debug('Wrapped an initializer with extra informations:', extraInformations);
+  debug('Wrapped an initializer with extra information:', extraInformation);
 
   return uniqueInitializer;
 }
@@ -1305,7 +1305,7 @@ export function handler<
   name?: ServiceName,
   dependencies?: DependencyDeclaration[],
   singleton?: boolean,
-  extra?: ExtraInformations,
+  extra?: ExtraInformation,
 ): ServiceInitializer<D, (parameters: P, ...args: U) => Promise<R>> {
   name = name || handlerFunction[SPECIAL_PROPS.NAME];
   dependencies = dependencies || handlerFunction[SPECIAL_PROPS.INJECT] || [];

@@ -99,7 +99,6 @@
     "metapak-nfroidure": "^18.2.0",
     "prettier": "^3.3.3",
     "rimraf": "^6.0.1",
-    "sinon": "^14.0.0",
     "typescript": "^5.5.3",
     "typescript-eslint": "^7.16.0"
   },

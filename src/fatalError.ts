@@ -6,6 +6,10 @@ const debug = initDebug('knifecycle');
 
 export const FATAL_ERROR = '$fatalError';
 
+/**
+ * Allow to manage processes lifecycle fatal
+ * errors.
+ */
 export type FatalErrorService = {
   errorPromise: Promise<void>;
   registerErrorPromise: (errorPromise: Promise<void>) => void;

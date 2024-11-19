@@ -14,6 +14,10 @@ const debug = initDebug('knifecycle');
 
 export const DISPOSE = '$dispose';
 
+/**
+ * Allow to dispose the services of an
+ * initialized silo content.
+ */
 async function initDispose({
   $instance,
   $siloContext,
