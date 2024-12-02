@@ -50,7 +50,7 @@ describe('buildInitializer', () => {
     ),
     dep5: initializer(
       {
-        inject: [],
+        inject: ['$ready'],
         type: 'service',
         name: 'dep5',
       },
@@ -111,6 +111,10 @@ async function $dispose() {
   }
 }
 
+let resolveReady;
+const $ready = new Promise((resolve) => {
+  resolveReady = resolve;
+});
 const $instance = {
   destroy: $dispose,
 };
@@ -118,10 +122,10 @@ const $instance = {
 
 // Definition batch #0
 import initDep1 from './services/dep1';
-import initDep5 from './services/dep5';
 const NODE_ENV = "development";
 
 // Definition batch #1
+import initDep5 from './services/dep5';
 import initDep2 from './services/dep2';
 
 // Definition batch #2
@@ -135,8 +139,7 @@ export async function initialize(services = {}) {
   const batch0 = {
     dep1: initDep1({
     }),
-    dep5: initDep5({
-    }),
+    $ready: Promise.resolve($ready),
     NODE_ENV: Promise.resolve(NODE_ENV),
   };
 
@@ -146,12 +149,15 @@ export async function initialize(services = {}) {
   );
 
   services['dep1'] = await batch0['dep1'];
-  services['dep5'] = await batch0['dep5'];
+  services['$ready'] = await batch0['$ready'];
   services['NODE_ENV'] = await batch0['NODE_ENV'];
 
   // Initialization batch #1
   batchsDisposers[1] = [];
   const batch1 = {
+    dep5: initDep5({
+      $ready: services['$ready'],
+    }),
     dep2: initDep2({
       dep1: services['dep1'],
       NODE_ENV: services['NODE_ENV'],
@@ -171,6 +177,7 @@ export async function initialize(services = {}) {
     .map(key => batch1[key])
   );
 
+  services['dep5'] = await batch1['dep5'];
   services['dep2'] = await batch1['dep2'];
 
   // Initialization batch #2
@@ -190,6 +197,9 @@ export async function initialize(services = {}) {
   );
 
   services['dep3'] = await batch2['dep3'];
+
+
+  resolveReady();
 
   return {
     dep1: services['dep1'],
@@ -235,6 +245,10 @@ async function $dispose() {
   }
 }
 
+let resolveReady;
+const $ready = new Promise((resolve) => {
+  resolveReady = resolve;
+});
 const $instance = {
   destroy: $dispose,
 };
@@ -315,6 +329,9 @@ export async function initialize(services = {}) {
 
   services['dep4'] = await batch2['dep4'];
 
+
+  resolveReady();
+
   return {
     dep1: services['dep1'],
     finalMappedDep: services['dep4'],
@@ -357,6 +374,10 @@ async function $dispose() {
   }
 }
 
+let resolveReady;
+const $ready = new Promise((resolve) => {
+  resolveReady = resolve;
+});
 const $instance = {
   destroy: $dispose,
 };
@@ -364,11 +385,11 @@ const $instance = {
 
 // Definition batch #0
 import initDep1 from './services/dep1';
-import initDep5 from './services/dep5';
 const NODE_ENV = "development";
 const $siloContext = undefined;
 
 // Definition batch #1
+import initDep5 from './services/dep5';
 import initDep2 from './services/dep2';
 
 // Definition batch #2
@@ -382,8 +403,7 @@ export async function initialize(services = {}) {
   const batch0 = {
     dep1: initDep1({
     }),
-    dep5: initDep5({
-    }),
+    $ready: Promise.resolve($ready),
     NODE_ENV: Promise.resolve(NODE_ENV),
     $fatalError: Promise.resolve($fatalError),
     $dispose: Promise.resolve($dispose),
@@ -397,7 +417,7 @@ export async function initialize(services = {}) {
   );
 
   services['dep1'] = await batch0['dep1'];
-  services['dep5'] = await batch0['dep5'];
+  services['$ready'] = await batch0['$ready'];
   services['NODE_ENV'] = await batch0['NODE_ENV'];
   services['$fatalError'] = await batch0['$fatalError'];
   services['$dispose'] = await batch0['$dispose'];
@@ -407,6 +427,9 @@ export async function initialize(services = {}) {
   // Initialization batch #1
   batchsDisposers[1] = [];
   const batch1 = {
+    dep5: initDep5({
+      $ready: services['$ready'],
+    }),
     dep2: initDep2({
       dep1: services['dep1'],
       NODE_ENV: services['NODE_ENV'],
@@ -426,6 +449,7 @@ export async function initialize(services = {}) {
     .map(key => batch1[key])
   );
 
+  services['dep5'] = await batch1['dep5'];
   services['dep2'] = await batch1['dep2'];
 
   // Initialization batch #2
@@ -445,6 +469,9 @@ export async function initialize(services = {}) {
   );
 
   services['dep3'] = await batch2['dep3'];
+
+
+  resolveReady();
 
   return {
     dep1: services['dep1'],

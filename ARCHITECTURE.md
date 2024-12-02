@@ -37,7 +37,7 @@ It is designed to have a low footprint on services code.
 In fact, the Knifecycle API is aimed to allow to statically
  build its services load/unload code once in production.
 
-[See in context](./src/index.ts#L204-L223)
+[See in context](./src/index.ts#L213-L232)
 
 
 
@@ -52,7 +52,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.ts#L225-L234)
+[See in context](./src/index.ts#L234-L243)
 
 
 
@@ -78,7 +78,7 @@ A service provider is full of state since its concern is
 `Knifecycle` provides a set of decorators that allows you to simply
  create new initializers.
 
-[See in context](./src/util.ts#L14-L35)
+[See in context](./src/util.ts#L15-L36)
 
 
 
@@ -92,7 +92,7 @@ The `?` flag indicates an optional dependency.
 It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.ts#L1371-L1380)
+[See in context](./src/util.ts#L1372-L1381)
 
 
 
@@ -121,7 +121,7 @@ Initializers can be of three types:
   instanciated once for all for each executions silos using
   them (we will cover this topic later on).
 
-[See in context](./src/index.ts#L315-L339)
+[See in context](./src/index.ts#L332-L356)
 
 
 
@@ -137,7 +137,7 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.ts#L671-L681)
+[See in context](./src/index.ts#L688-L698)
 
 
 
@@ -157,7 +157,7 @@ For the build to work, we need:
 - the dependencies list you want to
  initialize
 
-[See in context](./src/build.ts#L36-L51)
+[See in context](./src/build.ts#L37-L52)
 
 
 
@@ -173,5 +173,5 @@ Sadly TypeScript does not allow to add generic types
 For more details, see:
 https://stackoverflow.com/questions/64948037/generics-type-loss-while-infering/64950184#64950184
 
-[See in context](./src/util.ts#L1441-L1452)
+[See in context](./src/util.ts#L1442-L1453)
 

@@ -104,6 +104,12 @@ describe('Knifecycle', () => {
         });
       });
 
+      test('should work with the $ready service', async () => {
+        const $ready = await $.run<{ $ready: Promise<void> }>(['$ready']);
+
+        await $ready;
+      });
+
       test('should fail when overriding an initialized constant', async () => {
         $.register(constant('TEST', 1));
         expect(await $.run<any>(['TEST'])).toEqual({
