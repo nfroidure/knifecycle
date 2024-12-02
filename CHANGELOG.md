@@ -1,3 +1,12 @@
+# [17.3.0](https://github.com/nfroidure/knifecycle/compare/v17.2.1...v17.3.0) (2024-12-02)
+
+
+### Features
+
+* **core:** add a $ready service ([4eeec46](https://github.com/nfroidure/knifecycle/commit/4eeec460e3e364464ba54dc9a665eeb5a50ceeae)), closes [#135](https://github.com/nfroidure/knifecycle/issues/135)
+
+
+
 ## [17.2.1](https://github.com/nfroidure/knifecycle/compare/v17.2.0...v17.2.1) (2024-11-14)
 
 
