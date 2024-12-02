@@ -4,6 +4,7 @@ import {
   NO_PROVIDER,
   INSTANCE,
   SILO_CONTEXT,
+  READY,
   AUTOLOAD,
   SPECIAL_PROPS,
   SPECIAL_PROPS_PREFIX,
@@ -192,7 +193,15 @@ export type InternalDependencies = {
 
 const debug = initDebug('knifecycle');
 
-export { DISPOSE, FATAL_ERROR, INSTANCE, SILO_CONTEXT, AUTOLOAD, OVERRIDES };
+export {
+  DISPOSE,
+  FATAL_ERROR,
+  INSTANCE,
+  SILO_CONTEXT,
+  READY,
+  AUTOLOAD,
+  OVERRIDES,
+};
 export const INJECTOR = '$injector';
 export const UNBUILDABLE_SERVICES = [
   AUTOLOAD,
@@ -268,6 +277,14 @@ class Knifecycle {
         initializer: service(async () => {
           throw new YError('E_UNEXPECTED_INIT', SILO_CONTEXT);
         }, SILO_CONTEXT),
+        autoloaded: false,
+        dependents: [],
+        silosInstances: {},
+      },
+      [READY]: {
+        initializer: service(async () => {
+          throw new YError('E_UNEXPECTED_INIT', READY);
+        }, READY),
         autoloaded: false,
         dependents: [],
         silosInstances: {},
@@ -708,6 +725,11 @@ class Knifecycle {
       loadingSequences: [],
     };
 
+    let resolveReady;
+    const ready = new Promise<void>((resolve) => {
+      resolveReady = resolve;
+    });
+
     if (this._shutdownPromise) {
       throw new YError('E_INSTANCE_DESTROYED');
     }
@@ -721,6 +743,16 @@ class Knifecycle {
       provider: { service: siloContext },
     };
 
+    // Make the ready service available for internal injections
+    (
+      this._initializersStates[READY] as SiloedInitializerStateDescriptor<
+        Promise<void>,
+        Dependencies<unknown>
+      >
+    ).silosInstances[siloIndex] = {
+      provider: { service: ready },
+    };
+
     this._silosContexts[siloContext.index] = siloContext;
 
     const services = await this._loadInitializerDependencies(
@@ -731,6 +763,8 @@ class Knifecycle {
     );
 
     debug('All dependencies now loaded:', siloContext.loadingSequences);
+
+    resolveReady();
 
     return services as ID;
   }

@@ -4,6 +4,7 @@ import {
   AUTOLOAD,
   parseDependencyDeclaration,
   initializer,
+  READY,
 } from './util.js';
 import { buildInitializationSequence } from './sequence.js';
 import { FATAL_ERROR } from './fatalError.js';
@@ -16,7 +17,7 @@ import type {
 } from './util.js';
 import { OVERRIDES, pickOverridenName } from './overrides.js';
 
-export const MANAGED_SERVICES = [FATAL_ERROR, DISPOSE, INSTANCE];
+export const MANAGED_SERVICES = [FATAL_ERROR, DISPOSE, INSTANCE, READY];
 
 type DependencyTreeNode = {
   __name: string;
@@ -132,6 +133,10 @@ async function $dispose() {
   }
 }
 
+let resolveReady;
+const $ready = new Promise((resolve) => {
+  resolveReady = resolve;
+});
 const $instance = {
   destroy: $dispose,
 };
@@ -225,6 +230,9 @@ ${batch
 `,
   )
   .join('')}
+
+  resolveReady();
+
   return {${dependencies
     .map(parseDependencyDeclaration)
     .map(
@@ -259,6 +267,20 @@ async function buildDependencyTree(
     ...parentsNames,
     mappedName,
   ]);
+
+  if(MANAGED_SERVICES.includes(finalName)) {
+    return {
+
+      __name: finalName,
+      __initializer: async() => {},
+      __inject: [],
+      __type: 'constant',
+      __initializerName: 'init' + upperCaseFirst(finalName.slice(1)),
+      __path: `internal://managed/${finalName}`,
+      __childNodes: [],
+      __parentsNames: [...parentsNames, finalName],
+    };
+  }
 
   try {
     const { path, initializer } = await $autoload(finalName);

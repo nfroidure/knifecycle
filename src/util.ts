@@ -9,6 +9,7 @@ const debug = initDebug('knifecycle');
 export const NO_PROVIDER = Symbol('NO_PROVIDER');
 export const INSTANCE = '$instance';
 export const SILO_CONTEXT = '$siloContext';
+export const READY = '$ready';
 export const AUTOLOAD = '$autoload';
 
 /* Architecture Note #1.2: Creating initializers
