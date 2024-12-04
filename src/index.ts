@@ -33,6 +33,7 @@ import {
   autoService,
   provider,
   autoProvider,
+  location,
   wrapInitializer,
   handler,
   autoHandler,
@@ -54,6 +55,7 @@ import type {
   Provider,
   Dependencies,
   DependencyDeclaration,
+  LocationInformation,
   ExtraInformation,
   ParsedDependencyDeclaration,
   ConstantProperties,
@@ -61,11 +63,9 @@ import type {
   ProviderInitializerBuilder,
   ProviderProperties,
   ProviderInitializer,
-  ProviderInputProperties,
   ServiceInitializerBuilder,
   ServiceProperties,
   ServiceInitializer,
-  ServiceInputProperties,
   AsyncInitializerBuilder,
   AsyncInitializer,
   PartialAsyncInitializer,
@@ -77,7 +77,7 @@ import type {
 } from './util.js';
 import type { BuildInitializer } from './build.js';
 import type { FatalErrorService } from './fatalError.js';
-export { initFatalError, initDispose };
+
 export type {
   ServiceName,
   Service,
@@ -86,6 +86,7 @@ export type {
   Provider,
   Dependencies,
   DependencyDeclaration,
+  LocationInformation,
   ExtraInformation,
   ParsedDependencyDeclaration,
   ConstantProperties,
@@ -93,11 +94,9 @@ export type {
   ProviderInitializerBuilder,
   ProviderProperties,
   ProviderInitializer,
-  ProviderInputProperties,
   ServiceInitializerBuilder,
   ServiceProperties,
   ServiceInitializer,
-  ServiceInputProperties,
   AsyncInitializerBuilder,
   AsyncInitializer,
   PartialAsyncInitializer,
@@ -109,6 +108,47 @@ export type {
   BuildInitializer,
   FatalErrorService,
   Overrides,
+};
+
+export {
+  SPECIAL_PROPS,
+  SPECIAL_PROPS_PREFIX,
+  DECLARATION_SEPARATOR,
+  OPTIONAL_FLAG,
+  ALLOWED_INITIALIZER_TYPES,
+  ALLOWED_SPECIAL_PROPS,
+  parseInjections,
+  readFunctionName,
+  parseName,
+  Knifecycle,
+  initializer,
+  name,
+  autoName,
+  type,
+  inject,
+  useInject,
+  mergeInject,
+  autoInject,
+  alsoInject,
+  unInject,
+  extra,
+  singleton,
+  reuseSpecialProps,
+  wrapInitializer,
+  constant,
+  service,
+  autoService,
+  provider,
+  autoProvider,
+  location,
+  handler,
+  autoHandler,
+  parseDependencyDeclaration,
+  stringifyDependencyDeclaration,
+  unwrapInitializerProperties,
+  initInitializerBuilder,
+  initFatalError,
+  initDispose,
 };
 
 export const RUN_DEPENDENT_NAME = '__run__';
@@ -126,10 +166,7 @@ export interface Injector<T extends Record<string, unknown>> {
 export interface Autoloader<
   T extends Initializer<unknown, Record<string, unknown>>,
 > {
-  (name: DependencyDeclaration): Promise<{
-    initializer: T;
-    path: string;
-  }>;
+  (name: DependencyDeclaration): Promise<T>;
 }
 export type SiloIndex = string;
 export type BaseInitializerStateDescriptor<S, D extends Dependencies> = {
@@ -1176,22 +1213,22 @@ class Knifecycle {
             return;
           }
 
-          const result = await autoloader(serviceName);
+          const initializer = await autoloader(serviceName);
 
-          if (
-            typeof result !== 'object' ||
-            !('initializer' in result) ||
-            !('path' in result)
-          ) {
-            throw new YError('E_BAD_AUTOLOADER_RESULT', serviceName, result);
+          if (!['object', 'function'].includes(typeof initializer)) {
+            throw new YError(
+              'E_BAD_AUTOLOADER_RESULT',
+              serviceName,
+              initializer,
+            );
           }
-
-          const { initializer, path } = result;
 
           debug(
             `${[...parentsNames, serviceName].join(
               '->',
-            )}: Loaded the initializer at path ${path}...`,
+            )}: Loaded the initializer in location ${
+              initializer[SPECIAL_PROPS.LOCATION]?.url || 'no_location'
+            }...`,
           );
 
           if (initializer[SPECIAL_PROPS.NAME] !== serviceName) {
@@ -1362,44 +1399,6 @@ class Knifecycle {
     return this._shutdownPromise;
   }
 }
-
-export {
-  SPECIAL_PROPS,
-  SPECIAL_PROPS_PREFIX,
-  DECLARATION_SEPARATOR,
-  OPTIONAL_FLAG,
-  ALLOWED_INITIALIZER_TYPES,
-  ALLOWED_SPECIAL_PROPS,
-  parseInjections,
-  readFunctionName,
-  parseName,
-  Knifecycle,
-  initializer,
-  name,
-  autoName,
-  type,
-  inject,
-  useInject,
-  mergeInject,
-  autoInject,
-  alsoInject,
-  unInject,
-  extra,
-  singleton,
-  reuseSpecialProps,
-  wrapInitializer,
-  constant,
-  service,
-  autoService,
-  provider,
-  autoProvider,
-  handler,
-  autoHandler,
-  parseDependencyDeclaration,
-  stringifyDependencyDeclaration,
-  unwrapInitializerProperties,
-  initInitializerBuilder,
-};
 
 function _applyShapes(shapes, serviceName) {
   return shapes.reduce((shapedService, shape) => {

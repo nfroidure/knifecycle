@@ -1,5 +1,5 @@
 import { printStackTrace } from 'yerror';
-import { service } from './util.js';
+import { location, service } from './util.js';
 import initDebug from 'debug';
 
 const debug = initDebug('knifecycle');
@@ -57,4 +57,7 @@ async function initFatalError(): Promise<FatalErrorService> {
   };
 }
 
-export default service(initFatalError, FATAL_ERROR, [], true);
+export default location(
+  service(initFatalError, FATAL_ERROR, [], true),
+  import.meta.url,
+);

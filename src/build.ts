@@ -5,15 +5,17 @@ import {
   parseDependencyDeclaration,
   initializer,
   READY,
+  location,
 } from './util.js';
 import { buildInitializationSequence } from './sequence.js';
 import { FATAL_ERROR } from './fatalError.js';
 import { DISPOSE } from './dispose.js';
 import { type Overrides, type Autoloader } from './index.js';
-import type {
-  DependencyDeclaration,
-  Initializer,
-  Dependencies,
+import {
+  type DependencyDeclaration,
+  type Initializer,
+  type Dependencies,
+  type LocationInformation,
 } from './util.js';
 import { OVERRIDES, pickOverridenName } from './overrides.js';
 
@@ -26,7 +28,7 @@ type DependencyTreeNode = {
   __inject: DependencyDeclaration[];
   __type: 'provider' | 'constant' | 'service';
   __initializerName: string;
-  __path: string;
+  __location: LocationInformation | 'managed' | 'no_location';
   __parentsNames: string[];
 };
 
@@ -51,13 +53,16 @@ For the build to work, we need:
  initialize
 */
 
-export default initializer(
-  {
-    name: 'buildInitializer',
-    type: 'service',
-    inject: [AUTOLOAD, OVERRIDES],
-  },
-  initInitializerBuilder,
+export default location(
+  initializer(
+    {
+      name: 'buildInitializer',
+      type: 'service',
+      inject: [AUTOLOAD, OVERRIDES],
+    },
+    initInitializerBuilder,
+  ),
+  import.meta.url,
 );
 
 /**
@@ -146,23 +151,36 @@ ${batches
     (batch, index) => `
 // Definition batch #${index}${batch
       .map((name) => {
-        if (MANAGED_SERVICES.includes(name)) {
+        if (dependenciesHash[name].__location === 'managed') {
           return '';
         }
-        if (
-          'constant' ===
-          dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE]
-        ) {
-          return `
+        if (dependenciesHash[name].__location === 'no_location') {
+          if (
+            'constant' ===
+              dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE] &&
+            dependenciesHash[name].__location === 'no_location'
+          ) {
+            return `
 const ${name} = ${JSON.stringify(
-            dependenciesHash[name].__initializer[SPECIAL_PROPS.VALUE],
-            null,
-            2,
-          )};`;
+              dependenciesHash[name].__initializer[SPECIAL_PROPS.VALUE],
+              null,
+              2,
+            )};`;
+          }
+          return `
+// No location for "${name}" service
+const ${name} = undefined;`;
         }
 
         return `
-import ${dependenciesHash[name].__initializerName} from '${dependenciesHash[name].__path}';`;
+import ${
+          dependenciesHash[name].__location.exportName === 'default'
+            ? dependenciesHash[name].__initializerName
+            : dependenciesHash[name].__location.exportName ===
+                dependenciesHash[name].__initializerName
+              ? `{ ${dependenciesHash[name].__initializerName} }`
+              : `{ ${dependenciesHash[name].__location.exportName} as ${dependenciesHash[name].__initializerName} }`
+        } from '${dependenciesHash[name].__location.url}';`;
       })
       .join('')}`,
   )
@@ -268,22 +286,21 @@ async function buildDependencyTree(
     mappedName,
   ]);
 
-  if(MANAGED_SERVICES.includes(finalName)) {
+  if (MANAGED_SERVICES.includes(finalName)) {
     return {
-
       __name: finalName,
-      __initializer: async() => {},
+      __initializer: async () => {},
       __inject: [],
       __type: 'constant',
       __initializerName: 'init' + upperCaseFirst(finalName.slice(1)),
-      __path: `internal://managed/${finalName}`,
+      __location: 'managed',
       __childNodes: [],
       __parentsNames: [...parentsNames, finalName],
     };
   }
 
   try {
-    const { path, initializer } = await $autoload(finalName);
+    const initializer = await $autoload(finalName);
     const node: DependencyTreeNode = {
       __name: finalName,
       __initializer: initializer,
@@ -296,7 +313,7 @@ async function buildDependencyTree(
           ? initializer[SPECIAL_PROPS.TYPE]
           : 'provider',
       __initializerName: 'init' + upperCaseFirst(finalName),
-      __path: path,
+      __location: initializer[SPECIAL_PROPS.LOCATION] || 'no_location',
       __childNodes: [],
       __parentsNames: [...parentsNames, finalName],
     };

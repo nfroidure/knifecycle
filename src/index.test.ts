@@ -14,7 +14,7 @@ import {
   singleton,
 } from './index.js';
 import type { Provider, FatalErrorService } from './index.js';
-import { ALLOWED_INITIALIZER_TYPES } from './util.js';
+import { ALLOWED_INITIALIZER_TYPES, location } from './util.js';
 
 describe('Knifecycle', () => {
   let $: Knifecycle;
@@ -27,7 +27,7 @@ describe('Knifecycle', () => {
     return time;
   }
 
-  async function hashProvider(hash: Record<string, unknown>) {
+  async function hashProvider(hash: Record<string, any>) {
     return {
       service: hash,
     };
@@ -957,10 +957,11 @@ describe('Knifecycle', () => {
             inject: [],
             singleton: true,
           },
-          async () => async (serviceName) => ({
-            path: `/path/of/${serviceName}`,
-            initializer: constant(serviceName, `value_of:${serviceName}`),
-          }),
+          async () => async (serviceName) =>
+            location(
+              constant(serviceName, `value_of:${serviceName}`),
+              `/path/of/${serviceName}`,
+            ),
         );
         const wrappedProvider = provider(hashProvider, 'hash', [
           'ENV',
@@ -987,17 +988,19 @@ describe('Knifecycle', () => {
             inject: [],
             singleton: true,
           },
-          async () => async (serviceName) => ({
-            path: '/path/of/debug',
-            initializer: initializer(
+          async () => async (serviceName) =>
+            initializer(
               {
                 type: 'service',
                 name: 'DEBUG',
                 inject: [],
+                location: {
+                  url: 'file://path/of/debug',
+                  exportName: 'default',
+                },
               },
               async () => 'THE_DEBUG:' + serviceName,
             ),
-          }),
         );
         const wrappedProvider = provider(hashProvider, 'hash', [
           'ENV',
@@ -1026,9 +1029,8 @@ describe('Knifecycle', () => {
               type: 'service',
               singleton: true,
             },
-            async () => async (serviceName) => ({
-              path: `/path/to/${serviceName}`,
-              initializer: initializer(
+            async () => async (serviceName) =>
+              initializer(
                 {
                   type: 'provider',
                   name: serviceName,
@@ -1038,10 +1040,13 @@ describe('Knifecycle', () => {
                       : 'hash4' === serviceName
                         ? ['hash3']
                         : [],
+                  location: {
+                    url: `file://path/to/${serviceName}`,
+                    exportName: 'default',
+                  },
                 },
                 hashProvider,
               ),
-            }),
           ),
         );
         $.register(constant('ENV', ENV));
@@ -1073,9 +1078,8 @@ describe('Knifecycle', () => {
                 throw new YError('E_UNMATCHED_DEPENDENCY');
               }
 
-              return {
-                path: '/path/of/debug',
-                initializer: initializer(
+              return location(
+                initializer(
                   {
                     type: 'service',
                     name: 'hash2',
@@ -1083,7 +1087,9 @@ describe('Knifecycle', () => {
                   },
                   async () => 'THE_HASH:' + serviceName,
                 ),
-              };
+                'file://path/of/debug',
+                'default',
+              );
             },
           ),
         );
@@ -1101,17 +1107,12 @@ describe('Knifecycle', () => {
               type: 'service',
               singleton: true,
             },
-            async () => async (serviceName) => ({
-              path: `/path/to/${serviceName}`,
-              initializer: initializer(
-                {
-                  type: 'provider',
-                  name: serviceName,
-                  inject: ['ENV', 'time'],
-                },
-                hashProvider,
+            async () => async (serviceName) =>
+              location(
+                provider(hashProvider, serviceName, ['ENV', 'time']),
+                `file://path/to/${serviceName}`,
+                'default',
               ),
-            }),
           ),
         );
         const timeServiceStub = jest.fn(timeService);
@@ -1141,10 +1142,8 @@ describe('Knifecycle', () => {
               type: 'service',
               singleton: true,
             },
-            async () => async (serviceName) => ({
-              path: `/path/to/${serviceName}`,
-              initializer: nullService,
-            }),
+            async () => async (serviceName) =>
+              location(nullService, `file://path/to/${serviceName}`, 'default'),
           ),
         );
 
@@ -1168,10 +1167,12 @@ describe('Knifecycle', () => {
               type: 'service',
               singleton: true,
             },
-            async () => async (serviceName) => ({
-              path: `/path/to/${serviceName}`,
-              initializer: nullProvider,
-            }),
+            async () => async (serviceName) =>
+              location(
+                nullProvider,
+                `file://path/to/${serviceName}`,
+                'default',
+              ),
           ),
         );
 
@@ -1193,13 +1194,14 @@ describe('Knifecycle', () => {
               type: 'service',
               singleton: true,
             },
-            async () => async (serviceName) => ({
-              path: `/path/to/${serviceName}`,
-              initializer:
+            async () => async (serviceName) =>
+              location(
                 serviceName === 'undefinedService'
                   ? undefinedService
                   : undefinedProvider,
-            }),
+                `file://path/to/${serviceName}`,
+                'default',
+              ),
           ),
         );
 
@@ -1229,17 +1231,19 @@ describe('Knifecycle', () => {
               inject: ['?ENV'],
               singleton: true,
             },
-            async () => async (serviceName) => ({
-              path: `/path/of/${serviceName}`,
-              initializer: initializer(
+            async () => async (serviceName) =>
+              initializer(
                 {
                   type: 'service',
                   name: serviceName,
                   inject: [],
+                  location: {
+                    url: `file://path/of/${serviceName}`,
+                    exportName: 'default',
+                  },
                 },
                 async () => `THE_${serviceName.toUpperCase()}:` + serviceName,
               ),
-            }),
           ),
         );
 
@@ -1272,17 +1276,19 @@ describe('Knifecycle', () => {
               inject: ['?ENV', '?log'],
               singleton: true,
             },
-            async () => async (serviceName) => ({
-              path: `/path/of/${serviceName}`,
-              initializer: initializer(
+            async () => async (serviceName) =>
+              initializer(
                 {
                   type: 'service',
                   name: serviceName,
                   inject: [],
+                  location: {
+                    url: `file://path/of/${serviceName}`,
+                    exportName: 'default',
+                  },
                 },
                 async () => `THE_${serviceName.toUpperCase()}:` + serviceName,
               ),
-            }),
           ),
         );
 
@@ -1359,17 +1365,19 @@ describe('Knifecycle', () => {
               inject: ['?ENV', '?log'],
               singleton: true,
             },
-            async () => async (serviceName) => ({
-              path: `/path/of/${serviceName}`,
-              initializer: initializer(
+            async () => async (serviceName) =>
+              initializer(
                 {
                   type: 'service',
                   name: serviceName,
                   inject: ['parentService1'],
+                  location: {
+                    url: `file://path/of/${serviceName}`,
+                    exportName: 'default',
+                  },
                 },
                 async () => `THE_${serviceName.toUpperCase()}:` + serviceName,
               ),
-            }),
           ),
         );
 
@@ -1428,10 +1436,7 @@ describe('Knifecycle', () => {
               inject: [],
               singleton: true,
             },
-            async () => async () => ({
-              initializer: 'not_an_initializer',
-              path: '/path/to/initializer',
-            }),
+            async () => async () => 'not_an_initializer',
           ),
         );
 
@@ -1442,11 +1447,11 @@ describe('Knifecycle', () => {
           expect((err as YError).code).toEqual('E_BAD_AUTOLOADED_INITIALIZER');
           expect((err as YError).params).toEqual(['test']);
           expect(((err as YError).wrappedErrors[0] as YError).code).toEqual(
-            'E_AUTOLOADED_INITIALIZER_MISMATCH',
+            'E_BAD_AUTOLOADER_RESULT',
           );
           expect(((err as YError).wrappedErrors[0] as YError).params).toEqual([
             'test',
-            undefined,
+            'not_an_initializer',
           ]);
         }
       });
@@ -1460,17 +1465,19 @@ describe('Knifecycle', () => {
               inject: [],
               singleton: true,
             },
-            async () => async (serviceName) => ({
-              path: '/path/of/debug',
-              initializer: initializer(
+            async () => async (serviceName) =>
+              initializer(
                 {
                   type: 'service',
                   name: 'not-' + serviceName,
                   inject: [],
+                  location: {
+                    url: 'file://path/of/debug',
+                    exportName: 'default',
+                  },
                 },
                 async () => 'THE_TEST:' + serviceName,
               ),
-            }),
           ),
         );
 
@@ -1499,17 +1506,19 @@ describe('Knifecycle', () => {
               inject: ['ENV'],
               singleton: true,
             },
-            async () => async (serviceName) => ({
-              path: '/path/of/debug',
-              initializer: initializer(
+            async () => async (serviceName) =>
+              initializer(
                 {
                   type: 'service',
                   name: 'DEBUG',
                   inject: [],
+                  location: {
+                    url: 'file://path/of/debug',
+                    exportName: 'default',
+                  },
                 },
                 async () => 'THE_DEBUG:' + serviceName,
               ),
-            }),
           ),
         );
 

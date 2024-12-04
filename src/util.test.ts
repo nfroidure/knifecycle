@@ -26,6 +26,7 @@ import {
   autoHandler,
   SPECIAL_PROPS,
   unInject,
+  location,
 } from './util.js';
 import type { Provider } from './util.js';
 import type { Dependencies, ServiceInitializer } from './index.js';
@@ -344,6 +345,36 @@ describe('autoInject', () => {
     expect(newInitializer).not.toEqual(baseProvider);
     expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
     expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+  });
+
+  test('should allow to decorate a service initializer with its location', () => {
+    async function baseService({ ENV, mysql: db }) {
+      return { my: 'service' };
+    }
+
+    const newInitializer = location(
+      autoService(baseService),
+      'file://here',
+      'prop',
+    );
+
+    expect(newInitializer).not.toEqual(baseService);
+    expect(newInitializer[SPECIAL_PROPS.LOCATION]).toEqual({
+      url: 'file://here',
+      exportName: 'prop',
+    });
+  });
+
+  test('should allow to decorate a constant initializer with its location', () => {
+    const baseConstant = constant('test', 'test');
+    const newConstant = location(baseConstant, 'file://here');
+
+    expect(newConstant).not.toEqual(baseConstant);
+    expect(newConstant[SPECIAL_PROPS.TYPE]).toEqual('constant');
+    expect(newConstant[SPECIAL_PROPS.LOCATION]).toEqual({
+      url: 'file://here',
+      exportName: 'default',
+    });
   });
 
   test('should allow to decorate an initializer with optional dependencies', () => {
@@ -709,9 +740,7 @@ describe('extra', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.EXTRA]).not.toBe(
-      baseExtraInformations,
-    );
+    expect(newInitializer[SPECIAL_PROPS.EXTRA]).not.toBe(baseExtraInformations);
     expect(newInitializer[SPECIAL_PROPS.EXTRA]).not.toEqual(
       additionalExtraInformations,
     );

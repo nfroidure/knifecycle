@@ -56,6 +56,10 @@ export type Provider<S extends Service> = {
 export type Dependencies<S extends Service = Service> = { [name: string]: S };
 export type DependencyName = string;
 export type DependencyDeclaration = string;
+export type LocationInformation = {
+  url: string;
+  exportName: string;
+};
 export type ExtraInformation = any;
 export type ParsedDependencyDeclaration = {
   serviceName: string;
@@ -67,6 +71,7 @@ export type ConstantProperties = {
   $type: 'constant';
   $name: DependencyName;
   $singleton: true;
+  $location?: LocationInformation;
 };
 export type ConstantInitializer<S extends Service> = ConstantProperties & {
   $value: S;
@@ -83,6 +88,7 @@ export type ProviderProperties = {
   $name: DependencyName;
   $inject?: DependencyDeclaration[];
   $singleton?: boolean;
+  $location?: LocationInformation;
   $extra?: ExtraInformation;
 };
 export type ProviderInitializer<D extends Dependencies, S extends Service> =
@@ -93,6 +99,7 @@ export type ProviderInputProperties = {
   name: DependencyName;
   inject?: DependencyDeclaration[];
   singleton?: boolean;
+  location?: LocationInformation;
   extra?: ExtraInformation;
 };
 
@@ -105,6 +112,7 @@ export type ServiceProperties = {
   $name: DependencyName;
   $inject?: DependencyDeclaration[];
   $singleton?: boolean;
+  $location?: LocationInformation;
   $extra?: ExtraInformation;
 };
 export type ServiceInitializer<D extends Dependencies, S extends Service> =
@@ -115,6 +123,7 @@ export type ServiceInputProperties = {
   name: DependencyName;
   inject?: DependencyDeclaration[];
   singleton?: boolean;
+  location?: LocationInformation;
   extra?: ExtraInformation;
 };
 
@@ -166,6 +175,7 @@ export const SPECIAL_PROPS = {
   NAME: `${SPECIAL_PROPS_PREFIX}name`,
   INJECT: `${SPECIAL_PROPS_PREFIX}inject`,
   SINGLETON: `${SPECIAL_PROPS_PREFIX}singleton`,
+  LOCATION: `${SPECIAL_PROPS_PREFIX}location`,
   EXTRA: `${SPECIAL_PROPS_PREFIX}extra`,
   VALUE: `${SPECIAL_PROPS_PREFIX}value`,
 };
@@ -1068,6 +1078,86 @@ export function singleton<D extends Dependencies<any>, S>(
   );
 
   debug('Marked an initializer as singleton:', isSingleton);
+
+  return uniqueInitializer;
+}
+
+/**
+ * Decorator to set an initializer location.
+ * @param  {Function}  initializer
+ * The initializer to tweak
+ * @param  {string}    [url]
+ * Define the initializer url (import.meta.url) in most situations
+ * @param  {string}    [exportName]
+ * Define the initializer export name
+ * @return {Function}
+ * Returns a new initializer
+ * @example
+ *
+ * import { service, location } from 'knifecycle';
+ *
+ * export const initMyService = location(
+ *  service(async () => {}, 'myService', []),
+ *  import.meta.url,
+ *  'initMyService',
+ * });
+ */
+export function location<D extends Dependencies<any>, S>(
+  initializer: ProviderInitializer<D, S>,
+  url: string,
+  exportName?: string,
+): ProviderInitializer<D, S>;
+export function location<D extends Dependencies<any>, S>(
+  initializer: ProviderInitializerBuilder<D, S>,
+  url: string,
+  exportName?: string,
+): ProviderInitializerBuilder<D, S>;
+export function location<D extends Dependencies<any>, S>(
+  initializer: ServiceInitializer<D, S>,
+  url: string,
+  exportName?: string,
+): ServiceInitializer<D, S>;
+export function location<D extends Dependencies<any>, S>(
+  initializer: ServiceInitializerBuilder<D, S>,
+  url: string,
+  exportName?: string,
+): ServiceInitializerBuilder<D, S>;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function location<D extends Dependencies<any>, S>(
+  initializer: ConstantInitializer<S>,
+  url: string,
+  exportName?: string,
+): ConstantInitializer<S>;
+export function location<D extends Dependencies<any>, S>(
+  initializer:
+    | ProviderInitializerBuilder<D, S>
+    | ServiceInitializerBuilder<D, S>
+    | ConstantInitializer<S>,
+  url: LocationInformation['url'],
+  exportName: LocationInformation['exportName'] = 'default',
+):
+  | ProviderInitializerBuilder<D, S>
+  | ServiceInitializerBuilder<D, S>
+  | ConstantInitializer<S> {
+  if (initializer[SPECIAL_PROPS.TYPE] === 'constant') {
+    return {
+      $name: initializer[SPECIAL_PROPS.NAME],
+      $type: 'constant',
+      $value: initializer[SPECIAL_PROPS.VALUE],
+      $singleton: true,
+      $location: { url, exportName },
+    };
+  }
+
+  const uniqueInitializer = reuseSpecialProps(
+    initializer,
+    initializer as ServiceInitializerBuilder<D, S>,
+    {
+      [SPECIAL_PROPS.LOCATION]: { url, exportName },
+    },
+  );
+
+  debug('Set an initializer location as:', { url, exportName });
 
   return uniqueInitializer;
 }
