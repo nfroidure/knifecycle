@@ -37,7 +37,7 @@ It is designed to have a low footprint on services code.
 In fact, the Knifecycle API is aimed to allow to statically
  build its services load/unload code once in production.
 
-[See in context](./src/index.ts#L213-L232)
+[See in context](./src/index.ts#L207-L226)
 
 
 
@@ -52,7 +52,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.ts#L234-L243)
+[See in context](./src/index.ts#L228-L237)
 
 
 
@@ -92,7 +92,7 @@ The `?` flag indicates an optional dependency.
 It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.ts#L1372-L1381)
+[See in context](./src/util.ts#L1462-L1471)
 
 
 
@@ -121,7 +121,7 @@ Initializers can be of three types:
   instanciated once for all for each executions silos using
   them (we will cover this topic later on).
 
-[See in context](./src/index.ts#L332-L356)
+[See in context](./src/index.ts#L326-L350)
 
 
 
@@ -137,7 +137,7 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.ts#L688-L698)
+[See in context](./src/index.ts#L682-L692)
 
 
 
@@ -157,7 +157,7 @@ For the build to work, we need:
 - the dependencies list you want to
  initialize
 
-[See in context](./src/build.ts#L37-L52)
+[See in context](./src/build.ts#L39-L54)
 
 
 
@@ -173,5 +173,5 @@ Sadly TypeScript does not allow to add generic types
 For more details, see:
 https://stackoverflow.com/questions/64948037/generics-type-loss-while-infering/64950184#64950184
 
-[See in context](./src/util.ts#L1442-L1453)
+[See in context](./src/util.ts#L1532-L1543)
 

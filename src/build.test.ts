@@ -21,6 +21,10 @@ describe('buildInitializer', () => {
         inject: [],
         type: 'service',
         name: 'dep1',
+        location: {
+          url: `file://services/dep1`,
+          exportName: 'default',
+        },
       },
       aProvider,
     ),
@@ -29,6 +33,10 @@ describe('buildInitializer', () => {
         inject: ['dep1', 'NODE_ENV'],
         type: 'provider',
         name: 'dep2',
+        location: {
+          url: `file://services/dep2`,
+          exportName: 'default',
+        },
       },
       aProvider,
     ),
@@ -37,6 +45,10 @@ describe('buildInitializer', () => {
         inject: ['dep5', 'dep2', 'dep1', '?depOpt'],
         type: 'service',
         name: 'dep3',
+        location: {
+          url: `file://services/dep3`,
+          exportName: 'default',
+        },
       },
       aProvider,
     ),
@@ -45,6 +57,10 @@ describe('buildInitializer', () => {
         inject: ['dep5', 'dep2', 'dep1', '?depOpt'],
         type: 'service',
         name: 'dep4',
+        location: {
+          url: `file://services/dep4`,
+          exportName: 'default',
+        },
       },
       aProvider,
     ),
@@ -53,6 +69,10 @@ describe('buildInitializer', () => {
         inject: ['$ready'],
         type: 'service',
         name: 'dep5',
+        location: {
+          url: `file://services/dep5`,
+          exportName: 'initDep5',
+        },
       },
       aProvider,
     ),
@@ -61,6 +81,10 @@ describe('buildInitializer', () => {
         inject: [],
         type: 'service',
         name: 'dep6',
+        location: {
+          url: `file://services/dep6`,
+          exportName: 'aDep6',
+        },
       },
       aProvider,
     ),
@@ -75,10 +99,7 @@ describe('buildInitializer', () => {
     async () => {
       return async function $autoload(name) {
         return mockedDepsHash[name]
-          ? Promise.resolve({
-              path: `./services/${name}`,
-              initializer: mockedDepsHash[name],
-            })
+          ? Promise.resolve(mockedDepsHash[name])
           : Promise.reject(new YError('E_UNMATCHED_DEPENDENCY', name));
       };
     },
@@ -121,15 +142,15 @@ const $instance = {
 
 
 // Definition batch #0
-import initDep1 from './services/dep1';
+import initDep1 from 'file://services/dep1';
 const NODE_ENV = "development";
 
 // Definition batch #1
-import initDep5 from './services/dep5';
-import initDep2 from './services/dep2';
+import { initDep5 } from 'file://services/dep5';
+import initDep2 from 'file://services/dep2';
 
 // Definition batch #2
-import initDep3 from './services/dep3';
+import initDep3 from 'file://services/dep3';
 
 export async function initialize(services = {}) {
   const $fatalError = await initFatalError();
@@ -255,15 +276,15 @@ const $instance = {
 
 
 // Definition batch #0
-import initDep1 from './services/dep1';
-import initDep6 from './services/dep6';
+import initDep1 from 'file://services/dep1';
+import { aDep6 as initDep6 } from 'file://services/dep6';
 const NODE_ENV = "development";
 
 // Definition batch #1
-import initDep2 from './services/dep2';
+import initDep2 from 'file://services/dep2';
 
 // Definition batch #2
-import initDep4 from './services/dep4';
+import initDep4 from 'file://services/dep4';
 
 export async function initialize(services = {}) {
   const $fatalError = await initFatalError();
@@ -384,16 +405,16 @@ const $instance = {
 
 
 // Definition batch #0
-import initDep1 from './services/dep1';
+import initDep1 from 'file://services/dep1';
 const NODE_ENV = "development";
 const $siloContext = undefined;
 
 // Definition batch #1
-import initDep5 from './services/dep5';
-import initDep2 from './services/dep2';
+import { initDep5 } from 'file://services/dep5';
+import initDep2 from 'file://services/dep2';
 
 // Definition batch #2
-import initDep3 from './services/dep3';
+import initDep3 from 'file://services/dep3';
 
 export async function initialize(services = {}) {
   const $fatalError = await initFatalError();

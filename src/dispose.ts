@@ -3,6 +3,7 @@ import {
   NO_PROVIDER,
   SILO_CONTEXT,
   SPECIAL_PROPS,
+  location,
   parseDependencyDeclaration,
   service,
 } from './util.js';
@@ -151,4 +152,7 @@ async function initDispose({
   };
 }
 
-export default service(initDispose, DISPOSE, [INSTANCE, SILO_CONTEXT]);
+export default location(
+  service(initDispose, DISPOSE, [INSTANCE, SILO_CONTEXT]),
+  import.meta.url,
+);
