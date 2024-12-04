@@ -1,3 +1,19 @@
+# [18.0.0](https://github.com/nfroidure/knifecycle/compare/v17.3.0...v18.0.0) (2024-12-04)
+
+
+### Features
+
+* **core:** add a location special property ([9dd93ae](https://github.com/nfroidure/knifecycle/commit/9dd93ae58ef4c58a077e6df7e667982561084150)), closes [#136](https://github.com/nfroidure/knifecycle/issues/136)
+
+
+### BREAKING CHANGES
+
+* **core:** The build will need to be adapted to match this new feature. The autoloader service
+signature changed. Also the utils now provide a location decorator to allow you to create modules
+declaring their own location.
+
+
+
 # [17.3.0](https://github.com/nfroidure/knifecycle/compare/v17.2.1...v17.3.0) (2024-12-02)
 
 
