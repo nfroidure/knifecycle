@@ -102,6 +102,7 @@ export type {
   ProviderInitializerWrapper,
   BuildInitializer,
   FatalErrorService,
+  Injector,
   Overrides,
 };
 
@@ -148,7 +149,7 @@ export const RUN_DEPENDENT_NAME = '__run__';
 export const SYSTEM_DEPENDENT_NAME = '__system__';
 export const AUTOLOAD_DEPENDENT_NAME = '__autoloader__';
 export const INJECTOR_DEPENDENT_NAME = '__injector__';
-export { NO_PROVIDER };
+export { NO_PROVIDER, INJECTOR };
 
 export type KnifecycleOptions = {
   sequential?: boolean;
