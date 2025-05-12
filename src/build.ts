@@ -6,6 +6,7 @@ import {
   initializer,
   READY,
   location,
+  constant,
 } from './util.js';
 import { buildInitializationSequence } from './sequence.js';
 import { FATAL_ERROR } from './fatalError.js';
@@ -18,8 +19,14 @@ import {
   type LocationInformation,
 } from './util.js';
 import { OVERRIDES, pickOverridenName } from './overrides.js';
+import { type Injector, INJECTOR } from './injector.js';
 
 export const MANAGED_SERVICES = [FATAL_ERROR, DISPOSE, INSTANCE, READY];
+export const DEFAULT_BUILD_CONSTANT_FILTER: BuildConstantFilter = () => false;
+
+export interface BuildConstantFilter {
+  (name: string): boolean;
+}
 
 type DependencyTreeNode = {
   __name: string;
@@ -58,7 +65,7 @@ export default location(
     {
       name: 'buildInitializer',
       type: 'service',
-      inject: [AUTOLOAD, OVERRIDES],
+      inject: [AUTOLOAD, OVERRIDES, INJECTOR, '?BUILD_CONSTANT_FILTER'],
     },
     initInitializerBuilder,
   ),
@@ -83,9 +90,13 @@ export default location(
 async function initInitializerBuilder({
   $autoload,
   $overrides,
+  $injector,
+  BUILD_CONSTANT_FILTER = DEFAULT_BUILD_CONSTANT_FILTER,
 }: {
   $autoload: Autoloader<Initializer<unknown, Record<string, unknown>>>;
   $overrides: Overrides;
+  $injector: Injector<Record<string, unknown>>;
+  BUILD_CONSTANT_FILTER?: BuildConstantFilter;
 }) {
   return buildInitializer;
 
@@ -111,7 +122,11 @@ async function initInitializerBuilder({
   ): Promise<string> {
     const dependencyTrees = await Promise.all(
       dependencies.map((dependency) =>
-        buildDependencyTree({ $autoload, $overrides }, dependency, []),
+        buildDependencyTree(
+          { BUILD_CONSTANT_FILTER, $autoload, $overrides, $injector },
+          dependency,
+          [],
+        ),
       ),
     );
     const dependenciesHash = buildDependenciesHash(
@@ -271,9 +286,13 @@ async function buildDependencyTree(
   {
     $autoload,
     $overrides,
+    $injector,
+    BUILD_CONSTANT_FILTER,
   }: {
     $autoload: Autoloader<Initializer<unknown, Record<string, unknown>>>;
     $overrides: Overrides;
+    $injector: Injector<Record<string, unknown>>;
+    BUILD_CONSTANT_FILTER: BuildConstantFilter;
   },
   dependencyDeclaration: string,
   parentsNames: string[],
@@ -285,6 +304,22 @@ async function buildDependencyTree(
     ...parentsNames,
     mappedName,
   ]);
+
+  if (BUILD_CONSTANT_FILTER(finalName)) {
+    return {
+      __name: finalName,
+      __initializer: constant(
+        finalName,
+        (await $injector([finalName]))[finalName],
+      ),
+      __inject: [],
+      __type: 'constant',
+      __initializerName: 'init' + upperCaseFirst(finalName.slice(1)),
+      __location: 'no_location',
+      __childNodes: [],
+      __parentsNames: [...parentsNames, finalName],
+    };
+  }
 
   if (MANAGED_SERVICES.includes(finalName)) {
     return {
@@ -325,7 +360,12 @@ async function buildDependencyTree(
       const childNodes: DependencyTreeNode[] = await Promise.all(
         initializer[SPECIAL_PROPS.INJECT].map((childDependencyDeclaration) =>
           buildDependencyTree(
-            { $autoload, $overrides },
+            {
+              BUILD_CONSTANT_FILTER,
+              $autoload,
+              $overrides,
+              $injector,
+            },
             childDependencyDeclaration,
             [...parentsNames, finalName],
           ),

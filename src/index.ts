@@ -73,6 +73,7 @@ import type {
 } from './util.js';
 import type { BuildInitializer } from './build.js';
 import type { FatalErrorService } from './fatalError.js';
+import { Injector, INJECTOR } from './injector.js';
 
 export type {
   ServiceName,
@@ -152,9 +153,6 @@ export { NO_PROVIDER };
 export type KnifecycleOptions = {
   sequential?: boolean;
 };
-export interface Injector<T extends Record<string, unknown>> {
-  (dependencies: DependencyDeclaration[]): Promise<T>;
-}
 export interface Autoloader<
   T extends Initializer<unknown, Record<string, unknown>>,
 > {
@@ -231,7 +229,6 @@ export {
   AUTOLOAD,
   OVERRIDES,
 };
-export const INJECTOR = '$injector';
 export const UNBUILDABLE_SERVICES = [
   AUTOLOAD,
   INJECTOR,

@@ -109,6 +109,9 @@ describe('buildInitializer', () => {
     const $ = new Knifecycle();
 
     $.register(constant('PWD', '~/my-project'));
+    $.register(
+      constant('BUILD_CONSTANT_FILTER', (name: string) => name === 'dep1'),
+    );
     $.register(initAutoloader);
     $.register(initInitializerBuilder);
 
@@ -142,7 +145,9 @@ const $instance = {
 
 
 // Definition batch #0
-import initDep1 from 'file://services/dep1';
+const dep1 = {
+  "service": "PROVIDER_SERVICE"
+};
 const NODE_ENV = "development";
 
 // Definition batch #1
@@ -158,8 +163,7 @@ export async function initialize(services = {}) {
   // Initialization batch #0
   batchsDisposers[0] = [];
   const batch0 = {
-    dep1: initDep1({
-    }),
+    dep1: Promise.resolve(dep1),
     $ready: Promise.resolve($ready),
     NODE_ENV: Promise.resolve(NODE_ENV),
   };
