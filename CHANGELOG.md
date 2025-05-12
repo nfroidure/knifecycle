@@ -1,3 +1,12 @@
+# [19.1.0](https://github.com/nfroidure/knifecycle/compare/v19.0.0...v19.1.0) (2025-05-12)
+
+
+### Features
+
+* **build:** allow to force a service to be constant ([6563f43](https://github.com/nfroidure/knifecycle/commit/6563f43e44c67f950fbada5e0225252fe6a349f6))
+
+
+
 # [19.0.0](https://github.com/nfroidure/knifecycle/compare/v18.0.0...v19.0.0) (2025-02-12)
 
 
