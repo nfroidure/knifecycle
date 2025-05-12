@@ -1,3 +1,12 @@
+## [19.1.1](https://github.com/nfroidure/knifecycle/compare/v19.1.0...v19.1.1) (2025-05-12)
+
+
+### Bug Fixes
+
+* **types:** export injector type ([7a70363](https://github.com/nfroidure/knifecycle/commit/7a70363ec11f67059db978d16c3d795551530684))
+
+
+
 # [19.1.0](https://github.com/nfroidure/knifecycle/compare/v19.0.0...v19.1.0) (2025-05-12)
 
 
