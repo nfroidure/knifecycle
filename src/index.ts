@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint max-len: ["warn", { "ignoreComments": true }] @typescript-eslint/no-this-alias: "warn" */
+import { YError, printStackTrace } from 'yerror';
+import initDebug from 'debug';
 import {
   NO_PROVIDER,
   INSTANCE,
@@ -38,42 +40,43 @@ import {
   parseDependencyDeclaration,
   stringifyDependencyDeclaration,
   unwrapInitializerProperties,
+  type ServiceName,
+  type Service,
+  type Disposer,
+  type FatalErrorPromise,
+  type Provider,
+  type Dependencies,
+  type DependencyDeclaration,
+  type LocationInformation,
+  type ExtraInformation,
+  type ParsedDependencyDeclaration,
+  type ConstantProperties,
+  type ConstantInitializer,
+  type ProviderInitializerBuilder,
+  type ProviderProperties,
+  type ProviderInitializer,
+  type ServiceInitializerBuilder,
+  type ServiceProperties,
+  type ServiceInitializer,
+  type AsyncInitializerBuilder,
+  type AsyncInitializer,
+  type PartialAsyncInitializer,
+  type Initializer,
+  type ServiceInitializerWrapper,
+  type ProviderInitializerWrapper,
 } from './util.js';
-import initFatalError, { FATAL_ERROR } from './fatalError.js';
+import initFatalError, {
+  FATAL_ERROR,
+  type FatalErrorService,
+} from './fatalError.js';
 import initDispose, { DISPOSE } from './dispose.js';
 import { type Overrides, OVERRIDES, pickOverridenName } from './overrides.js';
-import initInitializerBuilder from './build.js';
-import { YError, printStackTrace } from 'yerror';
-import initDebug from 'debug';
-import type {
-  ServiceName,
-  Service,
-  Disposer,
-  FatalErrorPromise,
-  Provider,
-  Dependencies,
-  DependencyDeclaration,
-  LocationInformation,
-  ExtraInformation,
-  ParsedDependencyDeclaration,
-  ConstantProperties,
-  ConstantInitializer,
-  ProviderInitializerBuilder,
-  ProviderProperties,
-  ProviderInitializer,
-  ServiceInitializerBuilder,
-  ServiceProperties,
-  ServiceInitializer,
-  AsyncInitializerBuilder,
-  AsyncInitializer,
-  PartialAsyncInitializer,
-  Initializer,
-  ServiceInitializerWrapper,
-  ProviderInitializerWrapper,
-} from './util.js';
-import type { BuildInitializer } from './build.js';
-import type { FatalErrorService } from './fatalError.js';
-import { Injector, INJECTOR } from './injector.js';
+import initInitializerBuilder, {
+  DEFAULT_BUILD_CONSTANT_FILTER,
+  type BuildConstantFilter,
+  type BuildInitializer,
+} from './build.js';
+import { INJECTOR, type Injector } from './injector.js';
 
 export type {
   ServiceName,
@@ -104,6 +107,7 @@ export type {
   FatalErrorService,
   Injector,
   Overrides,
+  BuildConstantFilter,
 };
 
 export {
@@ -149,7 +153,7 @@ export const RUN_DEPENDENT_NAME = '__run__';
 export const SYSTEM_DEPENDENT_NAME = '__system__';
 export const AUTOLOAD_DEPENDENT_NAME = '__autoloader__';
 export const INJECTOR_DEPENDENT_NAME = '__injector__';
-export { NO_PROVIDER, INJECTOR };
+export { NO_PROVIDER, INJECTOR, DEFAULT_BUILD_CONSTANT_FILTER };
 
 export type KnifecycleOptions = {
   sequential?: boolean;

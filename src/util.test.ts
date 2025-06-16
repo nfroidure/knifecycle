@@ -332,7 +332,7 @@ describe('autoInject', () => {
 
   test('should allow to decorate an initializer with a function name', () => {
     async function baseProvider({ ENV, mysql: db }) {
-      async () => ({
+      return async () => ({
         ENV,
         db,
       });
