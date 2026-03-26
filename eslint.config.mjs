@@ -4,17 +4,20 @@
 // be overridden.
 
 import eslint from '@eslint/js';
+import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
+
 import eslintConfigPrettier from 'eslint-config-prettier';
 import eslintPluginJest from 'eslint-plugin-jest';
 
-export default tseslint.config(
+export default defineConfig(
   {
     files: ['**/*.ts'],
     ignores: ['**/*.d.ts'],
     extends: [
       eslint.configs.recommended,
-      ...tseslint.configs.recommended,
+      tseslint.configs.strict,
+      tseslint.configs.stylistic,
     ],
   },
   {
@@ -25,10 +28,11 @@ export default tseslint.config(
   {
     name: 'Project config',
     languageOptions: {
-      ecmaVersion: 2018,
+      ecmaVersion: 'latest',
       sourceType: 'module',
     },
     ignores: ['*.d.ts'],
   },
 );
+
 

@@ -42,107 +42,127 @@ export const ALLOWED_INITIALIZER_TYPES = [
   'constant',
 ] as const;
 
+export type InitializerTypes = (typeof ALLOWED_INITIALIZER_TYPES)[number];
 export type ServiceName = string;
 export type Service = any;
-export interface Disposer {
-  (): Promise<void>;
-}
+export type Disposer = () => Promise<void>;
 export type FatalErrorPromise = Promise<void>;
-export type Provider<S extends Service> = {
+export interface Provider<S extends Service> {
   service: S;
   dispose?: Disposer;
   fatalErrorPromise?: FatalErrorPromise;
-};
-export type Dependencies<S extends Service = Service> = { [name: string]: S };
+}
+export type Dependencies<S extends Service = Service> = Record<string, S>;
 export type DependencyName = string;
 export type DependencyDeclaration = string;
-export type LocationInformation = {
+export interface LocationInformation {
   url: string;
   exportName: string;
-};
+}
 export type ExtraInformation = any;
-export type ParsedDependencyDeclaration = {
+export interface ParsedDependencyDeclaration {
   serviceName: string;
   mappedName: string;
   optional: boolean;
-};
+}
 
-export type ConstantProperties = {
+export interface ConstantProperties {
   $type: 'constant';
   $name: DependencyName;
   $singleton: true;
   $location?: LocationInformation;
-};
+}
 export type ConstantInitializer<S extends Service> = ConstantProperties & {
   $value: S;
 };
 
-export type ProviderInitializerBuilder<
-  D extends Dependencies,
-  S extends Service,
-> =
-  | ((dependencies: D) => Promise<Provider<S>>)
-  | ((dependencies?: D) => Promise<Provider<S>>);
-export type ProviderProperties = {
+export interface ProviderProperties {
   $type: 'provider';
   $name: DependencyName;
   $inject?: DependencyDeclaration[];
   $singleton?: boolean;
   $location?: LocationInformation;
   $extra?: ExtraInformation;
-};
-export type ProviderInitializer<D extends Dependencies, S extends Service> =
-  | ((dependencies: D) => Promise<Provider<S>>)
-  | ((dependencies?: D) => Promise<Provider<S>>);
-export type ProviderInputProperties = {
+}
+export interface ProviderInputProperties {
   type: 'provider';
   name: DependencyName;
   inject?: DependencyDeclaration[];
   singleton?: boolean;
   location?: LocationInformation;
   extra?: ExtraInformation;
-};
-
-export type ServiceInitializerBuilder<
+}
+export interface ProviderInitializerReqD<
   D extends Dependencies,
   S extends Service,
-> = ((dependencies: D) => Promise<S>) | ((dependencies?: D) => Promise<S>);
-export type ServiceProperties = {
+> extends ProviderProperties {
+  (dependencies: D): Promise<Provider<S>>;
+}
+export interface ProviderInitializerOptD<
+  D extends Dependencies,
+  S extends Service,
+> extends ProviderProperties {
+  (dependencies?: D): Promise<Provider<S>>;
+}
+export type ProviderInitializer<D extends Dependencies, S extends Service> =
+  | ProviderInitializerReqD<D, S>
+  | ProviderInitializerOptD<D, S>;
+export type ProviderInitializerBuilder<
+  D extends Dependencies,
+  S extends Service,
+> =
+  | ((dependencies: D) => Promise<Provider<S>>)
+  | ((dependencies?: D) => Promise<Provider<S>>);
+
+export interface ServiceProperties {
   $type: 'service';
   $name: DependencyName;
   $inject?: DependencyDeclaration[];
   $singleton?: boolean;
   $location?: LocationInformation;
   $extra?: ExtraInformation;
-};
-export type ServiceInitializer<D extends Dependencies, S extends Service> =
-  | ((dependencies: D) => Promise<S>)
-  | ((dependencies?: D) => Promise<S>);
-export type ServiceInputProperties = {
+}
+export interface ServiceInputProperties {
   type: 'service';
   name: DependencyName;
   inject?: DependencyDeclaration[];
   singleton?: boolean;
   location?: LocationInformation;
   extra?: ExtraInformation;
-};
+}
+export interface ServiceInitializerReqD<
+  D extends Dependencies,
+  S extends Service,
+> extends ServiceProperties {
+  (dependencies: D): Promise<S>;
+}
+export interface ServiceInitializerOptD<
+  D extends Dependencies,
+  S extends Service,
+> extends ServiceProperties {
+  (dependencies?: D): Promise<S>;
+}
+export type ServiceInitializer<D extends Dependencies, S extends Service> =
+  | ServiceInitializerReqD<D, S>
+  | ServiceInitializerOptD<D, S>;
+export type ServiceInitializerBuilder<
+  D extends Dependencies,
+  S extends Service,
+> = ((dependencies: D) => Promise<S>) | ((dependencies?: D) => Promise<S>);
 
 export type InitializerProperties =
   | ConstantProperties
   | ProviderProperties
   | ServiceProperties;
 
-export type AsyncInitializerBuilder<
-  D extends Dependencies,
-  S extends Service,
-> = ProviderInitializerBuilder<D, S> | ServiceInitializerBuilder<D, S>;
+export type InitializerBuilder<D extends Dependencies, S extends Service> =
+  | ProviderInitializerBuilder<D, S>
+  | ServiceInitializerBuilder<D, S>
+  | Partial<ProviderInitializer<D, S>>
+  | Partial<ServiceInitializer<D, S>>;
 export type AsyncInitializer<D extends Dependencies, S extends Service> =
   | ServiceInitializer<D, S>
   | ProviderInitializer<D, S>;
-export type PartialAsyncInitializer<
-  D extends Dependencies,
-  S extends Service,
-> = Partial<ServiceInitializer<D, S>> | Partial<ProviderInitializer<D, S>>;
 
 export type Initializer<S extends Service, D extends Dependencies> =
   | ConstantInitializer<S>
@@ -167,10 +187,11 @@ export const SPECIAL_PROPS = {
   LOCATION: `${SPECIAL_PROPS_PREFIX}location`,
   EXTRA: `${SPECIAL_PROPS_PREFIX}extra`,
   VALUE: `${SPECIAL_PROPS_PREFIX}value`,
-};
+} as const;
 export const ALLOWED_SPECIAL_PROPS = Object.keys(SPECIAL_PROPS).map(
-  (key) => SPECIAL_PROPS[key],
+  (key) => SPECIAL_PROPS[key as keyof typeof SPECIAL_PROPS],
 );
+export type InitializerSpecialProp = (typeof ALLOWED_SPECIAL_PROPS)[number];
 
 const E_BAD_INJECT_IN_CONSTANT = 'E_BAD_INJECT_IN_CONSTANT';
 const E_CONSTANT_INJECTION = 'E_CONSTANT_INJECTION';
@@ -185,7 +206,7 @@ export function parseInjections(
 
   if (!matches) {
     if (!source.match(/^\s*async/)) {
-      throw new YError('E_NON_ASYNC_INITIALIZER', source);
+      throw new YError('E_NON_ASYNC_INITIALIZER', [source]);
     }
     if (
       options &&
@@ -194,7 +215,7 @@ export function parseInjections(
     ) {
       return [];
     }
-    throw new YError('E_AUTO_INJECTION_FAILURE', source);
+    throw new YError('E_AUTO_INJECTION_FAILURE', [source]);
   }
 
   return matches[1]
@@ -213,13 +234,13 @@ export function parseInjections(
 
 export function readFunctionName(aFunction: Function): string {
   if (typeof aFunction !== 'function') {
-    throw new YError('E_AUTO_NAMING_FAILURE', typeof aFunction);
+    throw new YError('E_AUTO_NAMING_FAILURE', [typeof aFunction]);
   }
 
   const functionName = parseName(aFunction.name || '');
 
   if (!functionName) {
-    throw new YError('E_AUTO_NAMING_FAILURE', aFunction.name);
+    throw new YError('E_AUTO_NAMING_FAILURE', [aFunction.name]);
   }
 
   return functionName;
@@ -245,9 +266,7 @@ export function reuseSpecialProps<
   TD extends Dependencies<any>,
   S,
 >(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ProviderInitializerBuilder<TD, S>,
   amend?: Partial<ProviderProperties>,
 ): ProviderInitializerBuilder<FD & TD, S>;
@@ -256,9 +275,7 @@ export function reuseSpecialProps<
   TD extends Dependencies<any>,
   S,
 >(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ServiceInitializerBuilder<TD, S>,
   amend?: Partial<ServiceProperties>,
 ): ServiceInitializerBuilder<FD & TD, S>;
@@ -267,9 +284,7 @@ export function reuseSpecialProps<
   TD extends Dependencies<any>,
   S,
 >(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ProviderInitializerBuilder<TD, S> | ServiceInitializerBuilder<TD, S>,
   amend: Partial<ProviderProperties> | Partial<ServiceProperties> = {},
 ):
@@ -278,10 +293,17 @@ export function reuseSpecialProps<
   const uniqueInitializer = (to as unknown as Function).bind(null);
 
   return [...new Set(Object.keys(from).concat(Object.keys(amend)))]
-    .filter((prop) => prop.startsWith(SPECIAL_PROPS_PREFIX))
+    .filter((prop): prop is (typeof ALLOWED_SPECIAL_PROPS)[number] =>
+      prop.startsWith(SPECIAL_PROPS_PREFIX),
+    )
     .reduce((fn, prop) => {
       const value =
-        'undefined' !== typeof amend[prop] ? amend[prop] : from[prop];
+        prop !== '$value' && prop in amend && 'undefined' !== typeof amend[prop]
+          ? amend[prop]
+          : prop !== '$value' && prop in from
+            ? (from as Partial<ServiceInitializer<FD, unknown>>)[prop]
+            : undefined;
+
       if (value instanceof Array) {
         fn[prop] = value.concat();
       } else if (value instanceof Object) {
@@ -321,10 +343,10 @@ export function constant<V extends Service>(
   value: V,
 ): ConstantInitializer<V> {
   const contantLooksLikeAnInitializer =
-    value instanceof Function && value[SPECIAL_PROPS.INJECT];
+    value instanceof Function && '$inject' in value;
 
   if (contantLooksLikeAnInitializer) {
-    throw new YError(E_CONSTANT_INJECTION, value[SPECIAL_PROPS.INJECT]);
+    throw new YError(E_CONSTANT_INJECTION, [value.$inject]);
   }
 
   debug(`Created an initializer from a constant: ${name}.`);
@@ -378,22 +400,24 @@ export function service<D extends Dependencies<any>, S>(
     throw new YError('E_NO_SERVICE_BUILDER');
   }
 
-  name = name || serviceBuilder[SPECIAL_PROPS.NAME] || 'anonymous';
-  dependencies = dependencies || serviceBuilder[SPECIAL_PROPS.INJECT] || [];
+  name =
+    name || pickInitializerBuilderProp(serviceBuilder, '$name') || 'anonymous';
+  dependencies =
+    dependencies || pickInitializerBuilderProp(serviceBuilder, '$inject') || [];
   singleton =
     typeof singleton === 'undefined'
-      ? serviceBuilder[SPECIAL_PROPS.SINGLETON] || false
+      ? pickInitializerBuilderProp(serviceBuilder, '$singleton') || false
       : singleton;
-  extra = extra || serviceBuilder[SPECIAL_PROPS.EXTRA] || [];
+  extra = extra || pickInitializerBuilderProp(serviceBuilder, '$extra') || [];
 
   debug(`Created an initializer from a service builder: ${name}.`);
 
   const uniqueInitializer = reuseSpecialProps(serviceBuilder, serviceBuilder, {
-    [SPECIAL_PROPS.TYPE]: 'service',
-    [SPECIAL_PROPS.NAME]: name,
-    [SPECIAL_PROPS.INJECT]: dependencies,
-    [SPECIAL_PROPS.SINGLETON]: singleton,
-    [SPECIAL_PROPS.EXTRA]: extra,
+    $type: 'service',
+    $name: name,
+    $inject: dependencies,
+    $singleton: singleton,
+    $extra: extra,
   }) as ServiceInitializer<D, S>;
 
   return uniqueInitializer;
@@ -477,13 +501,17 @@ export function provider<D extends Dependencies<any>, S>(
     throw new YError('E_NO_PROVIDER_BUILDER');
   }
 
-  name = name || providerBuilder[SPECIAL_PROPS.NAME] || 'anonymous';
-  dependencies = dependencies || providerBuilder[SPECIAL_PROPS.INJECT] || [];
+  name =
+    name || pickInitializerBuilderProp(providerBuilder, '$name') || 'anonymous';
+  dependencies =
+    dependencies ||
+    pickInitializerBuilderProp(providerBuilder, '$inject') ||
+    [];
   singleton =
     typeof singleton === 'undefined'
-      ? providerBuilder[SPECIAL_PROPS.SINGLETON] || false
+      ? pickInitializerBuilderProp(providerBuilder, '$singleton') || false
       : singleton;
-  extra = extra || providerBuilder[SPECIAL_PROPS.EXTRA] || [];
+  extra = extra || pickInitializerBuilderProp(providerBuilder, '$extra') || [];
 
   debug(
     `Created an initializer from a provider builder: ${name || 'anonymous'}.`,
@@ -493,11 +521,11 @@ export function provider<D extends Dependencies<any>, S>(
     providerBuilder,
     providerBuilder,
     {
-      [SPECIAL_PROPS.TYPE]: 'provider',
-      [SPECIAL_PROPS.NAME]: name,
-      [SPECIAL_PROPS.INJECT]: dependencies,
-      [SPECIAL_PROPS.SINGLETON]: singleton,
-      [SPECIAL_PROPS.EXTRA]: extra,
+      $type: 'provider',
+      $name: name,
+      $inject: dependencies,
+      $singleton: singleton,
+      $extra: extra,
     },
   ) as ProviderInitializer<D, S>;
 
@@ -546,14 +574,14 @@ export function wrapInitializer<D extends Dependencies<any>, S>(
   wrapper: ProviderInitializerWrapper<S, D> | ServiceInitializerWrapper<S, D>,
   baseInitializer: ProviderInitializer<D, S> | ServiceInitializer<D, S>,
 ): ProviderInitializer<D, S> | ServiceInitializer<D, S> {
-  return reuseSpecialProps(baseInitializer, async (services: D) => {
+  return reuseSpecialProps(baseInitializer, (async (services: D) => {
     const baseInstance = await baseInitializer(services);
 
     return (wrapper as ServiceInitializerWrapper<S, D>)(
       services,
       baseInstance as S,
-    );
-  }) as ServiceInitializer<D, S>;
+    ) as S;
+  }) as unknown as ServiceInitializer<D, S>) as ServiceInitializer<D, S>;
 }
 
 /**
@@ -603,19 +631,18 @@ export function inject<D extends Dependencies<any>, S>(
     | ProviderInitializerBuilder<any, S>
     | ServiceInitializerBuilder<any, S>,
 ): ProviderInitializerBuilder<D, S> | ServiceInitializerBuilder<D, S> {
-  if ('constant' === initializer[SPECIAL_PROPS.TYPE]) {
-    throw new YError(
-      E_BAD_INJECT_IN_CONSTANT,
-      initializer[SPECIAL_PROPS.NAME],
+  if (initializerBuilderIsOfType('constant', initializer)) {
+    throw new YError(E_BAD_INJECT_IN_CONSTANT, [
+      initializer.$name,
       dependencies,
-    );
+    ]);
   }
 
   const uniqueInitializer = reuseSpecialProps<D, Dependencies, S>(
     initializer,
     initializer as ServiceInitializerBuilder<Dependencies, S>,
     {
-      [SPECIAL_PROPS.INJECT]: dependencies,
+      $inject: dependencies,
     },
   );
 
@@ -671,9 +698,9 @@ export function unInject<D extends Dependencies<any>, S>(
     | ServiceInitializerBuilder<any, S>,
 ): ProviderInitializerBuilder<D, S> | ServiceInitializerBuilder<D, S> {
   const filteredDependencies = dependencies.map(parseDependencyDeclaration);
-  const originalDependencies = (initializer[SPECIAL_PROPS.INJECT] || []).map(
-    parseDependencyDeclaration,
-  );
+  const originalDependencies = (
+    pickInitializerBuilderProp(initializer, '$inject') || []
+  ).map(parseDependencyDeclaration);
 
   return inject<D, S>(
     originalDependencies
@@ -695,36 +722,26 @@ export function unInject<D extends Dependencies<any>, S>(
  * @return {Function}      The newly built initialization function
  */
 export function useInject<FD extends Dependencies<any>, S>(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ProviderInitializer<Dependencies, S>,
 ): ProviderInitializer<FD, S>;
 export function useInject<FD extends Dependencies<any>, S>(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ProviderInitializerBuilder<Dependencies, S>,
 ): ProviderInitializerBuilder<FD, S>;
 export function useInject<FD extends Dependencies<any>, S>(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ServiceInitializer<Dependencies, S>,
 ): ServiceInitializer<FD, S>;
 export function useInject<FD extends Dependencies<any>, S>(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ServiceInitializerBuilder<Dependencies, S>,
 ): ServiceInitializerBuilder<FD, S>;
 export function useInject<FD extends Dependencies<any>, S>(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ProviderInitializerBuilder<Dependencies, S>,
 ): ProviderInitializerBuilder<FD, S> | ServiceInitializerBuilder<FD, S> {
-  return inject<FD, S>(from[SPECIAL_PROPS.INJECT] || [], to);
+  return inject<FD, S>(pickInitializerBuilderProp(from, '$inject') || [], to);
 }
 
 /**
@@ -738,9 +755,7 @@ export function mergeInject<
   D extends Dependencies<any>,
   S,
 >(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ProviderInitializer<D, S>,
 ): ProviderInitializer<FD & D, S>;
 export function mergeInject<
@@ -748,9 +763,7 @@ export function mergeInject<
   D extends Dependencies<any>,
   S,
 >(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ProviderInitializerBuilder<D, S>,
 ): ProviderInitializerBuilder<FD & D, S>;
 export function mergeInject<
@@ -758,9 +771,7 @@ export function mergeInject<
   D extends Dependencies<any>,
   S,
 >(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ServiceInitializer<D, S>,
 ): ServiceInitializer<FD, S>;
 export function mergeInject<
@@ -768,9 +779,7 @@ export function mergeInject<
   D extends Dependencies<any>,
   S,
 >(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ServiceInitializerBuilder<D, S>,
 ): ServiceInitializerBuilder<FD, S>;
 export function mergeInject<
@@ -778,15 +787,14 @@ export function mergeInject<
   D extends Dependencies<any>,
   S,
 >(
-  from:
-    | AsyncInitializerBuilder<FD, unknown>
-    | PartialAsyncInitializer<FD, unknown>,
+  from: InitializerBuilder<FD, unknown>,
   to: ProviderInitializerBuilder<D, S> | ServiceInitializerBuilder<D, S>,
 ):
   | ProviderInitializerBuilder<D & FD, S>
   | ServiceInitializerBuilder<D & FD, S> {
   return alsoInject(
-    from[SPECIAL_PROPS.INJECT] || ([] as DependencyDeclaration[]),
+    (from as Partial<ServiceInitializer<D, unknown>>).$inject ||
+      ([] as DependencyDeclaration[]),
     to as ServiceInitializerBuilder<D, S>,
   );
 }
@@ -906,9 +914,9 @@ export function alsoInject<
 ):
   | ProviderInitializerBuilder<ND & D, S>
   | ServiceInitializerBuilder<ND & D, S> {
-  const currentDependencies = (initializer[SPECIAL_PROPS.INJECT] || []).map(
-    parseDependencyDeclaration,
-  );
+  const currentDependencies = (
+    pickInitializerBuilderProp(initializer, '$inject') || []
+  ).map(parseDependencyDeclaration);
   const addedDependencies = dependencies.map(parseDependencyDeclaration);
   const dedupedDependencies: DependencyDeclaration[] = currentDependencies
     .filter(({ serviceName }) => {
@@ -1000,9 +1008,9 @@ export function extra<D extends Dependencies<any>, S>(
     initializer,
     initializer as ServiceInitializerBuilder<D, S>,
     {
-      [SPECIAL_PROPS.EXTRA]: merge
+      $extra: merge
         ? Object.assign(
-            initializer[SPECIAL_PROPS.EXTRA] || {},
+            pickInitializerBuilderProp(initializer, '$extra') || {},
             extraInformation,
           )
         : extraInformation,
@@ -1062,7 +1070,7 @@ export function singleton<D extends Dependencies<any>, S>(
     initializer,
     initializer as ServiceInitializerBuilder<D, S>,
     {
-      [SPECIAL_PROPS.SINGLETON]: isSingleton,
+      $singleton: isSingleton,
     },
   );
 
@@ -1128,11 +1136,11 @@ export function location<D extends Dependencies<any>, S>(
   | ProviderInitializerBuilder<D, S>
   | ServiceInitializerBuilder<D, S>
   | ConstantInitializer<S> {
-  if (initializer[SPECIAL_PROPS.TYPE] === 'constant') {
+  if (initializerBuilderIsOfType('constant', initializer)) {
     return {
-      $name: initializer[SPECIAL_PROPS.NAME],
+      $name: initializer.$name,
       $type: 'constant',
-      $value: initializer[SPECIAL_PROPS.VALUE],
+      $value: initializer.$value,
       $singleton: true,
       $location: { url, exportName },
     };
@@ -1142,7 +1150,7 @@ export function location<D extends Dependencies<any>, S>(
     initializer,
     initializer as ServiceInitializerBuilder<D, S>,
     {
-      [SPECIAL_PROPS.LOCATION]: { url, exportName },
+      $location: { url, exportName },
     },
   );
 
@@ -1193,7 +1201,7 @@ export function name<D extends Dependencies<any>, S>(
     initializer,
     initializer as ServiceInitializerBuilder<D, S>,
     {
-      [SPECIAL_PROPS.NAME]: name,
+      $name: name,
     },
   );
 
@@ -1233,7 +1241,7 @@ export function autoName<D extends Dependencies<any>, S>(
     | ServiceInitializerBuilder<D, S>,
 ): ProviderInitializerBuilder<D, S> | ServiceInitializerBuilder<D, S> {
   return name(
-    readFunctionName(initializer),
+    readFunctionName(initializer as unknown as Function),
     initializer as ServiceInitializerBuilder<D, S>,
   );
 }
@@ -1286,7 +1294,7 @@ export function type<D extends Dependencies<any>, S>(
     initializer,
     initializer as ServiceInitializerBuilder<D, S>,
     {
-      [SPECIAL_PROPS.TYPE]: type,
+      $type: type as 'service',
     },
   );
 
@@ -1334,14 +1342,16 @@ export function initializer<D extends Dependencies<any>, S>(
     initializer,
     initializer as ServiceInitializerBuilder<D, S>,
     Object.keys(properties).reduce((finalProperties, property) => {
-      const finalProperty = SPECIAL_PROPS_PREFIX + property;
+      const finalProperty = (SPECIAL_PROPS_PREFIX +
+        property) as keyof ServiceProperties;
 
       if (!ALLOWED_SPECIAL_PROPS.includes(finalProperty)) {
-        throw new YError('E_BAD_PROPERTY', property);
+        throw new YError('E_BAD_PROPERTY', [property]);
       }
-      finalProperties[finalProperty] = properties[property];
+      finalProperties[finalProperty] =
+        properties[property as keyof ServiceInputProperties];
       return finalProperties;
-    }, {}),
+    }, {} as Partial<ServiceProperties>),
   );
 
   debug('Wrapped an initializer with properties:', properties);
@@ -1459,63 +1469,77 @@ export function unwrapInitializerProperties<S, D extends Dependencies<any>>(
     | ConstantInitializer<S>,
 ): ProviderProperties | ServiceProperties | ConstantProperties {
   if (typeof initializer !== 'function' && typeof initializer !== 'object') {
-    throw new YError('E_BAD_INITIALIZER', initializer);
+    throw new YError('E_BAD_INITIALIZER', [initializer]);
   }
   const properties = initializer as InitializerProperties;
 
-  if (
-    typeof properties[SPECIAL_PROPS.NAME] !== 'string' ||
-    properties[SPECIAL_PROPS.NAME] === ''
-  ) {
-    throw new YError('E_ANONYMOUS_ANALYZER', properties[SPECIAL_PROPS.NAME]);
+  if (typeof properties.$name !== 'string' || properties.$name === '') {
+    throw new YError('E_ANONYMOUS_ANALYZER', [properties.$name]);
   }
 
-  if (!ALLOWED_INITIALIZER_TYPES.includes(properties[SPECIAL_PROPS.TYPE])) {
-    throw new YError(
-      'E_BAD_INITIALIZER_TYPE',
-      initializer[SPECIAL_PROPS.NAME],
-      initializer[SPECIAL_PROPS.TYPE],
+  if (!ALLOWED_INITIALIZER_TYPES.includes(properties.$type)) {
+    throw new YError('E_BAD_INITIALIZER_TYPE', [
+      pickInitializerBuilderProp(initializer, '$name'),
+      pickInitializerBuilderProp(initializer, '$type'),
       ALLOWED_INITIALIZER_TYPES,
-    );
+    ]);
   }
 
   if (
-    initializer[SPECIAL_PROPS.NAME] === '$autoload' &&
-    !initializer[SPECIAL_PROPS.SINGLETON]
+    pickInitializerBuilderProp(initializer, '$name') === '$autoload' &&
+    !pickInitializerBuilderProp(initializer, '$singleton')
   ) {
-    throw new YError(
-      'E_BAD_AUTOLOADER',
-      initializer[SPECIAL_PROPS.SINGLETON] || false,
-    );
+    throw new YError('E_BAD_AUTOLOADER', [
+      pickInitializerBuilderProp(initializer, '$singleton') || false,
+    ]);
   }
 
-  if (properties[SPECIAL_PROPS.TYPE] === 'constant') {
-    if (
-      'undefined' ===
-      typeof (initializer as ConstantInitializer<S>)[SPECIAL_PROPS.VALUE]
-    ) {
-      throw new YError(
-        'E_UNDEFINED_CONSTANT_INITIALIZER',
-        properties[SPECIAL_PROPS.NAME],
-      );
+  if (properties.$type === 'constant') {
+    if ('undefined' === typeof (initializer as ConstantInitializer<S>).$value) {
+      throw new YError('E_UNDEFINED_CONSTANT_INITIALIZER', [properties.$name]);
     }
-    properties[SPECIAL_PROPS.SINGLETON] = true;
+    properties.$singleton = true;
   } else {
-    if ('undefined' !== typeof initializer[SPECIAL_PROPS.VALUE]) {
-      throw new YError(
-        'E_BAD_VALUED_NON_CONSTANT_INITIALIZER',
-        initializer[SPECIAL_PROPS.NAME],
-      );
+    if ('$value' in initializer && 'undefined' !== typeof initializer.$value) {
+      throw new YError('E_BAD_VALUED_NON_CONSTANT_INITIALIZER', [
+        initializer.$name,
+      ]);
     }
-    properties[SPECIAL_PROPS.INJECT] = properties[SPECIAL_PROPS.INJECT] || [];
-    properties[SPECIAL_PROPS.SINGLETON] =
-      properties[SPECIAL_PROPS.SINGLETON] || false;
-    properties[SPECIAL_PROPS.EXTRA] =
-      properties[SPECIAL_PROPS.EXTRA] || undefined;
+    properties.$inject = properties.$inject || [];
+    properties.$singleton = properties.$singleton || false;
+    properties.$extra = properties.$extra || undefined;
   }
 
   return initializer as
     | (ProviderInitializer<D, S> & ProviderProperties)
     | (ServiceInitializer<D, S> & ServiceProperties)
     | ConstantInitializer<S>;
+}
+
+export function initializerBuilderIsOfType<
+  T extends InitializerTypes,
+  D extends Dependencies<any>,
+  S,
+>(
+  type: T,
+  initializer: InitializerBuilder<D, S> | ConstantInitializer<S>,
+): initializer is T extends 'service'
+  ? ServiceInitializerBuilder<D, S>
+  : T extends 'provider'
+    ? ServiceInitializerBuilder<D, S>
+    : ConstantInitializer<S> {
+  return (initializer as ConstantInitializer<S>).$type === type ? true : false;
+}
+
+export function pickInitializerBuilderProp<
+  D extends Dependencies<any>,
+  S,
+  T extends InitializerSpecialProp,
+>(
+  initializer: InitializerBuilder<D, S> | ConstantInitializer<S>,
+  prop: T,
+): T extends keyof ServiceProperties ? ServiceProperties[T] : S {
+  return (initializer as ConstantInitializer<S>)[
+    prop as '$value'
+  ] as T extends keyof ServiceProperties ? ServiceProperties[T] : S;
 }

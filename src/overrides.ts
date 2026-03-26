@@ -2,7 +2,9 @@
  * A tree map to match service names to
  * their overridden values at run/build time
  */
-export type Overrides = { [key: string]: Overrides | string };
+export interface Overrides {
+  [key: string]: Overrides | string;
+}
 
 export const OVERRIDES = '$overrides';
 

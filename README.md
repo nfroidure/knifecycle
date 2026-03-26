@@ -248,7 +248,7 @@ $.register(
           // Allows to signal that the dependency is not found
           // so that optional dependencies doesn't impeach the
           // injector to resolve the dependency tree
-          throw new YError('E_UNMATCHED_DEPENDENCY', serviceName);
+          throw new YError('E_UNMATCHED_DEPENDENCY', [serviceName]);
         }
         try {
           const path = CONFIG.commands + '/' + ARGS[2];

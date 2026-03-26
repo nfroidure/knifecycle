@@ -1,6 +1,6 @@
 import { YError } from 'yerror';
 
-export type Node = {
+export interface Node {
   __name: string;
   __childNodes?: Node[];
 };

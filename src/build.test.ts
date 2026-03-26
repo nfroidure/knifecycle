@@ -10,7 +10,7 @@ describe('buildInitializer', () => {
       service: 'PROVIDER_SERVICE',
     };
   }
-  const mockedDepsHash = {
+  const mockedDepsHash: any = {
     $fatalError: constant('$fatalError', undefined),
     $dispose: constant('$dispose', undefined),
     $instance: constant('$instance', undefined),
@@ -97,10 +97,10 @@ describe('buildInitializer', () => {
       singleton: true,
     },
     async () => {
-      return async function $autoload(name) {
+      return async function $autoload(name: string) {
         return mockedDepsHash[name]
           ? Promise.resolve(mockedDepsHash[name])
-          : Promise.reject(new YError('E_UNMATCHED_DEPENDENCY', name));
+          : Promise.reject(new YError('E_UNMATCHED_DEPENDENCY', [name]));
       };
     },
   );

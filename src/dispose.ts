@@ -2,14 +2,14 @@ import {
   INSTANCE,
   NO_PROVIDER,
   SILO_CONTEXT,
-  SPECIAL_PROPS,
   location,
   parseDependencyDeclaration,
+  pickInitializerBuilderProp,
   service,
 } from './util.js';
 import initDebug from 'debug';
-import type { Disposer, ServiceName } from './util.js';
-import type { Knifecycle, SiloContext } from './index.js';
+import { type Disposer, type ServiceName } from './util.js';
+import { type Knifecycle, type SiloContext } from './index.js';
 
 const debug = initDebug('knifecycle');
 
@@ -31,6 +31,7 @@ async function initDispose({
       $siloContext._shutdownPromise ||
       _shutdownNextServices($siloContext.loadingSequences.concat());
     await $siloContext._shutdownPromise;
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete $instance._silosContexts[$siloContext.index];
 
     // Shutdown services in their instanciation order
@@ -54,11 +55,17 @@ async function initDispose({
               )
               .some((anotherServiceName) =>
                 (
-                  $instance._initializersStates[anotherServiceName]
-                    ?.initializer?.[SPECIAL_PROPS.INJECT] || []
+                  ($instance._initializersStates[anotherServiceName]
+                    ?.initializer &&
+                    pickInitializerBuilderProp(
+                      $instance._initializersStates[anotherServiceName]
+                        ?.initializer,
+                      '$inject',
+                    )) ||
+                  []
                 )
                   .map(
-                    (declaration) =>
+                    (declaration: string) =>
                       parseDependencyDeclaration(declaration).serviceName,
                   )
                   .includes(serviceName),

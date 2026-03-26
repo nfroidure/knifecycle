@@ -10,7 +10,7 @@ export const FATAL_ERROR = '$fatalError';
  * Allow to manage processes lifecycle fatal
  * errors.
  */
-export type FatalErrorService = {
+export interface FatalErrorService {
   errorPromise: Promise<void>;
   registerErrorPromise: (errorPromise: Promise<void>) => void;
   unregisterErrorPromise: (errorPromise: Promise<void>) => void;
@@ -20,7 +20,7 @@ export type FatalErrorService = {
 async function initFatalError(): Promise<FatalErrorService> {
   const errorPromises: Promise<void>[] = [];
   let errorCatchStep = 0;
-  let rejectFatalError;
+  let rejectFatalError: (reason?: Error) => void;
   const errorPromise = new Promise<void>((_resolve, reject) => {
     rejectFatalError = reject;
   });

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, test, expect, jest } from '@jest/globals';
 import {
   reuseSpecialProps,
@@ -25,9 +23,13 @@ import {
   SPECIAL_PROPS,
   unInject,
   location,
+  type Dependencies,
+  type ServiceInitializer,
+  pickInitializerBuilderProp,
+  Service,
+  ServiceInputProperties,
 } from './util.js';
-import type { Provider } from './util.js';
-import type { Dependencies, ServiceInitializer } from './index.js';
+import { type Provider } from './util.js';
 import { YError } from 'yerror';
 
 async function aProviderInitializer() {
@@ -61,26 +63,32 @@ describe('reuseSpecialProps', () => {
     const newFn = reuseSpecialProps(from, to);
 
     expect(newFn).not.toEqual(to);
-    expect((newFn as any).$name).toEqual(from.$name);
-    expect((newFn as any).$type).toEqual(from.$type);
-    expect((newFn as any).$inject).not.toBe(from.$inject);
-    expect((newFn as any).$inject).toEqual(from.$inject);
-    expect((newFn as any).$singleton).toEqual(from.$singleton);
-    expect((newFn as any).$extra).not.toBe(from.$extra);
-    expect((newFn as any).$extra).toEqual(from.$extra);
+    expect(pickInitializerBuilderProp(newFn, '$name')).toEqual(from.$name);
+    expect(pickInitializerBuilderProp(newFn, '$type')).toEqual(from.$type);
+    expect(pickInitializerBuilderProp(newFn, '$inject')).not.toBe(from.$inject);
+    expect(pickInitializerBuilderProp(newFn, '$inject')).toEqual(from.$inject);
+    expect(pickInitializerBuilderProp(newFn, '$singleton')).toEqual(
+      from.$singleton,
+    );
+    expect(pickInitializerBuilderProp(newFn, '$extra')).not.toBe(from.$extra);
+    expect(pickInitializerBuilderProp(newFn, '$extra')).toEqual(from.$extra);
 
     const newFn2 = reuseSpecialProps(from, to, {
       $name: 'yolo',
     });
 
     expect(newFn2).not.toEqual(to);
-    expect((newFn2 as any).$name).toEqual('yolo');
-    expect((newFn2 as any).$type).toEqual(from.$type);
-    expect((newFn2 as any).$inject).not.toBe(from.$inject);
-    expect((newFn2 as any).$inject).toEqual(from.$inject);
-    expect((newFn2 as any).$singleton).toEqual(from.$singleton);
-    expect((newFn as any).$extra).not.toBe(from.$extra);
-    expect((newFn as any).$extra).toEqual(from.$extra);
+    expect(pickInitializerBuilderProp(newFn2, '$name')).toEqual('yolo');
+    expect(pickInitializerBuilderProp(newFn2, '$type')).toEqual(from.$type);
+    expect(pickInitializerBuilderProp(newFn2, '$inject')).not.toBe(
+      from.$inject,
+    );
+    expect(pickInitializerBuilderProp(newFn2, '$inject')).toEqual(from.$inject);
+    expect(pickInitializerBuilderProp(newFn2, '$singleton')).toEqual(
+      from.$singleton,
+    );
+    expect(pickInitializerBuilderProp(newFn, '$extra')).not.toBe(from.$extra);
+    expect(pickInitializerBuilderProp(newFn, '$extra')).toEqual(from.$extra);
   });
 });
 
@@ -92,7 +100,7 @@ describe('wrapInitializer', () => {
 
     const log = jest.fn();
     const newInitializer = wrapInitializer(
-      async ({ log }: { log: any }, service: () => string) => {
+      async ({ log }: Dependencies, service: () => string) => {
         log('Wrapping...');
         return () => service() + '-wrapped';
       },
@@ -110,7 +118,10 @@ describe('wrapInitializer', () => {
     const newService = await newInitializer({ log });
     expect(newService()).toEqual('test-wrapped');
     expect(log.mock.calls).toEqual([['Wrapping...']]);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['log', '?test']);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
+      'log',
+      '?test',
+    ]);
   });
 
   test('should work with a provider initialzer', async () => {
@@ -142,7 +153,10 @@ describe('wrapInitializer', () => {
     const newService = await newInitializer({ log });
     expect(newService.service()).toEqual('test-wrapped');
     expect(log.mock.calls).toEqual([['Wrapping...']]);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['log', '?test']);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
+      'log',
+      '?test',
+    ]);
   });
 });
 
@@ -155,8 +169,12 @@ describe('inject', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
   });
 
   test('should allow to decorate an initializer builder with dependencies', () => {
@@ -167,8 +185,12 @@ describe('inject', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
   });
 
   test('should allow to decorate an initializer with dependencies', () => {
@@ -179,8 +201,12 @@ describe('inject', () => {
     );
 
     expect(newInitializer).not.toEqual(aServiceInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
   });
 
   test('should allow to decorate an initializer builder with dependencies', () => {
@@ -191,8 +217,12 @@ describe('inject', () => {
     );
 
     expect(newInitializer).not.toEqual(aServiceInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
   });
 
   test('should allow to decorate an initializer with mapped dependencies', () => {
@@ -200,8 +230,12 @@ describe('inject', () => {
     const newInitializer = inject(dependencies, aProviderInitializer);
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
   });
 
   test('should fail with a constant', () => {
@@ -228,9 +262,15 @@ describe('useInject', () => {
     const newInitializer = useInject(fromInitializer, toInitializer);
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(fromDependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toEqual(toDependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([...fromDependencies]);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      fromDependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toEqual(
+      toDependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
+      ...fromDependencies,
+    ]);
   });
 });
 
@@ -249,9 +289,13 @@ describe('mergeInject', () => {
     const newInitializer = mergeInject(fromInitializer, toInitializer);
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(fromDependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toEqual(toDependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      fromDependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toEqual(
+      toDependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
       ...toDependencies,
       ...fromDependencies,
     ]);
@@ -261,25 +305,29 @@ describe('mergeInject', () => {
 describe('unInject', () => {
   test('should work with empty dependencies', () => {
     const baseProvider =
-      async ({ ENV, mysql: db }) =>
+      async ({ ENV, mysql: db }: Dependencies) =>
       async () => ({
         ENV,
         db,
       });
-    const removedDependencies = [];
-    const leftDependencies = [];
+    const removedDependencies: string[] = [];
+    const leftDependencies: string[] = [];
     const dependencies = [...removedDependencies, ...leftDependencies];
     const initializer = inject(dependencies, baseProvider);
     const newInitializer = unInject(removedDependencies, initializer);
 
     expect(newInitializer).not.toEqual(baseProvider);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(leftDependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      leftDependencies,
+    );
   });
 
   test('should allow to remove dependencies', () => {
     const baseProvider =
-      async ({ ENV, mysql: db }) =>
+      async ({ ENV, mysql: db }: Dependencies) =>
       async () => ({
         ENV,
         db,
@@ -291,13 +339,17 @@ describe('unInject', () => {
     const newInitializer = unInject(removedDependencies, initializer);
 
     expect(newInitializer).not.toEqual(baseProvider);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(leftDependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      leftDependencies,
+    );
   });
 
   test('should allow to remove mapped dependencies', () => {
     const baseProvider =
-      async ({ ENV, mysql: db }) =>
+      async ({ ENV, mysql: db }: Dependencies) =>
       async () => ({
         ENV,
         db,
@@ -309,15 +361,19 @@ describe('unInject', () => {
     const newInitializer = unInject(removedDependencies, initializer);
 
     expect(newInitializer).not.toEqual(baseProvider);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(leftDependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      leftDependencies,
+    );
   });
 });
 
 describe('autoInject', () => {
   test('should allow to decorate an initializer with dependencies', () => {
     const baseProvider =
-      async ({ ENV, mysql: db }) =>
+      async ({ ENV, mysql: db }: Dependencies) =>
       async () => ({
         ENV,
         db,
@@ -326,12 +382,16 @@ describe('autoInject', () => {
     const newInitializer = autoInject(baseProvider);
 
     expect(newInitializer).not.toEqual(baseProvider);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
   });
 
   test('should allow to decorate an initializer with a function name', () => {
-    async function baseProvider({ ENV, mysql: db }) {
+    async function baseProvider({ ENV, mysql: db }: Dependencies) {
       return async () => ({
         ENV,
         db,
@@ -341,12 +401,17 @@ describe('autoInject', () => {
     const newInitializer = autoInject(baseProvider);
 
     expect(newInitializer).not.toEqual(baseProvider);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
   });
 
   test('should allow to decorate a service initializer with its location', () => {
-    async function baseService({ ENV, mysql: db }) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async function baseService({ ENV, mysql: db }: Dependencies) {
       return { my: 'service' };
     }
 
@@ -378,7 +443,7 @@ describe('autoInject', () => {
   test('should allow to decorate an initializer with optional dependencies', () => {
     const noop = () => undefined;
     const baseProvider =
-      async ({ ENV, log = noop, debug: aDebug = noop }) =>
+      async ({ ENV, log = noop, debug: aDebug = noop }: Dependencies) =>
       async () => ({
         ENV,
         log,
@@ -388,14 +453,18 @@ describe('autoInject', () => {
     const newInitializer = autoInject(baseProvider);
 
     expect(newInitializer).not.toEqual(baseProvider);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
   });
 
   test('should allow to decorate an initializer with several arguments', () => {
     const noop = () => undefined;
     const baseProvider =
-      async ({ ENV, log = noop, debug: aDebug = noop }) =>
+      async ({ ENV, log = noop, debug: aDebug = noop }: Dependencies) =>
       async () => ({
         ENV,
         log,
@@ -405,14 +474,18 @@ describe('autoInject', () => {
     const newInitializer = autoInject(baseProvider);
 
     expect(newInitializer).not.toEqual(baseProvider);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
   });
 
   test('should allow to decorate an initializer with complex arguments', () => {
     const noop = () => undefined;
     const baseProvider =
-      async ({ ENV, log = noop, debug: aDebug = noop }) =>
+      async ({ ENV, log = noop, debug: aDebug = noop }: Dependencies) =>
       async () => ({
         ENV,
         log,
@@ -422,15 +495,19 @@ describe('autoInject', () => {
     const newInitializer = autoInject(baseProvider);
 
     expect(newInitializer).not.toEqual(baseProvider);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
   });
 
   test('should fail with non async initializers', () => {
     try {
       autoInject((({ foo: bar = { bar: 'foo' } }) => {
         return bar;
-      }) as any);
+      }) as unknown as ServiceInitializer<Dependencies, Service>);
       throw new YError('E_UNEXPECTED_SUCCESS');
     } catch (err) {
       expect((err as YError).code).toEqual('E_NON_ASYNC_INITIALIZER');
@@ -466,14 +543,19 @@ describe('alsoInject', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['TEST', 'ENV']);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
+      'TEST',
+      'ENV',
+    ]);
   });
 
   test('should allow to decorate an initializer with dependencies', () => {
     const newInitializer = alsoInject(['ENV'], aProviderInitializer);
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['ENV']);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
+      'ENV',
+    ]);
   });
 
   test('should dedupe dependencies', () => {
@@ -484,7 +566,7 @@ describe('alsoInject', () => {
     );
 
     expect(newInitializer).not.toEqual(baseProvider);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
       'mysql',
       'ENV',
       'NODE_ENV',
@@ -502,7 +584,7 @@ describe('alsoInject', () => {
     );
 
     expect(newInitializer).not.toEqual(baseProvider);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
       '?TEST',
       '?TEST3',
       'ENV',
@@ -515,7 +597,7 @@ describe('alsoInject', () => {
     const newInitializer = alsoInject(['db>mysql', '?ftp>sftp'], baseProvider);
 
     expect(newInitializer).not.toEqual(baseProvider);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
       'mysql',
       '?sftp',
       'db>mysql',
@@ -534,7 +616,7 @@ describe('alsoInject', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
       'ENV',
       'NODE_ENV',
       '?TEST',
@@ -554,7 +636,7 @@ describe('alsoInject', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
       'ENV',
       'NODE_ENV',
       '?TEST',
@@ -583,7 +665,9 @@ describe('parseInjections', () => {
     const newInitializer = alsoInject(['ENV'], aProviderInitializer);
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['ENV']);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
+      'ENV',
+    ]);
   });
 });
 
@@ -596,9 +680,15 @@ describe('singleton', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$singleton')).toEqual(
+      true,
+    );
   });
 
   test('should allow to be used several times', () => {
@@ -609,9 +699,15 @@ describe('singleton', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(false);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$singleton')).toEqual(
+      false,
+    );
   });
 });
 
@@ -625,9 +721,15 @@ describe('name', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      baseName,
+    );
   });
 });
 
@@ -643,9 +745,15 @@ describe('autoName', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      baseName,
+    );
   });
 
   test('should allow to decorate an initializer with its init like function name', () => {
@@ -659,9 +767,15 @@ describe('autoName', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      baseName,
+    );
   });
 
   test('should allow to decorate an initializer with its initialize like function name', () => {
@@ -675,9 +789,15 @@ describe('autoName', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      baseName,
+    );
   });
 
   test('should allow to decorate a bounded initializer', () => {
@@ -693,10 +813,18 @@ describe('autoName', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$singleton')).toEqual(
+      true,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      baseName,
+    );
   });
 
   test('should fail with anonymous functions', () => {
@@ -715,8 +843,12 @@ describe('extra', () => {
     const newInitializer = extra(extraInformations, aProviderInitializer);
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.EXTRA]).not.toBe(extraInformations);
-    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual(extraInformations);
+    expect(pickInitializerBuilderProp(newInitializer, '$extra')).not.toBe(
+      extraInformations,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$extra')).toEqual(
+      extraInformations,
+    );
   });
 
   test('should allow to decorate an initializer with extra infos', () => {
@@ -724,8 +856,12 @@ describe('extra', () => {
     const newInitializer = extra(extraInformations, aProviderInitializer, true);
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.EXTRA]).not.toBe(extraInformations);
-    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual(extraInformations);
+    expect(pickInitializerBuilderProp(newInitializer, '$extra')).not.toBe(
+      extraInformations,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$extra')).toEqual(
+      extraInformations,
+    );
   });
 
   test('should allow to decorate an initializer with additional extra infos', () => {
@@ -738,11 +874,13 @@ describe('extra', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.EXTRA]).not.toBe(baseExtraInformations);
-    expect(newInitializer[SPECIAL_PROPS.EXTRA]).not.toEqual(
+    expect(pickInitializerBuilderProp(newInitializer, '$extra')).not.toBe(
+      baseExtraInformations,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$extra')).not.toEqual(
       additionalExtraInformations,
     );
-    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual({
+    expect(pickInitializerBuilderProp(newInitializer, '$extra')).toEqual({
       ...additionalExtraInformations,
       ...baseExtraInformations,
     });
@@ -760,10 +898,18 @@ describe('type', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
-    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual(baseType);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      baseName,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$type')).toEqual(
+      baseType,
+    );
   });
 });
 
@@ -783,11 +929,21 @@ describe('initializer', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
-    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual(baseType);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$singleton')).toEqual(
+      true,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      baseName,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$type')).toEqual(
+      baseType,
+    );
   });
 
   test('should fail with bad properties', () => {
@@ -796,7 +952,7 @@ describe('initializer', () => {
         {
           name: 'yolo',
           yolo: '',
-        } as any,
+        } as unknown as ServiceInputProperties,
         async () => undefined,
       );
       throw new YError('E_UNEXPECTED_SUCCESS');
@@ -832,6 +988,7 @@ describe('constant', () => {
 
 describe('service', () => {
   test('should allow to create an initializer from a service builder', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const aServiceBuilder = async (_services: unknown) => 'A_SERVICE';
     const dependencies = ['ANOTHER_ENV>ENV'];
     const extraData = { cool: true };
@@ -846,15 +1003,28 @@ describe('service', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
-    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual(extraData);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
-    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual(baseType);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$singleton')).toEqual(
+      true,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$extra')).toEqual(
+      extraData,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      baseName,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$type')).toEqual(
+      baseType,
+    );
   });
 
   test('should allow to create an initializer from a generic service builder', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const aServiceBuilder = async <T>(_services: T) => '';
     const dependencies = ['ANOTHER_ENV>ENV'];
     const extraData = { nice: true };
@@ -869,17 +1039,29 @@ describe('service', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
-    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual(extraData);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
-    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual(baseType);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$singleton')).toEqual(
+      true,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$extra')).toEqual(
+      extraData,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      baseName,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$type')).toEqual(
+      baseType,
+    );
   });
 
   test('should fail with no service builder', () => {
     try {
-      service(undefined as any);
+      service(undefined as Service);
       throw new YError('E_UNEXPECTED_SUCCESS');
     } catch (err) {
       expect((err as YError).code).toEqual('E_NO_SERVICE_BUILDER');
@@ -889,15 +1071,23 @@ describe('service', () => {
 
 describe('autoService', () => {
   test('should detect the service details', () => {
-    const baseServiceBuilder = async function initializeMySQL({ ENV }) {
+    const baseServiceBuilder = async function initializeMySQL({
+      ENV,
+    }: Dependencies) {
       return ENV;
     };
     const newInitializer = autoService(baseServiceBuilder);
 
     expect(newInitializer).not.toEqual(baseServiceBuilder);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['ENV']);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual('mySQL');
-    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual('service');
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
+      'ENV',
+    ]);
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      'mySQL',
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$type')).toEqual(
+      'service',
+    );
   });
 
   test('should detect the service details even with no dependencies', () => {
@@ -907,9 +1097,13 @@ describe('autoService', () => {
     const newInitializer = autoService(baseServiceBuilder);
 
     expect(newInitializer).not.toEqual(baseServiceBuilder);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([]);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual('mySQL');
-    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual('service');
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([]);
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      'mySQL',
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$type')).toEqual(
+      'service',
+    );
   });
 });
 
@@ -929,15 +1123,28 @@ describe('provider', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
-    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual(extraData);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
-    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual(baseType);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$singleton')).toEqual(
+      true,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$extra')).toEqual(
+      extraData,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      baseName,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$type')).toEqual(
+      baseType,
+    );
   });
 
   test('should allow to create an initializer from a provider builder', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const aServiceBuilder = async (_services: unknown) => ({
       service: 'A_SERVICE',
     });
@@ -953,17 +1160,29 @@ describe('provider', () => {
     );
 
     expect(newInitializer).not.toEqual(aProviderInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).not.toBe(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(dependencies);
-    expect(newInitializer[SPECIAL_PROPS.SINGLETON]).toEqual(true);
-    expect(newInitializer[SPECIAL_PROPS.EXTRA]).toEqual(extraData);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual(baseName);
-    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual(baseType);
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).not.toBe(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual(
+      dependencies,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$singleton')).toEqual(
+      true,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$extra')).toEqual(
+      extraData,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      baseName,
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$type')).toEqual(
+      baseType,
+    );
   });
 
   test('should fail with no provider builder', () => {
     try {
-      provider(undefined as any);
+      provider(undefined as Service);
       throw new YError('E_UNEXPECTED_SUCCESS');
     } catch (err) {
       expect((err as YError).code).toEqual('E_NO_PROVIDER_BUILDER');
@@ -983,9 +1202,15 @@ describe('autoProvider', () => {
     const newInitializer = autoProvider(baseInitializer);
 
     expect(newInitializer).not.toEqual(baseInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual(['ENV']);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual('mySQL');
-    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual('provider');
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([
+      'ENV',
+    ]);
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      'mySQL',
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$type')).toEqual(
+      'provider',
+    );
   });
 
   test('should detect the provider details even with no dependencies', () => {
@@ -995,9 +1220,13 @@ describe('autoProvider', () => {
     const newInitializer = autoProvider(baseInitializer);
 
     expect(newInitializer).not.toEqual(baseInitializer);
-    expect(newInitializer[SPECIAL_PROPS.INJECT]).toEqual([]);
-    expect(newInitializer[SPECIAL_PROPS.NAME]).toEqual('mySQL');
-    expect(newInitializer[SPECIAL_PROPS.TYPE]).toEqual('provider');
+    expect(pickInitializerBuilderProp(newInitializer, '$inject')).toEqual([]);
+    expect(pickInitializerBuilderProp(newInitializer, '$name')).toEqual(
+      'mySQL',
+    );
+    expect(pickInitializerBuilderProp(newInitializer, '$type')).toEqual(
+      'provider',
+    );
   });
 });
 

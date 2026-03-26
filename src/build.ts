@@ -7,6 +7,10 @@ import {
   READY,
   location,
   constant,
+  type InitializerTypes,
+  initializerBuilderIsOfType,
+  pickInitializerBuilderProp,
+  type Service,
 } from './util.js';
 import { buildInitializationSequence } from './sequence.js';
 import { FATAL_ERROR } from './fatalError.js';
@@ -24,20 +28,18 @@ import { type Injector, INJECTOR } from './injector.js';
 export const MANAGED_SERVICES = [FATAL_ERROR, DISPOSE, INSTANCE, READY];
 export const DEFAULT_BUILD_CONSTANT_FILTER: BuildConstantFilter = () => false;
 
-export interface BuildConstantFilter {
-  (name: string): boolean;
-}
+export type BuildConstantFilter = (name: string) => boolean;
 
-type DependencyTreeNode = {
+interface DependencyTreeNode {
   __name: string;
   __childNodes?: DependencyTreeNode[];
   __initializer: Initializer<unknown, Dependencies<unknown>>;
   __inject: DependencyDeclaration[];
-  __type: 'provider' | 'constant' | 'service';
+  __type: InitializerTypes;
   __initializerName: string;
   __location: LocationInformation | 'managed' | 'no_location';
   __parentsNames: string[];
-};
+}
 
 export type BuildInitializer = (
   dependencies: DependencyDeclaration[],
@@ -171,13 +173,15 @@ ${batches
         }
         if (dependenciesHash[name].__location === 'no_location') {
           if (
-            'constant' ===
-              dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE] &&
+            initializerBuilderIsOfType(
+              'constant',
+              dependenciesHash[name].__initializer,
+            ) &&
             dependenciesHash[name].__location === 'no_location'
           ) {
             return `
 const ${name} = ${JSON.stringify(
-              dependenciesHash[name].__initializer[SPECIAL_PROPS.VALUE],
+              dependenciesHash[name].__initializer.$value,
               null,
               2,
             )};`;
@@ -212,7 +216,10 @@ ${batches
     .map((name) => {
       if (
         MANAGED_SERVICES.includes(name) ||
-        'constant' === dependenciesHash[name].__initializer[SPECIAL_PROPS.TYPE]
+        initializerBuilderIsOfType(
+          'constant',
+          dependenciesHash[name].__initializer,
+        )
       ) {
         return `
     ${name}: Promise.resolve(${name}),`;
@@ -324,7 +331,10 @@ async function buildDependencyTree(
   if (MANAGED_SERVICES.includes(finalName)) {
     return {
       __name: finalName,
-      __initializer: async () => {},
+      __initializer: (async () => undefined) as Initializer<
+        Service,
+        Dependencies
+      >,
       __inject: [],
       __type: 'constant',
       __initializerName: 'init' + upperCaseFirst(finalName.slice(1)),
@@ -336,13 +346,11 @@ async function buildDependencyTree(
 
   try {
     const initializer = await $autoload(finalName);
+    const inject = pickInitializerBuilderProp(initializer, '$inject') || [];
     const node: DependencyTreeNode = {
       __name: finalName,
       __initializer: initializer,
-      __inject:
-        initializer && initializer[SPECIAL_PROPS.INJECT]
-          ? initializer[SPECIAL_PROPS.INJECT]
-          : [],
+      __inject: inject,
       __type:
         initializer && initializer[SPECIAL_PROPS.TYPE]
           ? initializer[SPECIAL_PROPS.TYPE]
@@ -353,12 +361,9 @@ async function buildDependencyTree(
       __parentsNames: [...parentsNames, finalName],
     };
 
-    if (
-      initializer[SPECIAL_PROPS.INJECT] &&
-      initializer[SPECIAL_PROPS.INJECT].length
-    ) {
-      const childNodes: DependencyTreeNode[] = await Promise.all(
-        initializer[SPECIAL_PROPS.INJECT].map((childDependencyDeclaration) =>
+    if (inject.length) {
+      const childNodes: (DependencyTreeNode | null)[] = await Promise.all(
+        inject.map((childDependencyDeclaration) =>
           buildDependencyTree(
             {
               BUILD_CONSTANT_FILTER,
@@ -371,7 +376,7 @@ async function buildDependencyTree(
           ),
         ),
       );
-      node.__childNodes = childNodes.filter(identity);
+      node.__childNodes = childNodes.filter(identity) as DependencyTreeNode[];
       return node;
     } else {
       return node;
