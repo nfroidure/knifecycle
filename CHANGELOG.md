@@ -1,3 +1,5 @@
+# [20.0.0](https://github.com/nfroidure/knifecycle/compare/v19.1.3...v20.0.0) (2026-03-26)
+
 ## [19.1.3](https://github.com/nfroidure/knifecycle/compare/v19.1.2...v19.1.3) (2025-11-06)
 
 
