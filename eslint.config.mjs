@@ -6,7 +6,6 @@
 import eslint from '@eslint/js';
 import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
-
 import eslintConfigPrettier from 'eslint-config-prettier';
 import eslintPluginJest from 'eslint-plugin-jest';
 
@@ -19,6 +18,9 @@ export default defineConfig(
       tseslint.configs.strict,
       tseslint.configs.stylistic,
     ],
+    rules: {
+      '@typescript-eslint/consistent-type-definitions': 'warn'
+    }
   },
   {
     files: ['*.test.ts'],
@@ -30,9 +32,11 @@ export default defineConfig(
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
+      parserOptions: {
+        ecmaVersion: 'latest',
+        tsconfigRootDir: import.meta.dirname,
+      }
     },
     ignores: ['*.d.ts'],
   },
 );
-
-

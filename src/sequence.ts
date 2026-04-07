@@ -3,7 +3,7 @@ import { YError } from 'yerror';
 export interface Node {
   __name: string;
   __childNodes?: Node[];
-};
+}
 
 const MAX_ITERATIONS = 99;
 

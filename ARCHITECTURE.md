@@ -37,7 +37,7 @@ It is designed to have a low footprint on services code.
 In fact, the Knifecycle API is aimed to allow to statically
  build its services load/unload code once in production.
 
-[See in context](./src/index.ts#L240-L259)
+[See in context](./src/index.ts#L128-L147)
 
 
 
@@ -52,7 +52,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.ts#L261-L270)
+[See in context](./src/index.ts#L149-L158)
 
 
 
@@ -78,7 +78,7 @@ A service provider is full of state since its concern is
 `Knifecycle` provides a set of decorators that allows you to simply
  create new initializers.
 
-[See in context](./src/util.ts#L15-L36)
+[See in context](./src/util.ts#L11-L32)
 
 
 
@@ -92,7 +92,7 @@ The `?` flag indicates an optional dependency.
 It allows to write generic services with fixed
  dependencies and remap their name at injection time.
 
-[See in context](./src/util.ts#L1362-L1371)
+[See in context](./src/util.ts#L1358-L1367)
 
 
 
@@ -107,7 +107,7 @@ Initializers can be of three types:
  any constant value.
 - services: a `service` initializer directly
  resolve to the actual service it builds. It can
- be objects, functions or litteral values.
+ be objects, functions or literal values.
 - providers: they instead resolve to an object that
  contains the service built into the `service` property
  but also an optional `dispose` property exposing a
@@ -118,10 +118,10 @@ Initializers can be of three types:
 
  Initializers can be declared as singletons (constants are
   of course only singletons). This means that they will be
-  instanciated once for all for each executions silos using
+  instantiated once for all for each executions silos using
   them (we will cover this topic later on).
 
-[See in context](./src/index.ts#L365-L389)
+[See in context](./src/index.ts#L253-L277)
 
 
 
@@ -137,7 +137,7 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.ts#L708-L718)
+[See in context](./src/index.ts#L598-L608)
 
 
 
@@ -173,5 +173,5 @@ Sadly TypeScript does not allow to add generic types
 For more details, see:
 https://stackoverflow.com/questions/64948037/generics-type-loss-while-infering/64950184#64950184
 
-[See in context](./src/util.ts#L1432-L1443)
+[See in context](./src/util.ts#L1428-L1439)
 

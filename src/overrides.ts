@@ -6,8 +6,6 @@ export interface Overrides {
   [key: string]: Overrides | string;
 }
 
-export const OVERRIDES = '$overrides';
-
 export function pickOverridenName(
   overrides: Overrides,
   servicesNames: [...string[], string],

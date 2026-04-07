@@ -1,10 +1,7 @@
 import {
   SPECIAL_PROPS,
-  INSTANCE,
-  AUTOLOAD,
   parseDependencyDeclaration,
   initializer,
-  READY,
   location,
   constant,
   type InitializerTypes,
@@ -13,8 +10,6 @@ import {
   type Service,
 } from './util.js';
 import { buildInitializationSequence } from './sequence.js';
-import { FATAL_ERROR } from './fatalError.js';
-import { DISPOSE } from './dispose.js';
 import { type Overrides, type Autoloader } from './index.js';
 import {
   type DependencyDeclaration,
@@ -22,10 +17,15 @@ import {
   type Dependencies,
   type LocationInformation,
 } from './util.js';
-import { OVERRIDES, pickOverridenName } from './overrides.js';
-import { type Injector, INJECTOR } from './injector.js';
+import { pickOverridenName } from './overrides.js';
+import { type Injector } from './injector.js';
 
-export const MANAGED_SERVICES = [FATAL_ERROR, DISPOSE, INSTANCE, READY];
+export const MANAGED_SERVICES = [
+  '$fatalError',
+  '$dispose',
+  '$instance',
+  '$ready',
+];
 export const DEFAULT_BUILD_CONSTANT_FILTER: BuildConstantFilter = () => false;
 
 export type BuildConstantFilter = (name: string) => boolean;
@@ -67,7 +67,12 @@ export default location(
     {
       name: 'buildInitializer',
       type: 'service',
-      inject: [AUTOLOAD, OVERRIDES, INJECTOR, '?BUILD_CONSTANT_FILTER'],
+      inject: [
+        '$autoload',
+        '$overrides',
+        '$injector',
+        '?BUILD_CONSTANT_FILTER',
+      ],
     },
     initInitializerBuilder,
   ),

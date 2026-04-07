@@ -4,8 +4,6 @@ import initDebug from 'debug';
 
 const debug = initDebug('knifecycle');
 
-export const FATAL_ERROR = '$fatalError';
-
 /**
  * Allow to manage processes lifecycle fatal
  * errors.
@@ -15,7 +13,7 @@ export interface FatalErrorService {
   registerErrorPromise: (errorPromise: Promise<void>) => void;
   unregisterErrorPromise: (errorPromise: Promise<void>) => void;
   throwFatalError: (err: Error) => void;
-};
+}
 
 async function initFatalError(): Promise<FatalErrorService> {
   const errorPromises: Promise<void>[] = [];
@@ -58,6 +56,6 @@ async function initFatalError(): Promise<FatalErrorService> {
 }
 
 export default location(
-  service(initFatalError, FATAL_ERROR, [], true),
+  service(initFatalError, '$fatalError', [], true),
   import.meta.url,
 );

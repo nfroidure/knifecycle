@@ -7,10 +7,6 @@ import initDebug from 'debug';
 const debug = initDebug('knifecycle');
 
 export const NO_PROVIDER = Symbol('NO_PROVIDER');
-export const INSTANCE = '$instance';
-export const SILO_CONTEXT = '$siloContext';
-export const READY = '$ready';
-export const AUTOLOAD = '$autoload';
 
 /* Architecture Note #1.2: Creating initializers
 
@@ -187,7 +183,7 @@ export const SPECIAL_PROPS = {
   LOCATION: `${SPECIAL_PROPS_PREFIX}location`,
   EXTRA: `${SPECIAL_PROPS_PREFIX}extra`,
   VALUE: `${SPECIAL_PROPS_PREFIX}value`,
-} as const;
+} as const satisfies Record<string, `$${string}`>;
 export const ALLOWED_SPECIAL_PROPS = Object.keys(SPECIAL_PROPS).map(
   (key) => SPECIAL_PROPS[key as keyof typeof SPECIAL_PROPS],
 );
@@ -346,7 +342,7 @@ export function constant<V extends Service>(
     value instanceof Function && '$inject' in value;
 
   if (contantLooksLikeAnInitializer) {
-    throw new YError(E_CONSTANT_INJECTION, [value.$inject]);
+    throw new YError(E_CONSTANT_INJECTION, [value.$inject as string[]]);
   }
 
   debug(`Created an initializer from a constant: ${name}.`);
@@ -1489,7 +1485,7 @@ export function unwrapInitializerProperties<S, D extends Dependencies<any>>(
     pickInitializerBuilderProp(initializer, '$name') === '$autoload' &&
     !pickInitializerBuilderProp(initializer, '$singleton')
   ) {
-    throw new YError('E_BAD_AUTOLOADER', [
+    throw new YError('E_BAD_AUTO_LOADER', [
       pickInitializerBuilderProp(initializer, '$singleton') || false,
     ]);
   }

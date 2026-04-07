@@ -1,7 +1,5 @@
 import {
-  INSTANCE,
   NO_PROVIDER,
-  SILO_CONTEXT,
   location,
   parseDependencyDeclaration,
   pickInitializerBuilderProp,
@@ -12,8 +10,6 @@ import { type Disposer, type ServiceName } from './util.js';
 import { type Knifecycle, type SiloContext } from './index.js';
 
 const debug = initDebug('knifecycle');
-
-export const DISPOSE = '$dispose';
 
 /**
  * Allow to dispose the services of an
@@ -34,7 +30,7 @@ async function initDispose({
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete $instance._silosContexts[$siloContext.index];
 
-    // Shutdown services in their instanciation order
+    // Shutdown services in their instantiation order
     async function _shutdownNextServices(
       serviceLoadSequences: ServiceName[][],
     ) {
@@ -160,6 +156,6 @@ async function initDispose({
 }
 
 export default location(
-  service(initDispose, DISPOSE, [INSTANCE, SILO_CONTEXT]),
+  service(initDispose, '$dispose', ['$instance', '$siloContext']),
   import.meta.url,
 );

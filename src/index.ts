@@ -4,41 +4,11 @@ import { YError, printStackTrace } from 'yerror';
 import initDebug from 'debug';
 import {
   NO_PROVIDER,
-  INSTANCE,
-  SILO_CONTEXT,
-  READY,
-  AUTOLOAD,
   SPECIAL_PROPS,
-  SPECIAL_PROPS_PREFIX,
-  DECLARATION_SEPARATOR,
-  OPTIONAL_FLAG,
-  ALLOWED_INITIALIZER_TYPES,
-  ALLOWED_SPECIAL_PROPS,
-  parseInjections,
-  readFunctionName,
-  reuseSpecialProps,
-  parseName,
-  name,
-  autoName,
-  inject,
-  useInject,
-  mergeInject,
-  autoInject,
-  alsoInject,
-  unInject,
-  type,
-  extra,
-  singleton,
-  initializer,
   constant,
   service,
-  autoService,
   provider,
-  autoProvider,
-  location,
-  wrapInitializer,
   parseDependencyDeclaration,
-  stringifyDependencyDeclaration,
   unwrapInitializerProperties,
   type ServiceName,
   type Service,
@@ -47,111 +17,38 @@ import {
   type Provider,
   type Dependencies,
   type DependencyDeclaration,
-  type LocationInformation,
-  type ExtraInformation,
-  type ParsedDependencyDeclaration,
-  type ConstantProperties,
   type ConstantInitializer,
   type ProviderInitializerBuilder,
-  type ProviderProperties,
   type ProviderInitializer,
   type ServiceInitializerBuilder,
-  type ServiceProperties,
   type ServiceInitializer,
-  type InitializerBuilder,
   type AsyncInitializer,
   type Initializer,
-  type ServiceInitializerWrapper,
-  type ProviderInitializerWrapper,
 } from './util.js';
-import initFatalError, {
-  FATAL_ERROR,
-  type FatalErrorService,
-} from './fatalError.js';
-import initDispose, { DISPOSE } from './dispose.js';
-import { type Overrides, OVERRIDES, pickOverridenName } from './overrides.js';
-import initInitializerBuilder, {
-  DEFAULT_BUILD_CONSTANT_FILTER,
-  type BuildConstantFilter,
-  type BuildInitializer,
-} from './build.js';
-import { INJECTOR, type Injector } from './injector.js';
+import initFatalError, { type FatalErrorService } from './fatalError.js';
+import initDispose from './dispose.js';
+import { type Overrides, pickOverridenName } from './overrides.js';
+import { type Injector } from './injector.js';
+import './errors.js';
 
-export type {
-  ServiceName,
-  Service,
-  Disposer,
-  FatalErrorPromise,
-  Provider,
-  Dependencies,
-  DependencyDeclaration,
-  LocationInformation,
-  ExtraInformation,
-  ParsedDependencyDeclaration,
-  ConstantProperties,
-  ConstantInitializer,
-  ProviderInitializerBuilder,
-  ProviderProperties,
-  ProviderInitializer,
-  ServiceInitializerBuilder,
-  ServiceProperties,
-  ServiceInitializer,
-  InitializerBuilder,
-  AsyncInitializer,
-  Initializer,
-  ServiceInitializerWrapper,
-  ProviderInitializerWrapper,
-  BuildInitializer,
-  FatalErrorService,
-  Injector,
-  Overrides,
-  BuildConstantFilter,
-};
-
-export {
-  SPECIAL_PROPS,
-  SPECIAL_PROPS_PREFIX,
-  DECLARATION_SEPARATOR,
-  OPTIONAL_FLAG,
-  ALLOWED_INITIALIZER_TYPES,
-  ALLOWED_SPECIAL_PROPS,
-  parseInjections,
-  readFunctionName,
-  parseName,
-  Knifecycle,
-  initializer,
-  name,
-  autoName,
-  type,
-  inject,
-  useInject,
-  mergeInject,
-  autoInject,
-  alsoInject,
-  unInject,
-  extra,
-  singleton,
-  reuseSpecialProps,
-  wrapInitializer,
-  constant,
-  service,
-  autoService,
-  provider,
-  autoProvider,
-  location,
-  parseDependencyDeclaration,
-  stringifyDependencyDeclaration,
-  unwrapInitializerProperties,
-  initInitializerBuilder,
-  initFatalError,
-  initDispose,
-};
+export type * from './build.js';
+export * from './build.js';
+export type * from './dispose.js';
+export * from './dispose.js';
+export type * from './fatalError.js';
+export * from './fatalError.js';
+export type * from './injector.js';
+export type * from './overrides.js';
+export * from './overrides.js';
+export type * from './sequence.js';
+export * from './sequence.js';
+export type * from './util.js';
+export * from './util.js';
 
 export const RUN_DEPENDENT_NAME = '__run__';
 export const SYSTEM_DEPENDENT_NAME = '__system__';
-export const AUTOLOAD_DEPENDENT_NAME = '__autoloader__';
+export const AUTO_LOAD_DEPENDENT_NAME = '__autoloader__';
 export const INJECTOR_DEPENDENT_NAME = '__injector__';
-export { NO_PROVIDER, INJECTOR, DEFAULT_BUILD_CONSTANT_FILTER };
 
 export interface KnifecycleOptions {
   sequential?: boolean;
@@ -221,20 +118,11 @@ export interface InternalDependencies {
 
 const debug = initDebug('knifecycle');
 
-export {
-  DISPOSE,
-  FATAL_ERROR,
-  INSTANCE,
-  SILO_CONTEXT,
-  READY,
-  AUTOLOAD,
-  OVERRIDES,
-};
 export const UNBUILDABLE_SERVICES = [
-  AUTOLOAD,
-  INJECTOR,
-  INSTANCE,
-  SILO_CONTEXT,
+  '$autoload',
+  '$injector',
+  '$instance',
+  '$siloContext',
 ];
 
 /* Architecture Note #1: Knifecycle
@@ -268,7 +156,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 */
-class Knifecycle {
+export class Knifecycle {
   private _options: KnifecycleOptions;
   private _silosCounter: number;
   _silosContexts: Record<SiloIndex, SiloContext>;
@@ -283,7 +171,7 @@ class Knifecycle {
    * @param {Object}  options
    * An object with options
    * @param {boolean} options.sequential
-   * Allows to load dependencies sequentially (usefull for debugging)
+   * Allows to load dependencies sequentially (useful for debugging)
    * @return {Knifecycle}
    * The Knifecycle instance
    * @example
@@ -295,42 +183,42 @@ class Knifecycle {
   constructor(options?: KnifecycleOptions) {
     this._options = options || {};
     this._initializersStates = {
-      [FATAL_ERROR]: {
+      ['$fatalError']: {
         initializer: initFatalError,
         autoloaded: false,
         dependents: [],
       },
-      [SILO_CONTEXT]: {
+      ['$siloContext']: {
         initializer: service(
           (async () => {
-            throw new YError('E_UNEXPECTED_INIT', [SILO_CONTEXT]);
+            throw new YError('E_UNEXPECTED_INIT', ['$siloContext']);
           }) as ServiceInitializerBuilder<Dependencies, unknown>,
-          SILO_CONTEXT,
+          '$siloContext',
         ),
         autoloaded: false,
         dependents: [],
         silosInstances: {},
       },
-      [READY]: {
+      ['$ready']: {
         initializer: service(
           (async () => {
-            throw new YError('E_UNEXPECTED_INIT', [READY]);
+            throw new YError('E_UNEXPECTED_INIT', ['$ready']);
           }) as ServiceInitializerBuilder<Dependencies, unknown>,
-          READY,
+          '$ready',
         ),
         autoloaded: false,
         dependents: [],
         silosInstances: {},
       },
-      [DISPOSE]: {
+      ['$dispose']: {
         initializer: initDispose as any,
         autoloaded: false,
         dependents: [],
         silosInstances: {},
       },
     };
-    this.register(constant(INSTANCE, this));
-    this.register(constant(OVERRIDES, {}));
+    this.register(constant('$instance', this));
+    this.register(constant('$overrides', {}));
 
     const initInjectorProvider = provider(
       (async ({
@@ -349,11 +237,11 @@ class Knifecycle {
           );
         },
       })) as unknown as ProviderInitializerBuilder<Dependencies, Service>,
-      INJECTOR,
-      [SILO_CONTEXT, INSTANCE],
+      '$injector',
+      ['$siloContext', '$instance'],
       // Despite its global definition, the injector
       // depends on the silo context and then needs
-      // to be instanciated once per silo.
+      // to be instantiated once per silo.
       false,
     );
 
@@ -373,7 +261,7 @@ class Knifecycle {
    any constant value.
   - services: a `service` initializer directly
    resolve to the actual service it builds. It can
-   be objects, functions or litteral values.
+   be objects, functions or literal values.
   - providers: they instead resolve to an object that
    contains the service built into the `service` property
    but also an optional `dispose` property exposing a
@@ -384,7 +272,7 @@ class Knifecycle {
 
    Initializers can be declared as singletons (constants are
     of course only singletons). This means that they will be
-    instanciated once for all for each executions silos using
+    instantiated once for all for each executions silos using
     them (we will cover this topic later on).
   */
 
@@ -401,12 +289,14 @@ class Knifecycle {
     }
     if (
       this._silosContexts &&
-      [INSTANCE, INJECTOR, SILO_CONTEXT, DISPOSE].includes(initializer.$name)
+      ['$instance', '$injector', '$siloContext', '$dispose'].includes(
+        initializer.$name,
+      )
     ) {
       throw new YError('E_IMMUTABLE_SERVICE_NAME', [initializer.$name]);
     }
     if (
-      initializer.$name === OVERRIDES &&
+      initializer.$name === '$overrides' &&
       initializer[SPECIAL_PROPS.TYPE] !== 'constant'
     ) {
       throw new YError('E_CONSTANT_SERVICE_NAME', [
@@ -438,7 +328,7 @@ class Knifecycle {
           debug(
             `Override attempt of an already used initializer: ${serviceName}`,
           );
-          throw new YError('E_INITIALIZER_ALREADY_INSTANCIATED', [serviceName]);
+          throw new YError('E_INITIALIZER_ALREADY_INSTANTIATED', [serviceName]);
         }
         debug(`Overridden an initializer: ${serviceName}`);
       }
@@ -481,10 +371,10 @@ class Knifecycle {
         );
 
         if (
-          // TEMPFIX: let's build
+          // TEMP_FIX: let's build
           initializer.$name !== 'BUILD_CONSTANTS' &&
-          // TEMPFIX: Those services are special...
-          ![INJECTOR, SILO_CONTEXT].includes(serviceName) &&
+          // TEMP_FIX: Those services are special...
+          !['$injector', '$siloContext'].includes(serviceName) &&
           initializer.$singleton &&
           this._initializersStates[serviceName] &&
           'initializer' in this._initializersStates[serviceName] &&
@@ -511,7 +401,7 @@ class Knifecycle {
       .includes(initializer.$name);
 
     if (
-      // TEMPFIX: let's build
+      // TEMP_FIX: let's build
       initializer.$name !== 'BUILD_CONSTANTS' &&
       !initializer.$singleton
     ) {
@@ -519,9 +409,9 @@ class Knifecycle {
         .filter(
           (serviceName) =>
             ![
-              // TEMPFIX: Those services are special...
-              INJECTOR,
-              SILO_CONTEXT,
+              // TEMP_FIX: Those services are special...
+              '$injector',
+              '$siloContext',
             ].includes(serviceName),
         )
         .forEach((serviceName) => {
@@ -591,7 +481,7 @@ class Knifecycle {
           'E_CIRCULAR_DEPENDENCY',
           [rootServiceName]
             .concat(declarationsStacks)
-            .concat(childDependencyDeclaration),
+            .concat(childDependencyDeclaration) as [ServiceName],
         );
       }
 
@@ -757,7 +647,7 @@ class Knifecycle {
     // Make the siloContext available for internal injections
     (
       this._initializersStates[
-        SILO_CONTEXT
+        '$siloContext'
       ] as SiloedInitializerStateDescriptor<SiloContext, Dependencies<unknown>>
     ).silosInstances[siloIndex] = {
       provider: { service: siloContext },
@@ -765,7 +655,7 @@ class Knifecycle {
 
     // Make the ready service available for internal injections
     (
-      this._initializersStates[READY] as SiloedInitializerStateDescriptor<
+      this._initializersStates['$ready'] as SiloedInitializerStateDescriptor<
         Promise<void>,
         Dependencies<unknown>
       >
@@ -779,7 +669,7 @@ class Knifecycle {
       siloContext,
       [RUN_DEPENDENT_NAME],
       dependenciesDeclarations,
-      [DISPOSE, FATAL_ERROR],
+      ['$dispose', '$fatalError'],
     );
 
     debug('All dependencies now loaded:', siloContext.loadingSequences);
@@ -842,7 +732,7 @@ class Knifecycle {
     additionalDeclarations: DependencyDeclaration[],
   ): Promise<Dependencies> {
     const overrides = (
-      this._initializersStates[OVERRIDES].initializer as ConstantInitializer<
+      this._initializersStates['$overrides'].initializer as ConstantInitializer<
         Record<string, string>
       >
     ).$value as Overrides;
@@ -943,7 +833,7 @@ class Knifecycle {
         if (!optional && provider === NO_PROVIDER) {
           throw new YError(
             'E_UNMATCHED_DEPENDENCY',
-            parentsNames.concat(serviceName),
+            parentsNames.concat(serviceName) as [ServiceName],
           );
         }
 
@@ -972,17 +862,17 @@ class Knifecycle {
     );
 
     if (parentsNames.includes(serviceName)) {
-      // At that point there should be an initialiser property
+      // At that point there should be an initializer property
       throw new YError(
         'E_CIRCULAR_DEPENDENCY',
-        parentsNames.concat(serviceName),
+        parentsNames.concat(serviceName) as [ServiceName],
       );
     }
 
     const initializerState = this._initializersStates[serviceName];
 
     if (!('initializer' in initializerState) || !initializerState.initializer) {
-      // At that point there should be an initialiser property
+      // At that point there should be an initializer property
       throw new YError('E_UNEXPECTED_INITIALIZER_STATE', [serviceName]);
     }
 
@@ -1026,7 +916,10 @@ class Knifecycle {
       }
     } else {
       providerPromise = Promise.reject(
-        new YError('E_UNEXPECTED_STATE', [serviceName, initializer]),
+        new YError('E_UNEXPECTED_STATE', [
+          serviceName,
+          initializerState.initializer,
+        ]),
       );
     }
 
@@ -1056,7 +949,7 @@ class Knifecycle {
 
     if (provider.fatalErrorPromise) {
       const fatalErrorInitializerState = (await this._initializersStates[
-        FATAL_ERROR
+        '$fatalError'
       ]) as SingletonInitializerStateDescriptor<any, any>;
 
       await fatalErrorInitializerState.singletonProviderLoadPromise;
@@ -1088,7 +981,7 @@ class Knifecycle {
   > {
     // The auto loader must only have static dependencies
     // and we have to do this check here to avoid infinite loop
-    if (parentsNames.includes(AUTOLOAD)) {
+    if (parentsNames.includes('$autoload')) {
       debug(
         `${parentsNames.join(
           '->',
@@ -1098,14 +991,14 @@ class Knifecycle {
     }
 
     const autoloaderState: SingletonInitializerStateDescriptor<any, any> =
-      this._initializersStates[AUTOLOAD];
+      this._initializersStates['$autoload'];
 
     if (!autoloaderState) {
       return;
     }
 
     if (!('singletonProviderLoadPromise' in autoloaderState)) {
-      debug(`${parentsNames.join('->')}: Instanciating the autoloader...`);
+      debug(`${parentsNames.join('->')}: Instantiating the autoloader...`);
 
       // Trick to ensure the singletonProviderLoadPromise is set
       let resolveAutoloder: (value: void | PromiseLike<void>) => void;
@@ -1117,20 +1010,20 @@ class Knifecycle {
       // @ts-expect-error The promise initializer is
       // immediately executed so will never be undefined
       resolveAutoloder(
-        await this._loadProvider(siloContext, AUTOLOAD, parentsNames),
+        await this._loadProvider(siloContext, '$autoload', parentsNames),
       );
     }
     await autoloaderState.singletonProviderLoadPromise;
 
     const autoloader = (await this._getServiceProvider(
       siloContext,
-      AUTOLOAD,
+      '$autoload',
     )) as Provider<Autoloader<any>>;
 
     debug(`${parentsNames.join('->')}: Loaded the autoloader...`);
 
     if (!autoloader) {
-      throw new YError('E_UNEXPECTED_AUTOLOADER');
+      throw new YError('E_UNEXPECTED_AUTO_LOADER');
     }
     return autoloader.service;
   }
@@ -1146,7 +1039,7 @@ class Knifecycle {
       `${[...parentsNames, serviceName].join('->')}: Loading an initializer...`,
     );
 
-    // At that point there should be an initialiser state
+    // At that point there should be an initializer state
     if (!initializerState) {
       throw new YError('E_UNEXPECTED_INITIALIZER_STATE', [serviceName]);
     }
@@ -1210,7 +1103,7 @@ class Knifecycle {
           const initializer = await autoloader(serviceName);
 
           if (!['object', 'function'].includes(typeof initializer)) {
-            throw new YError('E_BAD_AUTOLOADER_RESULT', [
+            throw new YError('E_BAD_AUTO_LOADER_RESULT', [
               serviceName,
               initializer,
             ]);
@@ -1225,7 +1118,7 @@ class Knifecycle {
           );
 
           if (initializer.$name !== serviceName) {
-            throw new YError('E_AUTOLOADED_INITIALIZER_MISMATCH', [
+            throw new YError('E_AUTO_LOADED_INITIALIZER_MISMATCH', [
               serviceName,
               initializer.$name,
             ]);
@@ -1233,7 +1126,7 @@ class Knifecycle {
 
           initializerState.dependents.push({
             silo: siloContext.index,
-            name: AUTOLOAD,
+            name: '$autoload',
             optional: false,
           });
           initializerState.initializer = initializer;
@@ -1245,7 +1138,7 @@ class Knifecycle {
           resolveInitializer(initializer);
           return;
         } catch (err) {
-          if ((err as YError).code === 'E_AULOADER_DEPENDS_ON_AUTOLOAD') {
+          if ((err as YError).code === 'E_AUTO_LOADER_DEPENDS_ON_AUTO_LOAD') {
             initializerState.initializer = undefined;
             // @ts-expect-error The promise initializer is
             // immediately executed so will never be undefined
@@ -1258,7 +1151,7 @@ class Knifecycle {
             // @ts-expect-error The promise initializer is
             // immediately executed so will never be undefined
             rejectInitializer(
-              YError.wrap(err as Error, 'E_BAD_AUTOLOADED_INITIALIZER', [
+              YError.wrap(err as Error, 'E_BAD_AUTO_LOADED_INITIALIZER', [
                 serviceName,
               ]),
             );
@@ -1384,7 +1277,7 @@ class Knifecycle {
           const $dispose = (
             (await this._getServiceProvider(
               siloContext,
-              DISPOSE,
+              '$dispose',
             )) as Provider<Disposer>
           )?.service;
 

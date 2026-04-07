@@ -127,7 +127,7 @@ describe('Knifecycle', () => {
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual(
-            'E_INITIALIZER_ALREADY_INSTANCIATED',
+            'E_INITIALIZER_ALREADY_INSTANTIATED',
           );
         }
       });
@@ -174,7 +174,7 @@ describe('Knifecycle', () => {
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual(
-            'E_INITIALIZER_ALREADY_INSTANCIATED',
+            'E_INITIALIZER_ALREADY_INSTANTIATED',
           );
         }
       });
@@ -324,7 +324,7 @@ describe('Knifecycle', () => {
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual(
-            'E_INITIALIZER_ALREADY_INSTANCIATED',
+            'E_INITIALIZER_ALREADY_INSTANTIATED',
           );
         }
       });
@@ -381,7 +381,7 @@ describe('Knifecycle', () => {
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_BAD_INITIALIZER');
-        expect((err as YError).debugValues).toEqual(['not_a_function']);
+        expect((err as YError).debug).toEqual(['not_a_function']);
       }
     });
 
@@ -397,7 +397,7 @@ describe('Knifecycle', () => {
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_ANONYMOUS_ANALYZER');
-        expect((err as YError).debugValues).toEqual([]);
+        expect((err as YError).debug).toEqual([]);
       }
     });
 
@@ -412,7 +412,7 @@ describe('Knifecycle', () => {
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_BAD_INITIALIZER_TYPE');
-        expect((err as YError).debugValues).toEqual([
+        expect((err as YError).debug).toEqual([
           'test',
           'not_allowed_type',
           ALLOWED_INITIALIZER_TYPES,
@@ -433,7 +433,7 @@ describe('Knifecycle', () => {
         expect((err as YError).code).toEqual(
           'E_UNDEFINED_CONSTANT_INITIALIZER',
         );
-        expect((err as YError).debugValues).toEqual(['THE_NUMBER']);
+        expect((err as YError).debug).toEqual(['THE_NUMBER']);
       }
     });
 
@@ -450,7 +450,7 @@ describe('Knifecycle', () => {
         expect((err as YError).code).toEqual(
           'E_BAD_VALUED_NON_CONSTANT_INITIALIZER',
         );
-        expect((err as YError).debugValues).toEqual(['myService']);
+        expect((err as YError).debug).toEqual(['myService']);
       }
     });
 
@@ -468,8 +468,8 @@ describe('Knifecycle', () => {
 
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
-        expect((err as YError).code).toEqual('E_BAD_AUTOLOADER');
-        expect((err as YError).debugValues).toEqual([false]);
+        expect((err as YError).code).toEqual('E_BAD_AUTO_LOADER');
+        expect((err as YError).debug).toEqual([false]);
       }
     });
   });
@@ -486,7 +486,7 @@ describe('Knifecycle', () => {
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
-        expect((err as YError).debugValues).toEqual(['hash']);
+        expect((err as YError).debug).toEqual(['hash']);
       }
     });
 
@@ -497,7 +497,7 @@ describe('Knifecycle', () => {
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
-        expect((err as YError).debugValues).toEqual(['hash']);
+        expect((err as YError).debug).toEqual(['hash']);
       }
     });
 
@@ -510,7 +510,7 @@ describe('Knifecycle', () => {
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
-        expect((err as YError).debugValues).toEqual(['hash3', 'hash', 'hash3']);
+        expect((err as YError).debug).toEqual(['hash3', 'hash', 'hash3']);
       }
     });
 
@@ -523,7 +523,7 @@ describe('Knifecycle', () => {
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
-        expect((err as YError).debugValues).toEqual([
+        expect((err as YError).debug).toEqual([
           'hash3',
           'hash',
           'hash1',
@@ -542,7 +542,7 @@ describe('Knifecycle', () => {
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
-        expect((err as YError).debugValues).toEqual([
+        expect((err as YError).debug).toEqual([
           'hash3',
           'hash>aHash',
           'hash3>aHash3',
@@ -557,7 +557,7 @@ describe('Knifecycle', () => {
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_BAD_SINGLETON_DEPENDENCIES');
-        expect((err as YError).debugValues).toEqual(['hash1', 'hash']);
+        expect((err as YError).debug).toEqual(['hash1', 'hash']);
       }
     });
 
@@ -568,7 +568,7 @@ describe('Knifecycle', () => {
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_BAD_SINGLETON_DEPENDENCIES');
-        expect((err as YError).debugValues).toEqual(['hash1', 'hash']);
+        expect((err as YError).debug).toEqual(['hash1', 'hash']);
       }
     });
   });
@@ -720,7 +720,7 @@ describe('Knifecycle', () => {
         expect(Object.keys(dependencies)).toEqual(['hash5', 'time']);
       });
 
-      test('and instanciate services once', async () => {
+      test('and instantiate services once', async () => {
         const timeServiceStub = jest.fn(timeService);
 
         $.register(constant('ENV', ENV));
@@ -745,7 +745,7 @@ describe('Knifecycle', () => {
         expect(timeServiceStub.mock.calls).toEqual([[{}]]);
       });
 
-      test('and instanciate a single mapped service', async () => {
+      test('and instantiate a single mapped service', async () => {
         const providerStub = jest.fn().mockReturnValue(
           Promise.resolve({
             service: 'stub',
@@ -776,7 +776,7 @@ describe('Knifecycle', () => {
         ]);
       });
 
-      test('and instanciate several services with mappings', async () => {
+      test('and instantiate several services with mappings', async () => {
         const timeServiceStub = jest.fn(timeService);
 
         $.register(constant('ENV', ENV));
@@ -805,7 +805,7 @@ describe('Knifecycle', () => {
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_BAD_SERVICE_PROMISE');
-          expect((err as YError).debugValues).toEqual(['lol']);
+          expect((err as YError).debug).toEqual(['lol']);
         }
       });
 
@@ -816,7 +816,7 @@ describe('Knifecycle', () => {
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_BAD_SERVICE_PROVIDER');
-          expect((err as YError).debugValues).toEqual(['lol']);
+          expect((err as YError).debug).toEqual(['lol']);
         }
       });
 
@@ -827,7 +827,7 @@ describe('Knifecycle', () => {
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_BAD_SERVICE_PROVIDER');
-          expect((err as YError).debugValues).toEqual(['lol']);
+          expect((err as YError).debug).toEqual(['lol']);
         }
       });
 
@@ -837,7 +837,7 @@ describe('Knifecycle', () => {
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_UNMATCHED_DEPENDENCY');
-          expect((err as YError).debugValues).toEqual(['__run__', 'lol']);
+          expect((err as YError).debug).toEqual(['__run__', 'lol']);
         }
       });
 
@@ -852,7 +852,7 @@ describe('Knifecycle', () => {
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_UNMATCHED_DEPENDENCY');
-          expect((err as YError).debugValues).toEqual([
+          expect((err as YError).debug).toEqual([
             '__run__',
             'hash',
             'hash2',
@@ -896,7 +896,7 @@ describe('Knifecycle', () => {
           throw new Error('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
-          expect((err as YError).debugValues).toEqual([
+          expect((err as YError).debug).toEqual([
             '__run__',
             'human',
             'tree',
@@ -992,7 +992,7 @@ describe('Knifecycle', () => {
         });
       });
 
-      test('with lacking autoloaded dependencies', async () => {
+      test('with lacking auto-loaded dependencies', async () => {
         const autoloaderInitializer = initializer(
           {
             type: 'service',
@@ -1234,7 +1234,7 @@ describe('Knifecycle', () => {
         });
       });
 
-      test('when autoload depends on optional and unexisting autoloaded dependencies', async () => {
+      test('when autoload depends on optional and not existing auto-loaded dependencies', async () => {
         $.register(
           initializer(
             {
@@ -1264,7 +1264,7 @@ describe('Knifecycle', () => {
         expect(Object.keys(dependencies)).toEqual(['test']);
       });
 
-      test('when autoload depends on deeper optional and unexisting autoloaded dependencies', async () => {
+      test('when autoload depends on deeper optional and not existing auto-loaded dependencies', async () => {
         $.register(
           initializer(
             {
@@ -1320,7 +1320,7 @@ describe('Knifecycle', () => {
         }
       });
 
-      test('when autoloaded dependencies are not found', async () => {
+      test('when auto-loaded dependencies are not found', async () => {
         $.register(
           initializer(
             {
@@ -1330,7 +1330,7 @@ describe('Knifecycle', () => {
               singleton: true,
             },
             async () => async (serviceName: string) => {
-              throw new YError('E_CANNOT_AUTOLOAD', [serviceName]);
+              throw new YError('E_CANNOT_AUTO_LOAD', [serviceName]);
             },
           ),
         );
@@ -1339,18 +1339,16 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          expect((err as YError).code).toEqual('E_BAD_AUTOLOADED_INITIALIZER');
-          expect((err as YError).debugValues).toEqual(['test']);
-          expect(((err as YError).wrappedErrors[0] as YError).code).toEqual(
-            'E_CANNOT_AUTOLOAD',
+          expect((err as YError).code).toEqual('E_BAD_AUTO_LOADED_INITIALIZER');
+          expect((err as YError).debug).toEqual(['test']);
+          expect(((err as YError).cause as YError).code).toEqual(
+            'E_CANNOT_AUTO_LOAD',
           );
-          expect(
-            ((err as YError).wrappedErrors[0] as YError).debugValues,
-          ).toEqual(['test']);
+          expect(((err as YError).cause as YError).debug).toEqual(['test']);
         }
       });
 
-      test('when autoloaded dependencies are circularly dependent', async () => {
+      test('when auto-loaded dependencies are circularly dependent', async () => {
         $.register(
           service(
             async () => {
@@ -1397,14 +1395,16 @@ describe('Knifecycle', () => {
           await $.run<any>(['test', 'log']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          expect((err as YError).code).toEqual('E_BAD_AUTOLOADED_INITIALIZER');
-          expect((err as YError).debugValues).toEqual(['parentService2']);
-          expect(((err as YError).wrappedErrors[0] as YError).code).toEqual(
+          expect((err as YError).code).toEqual('E_BAD_AUTO_LOADED_INITIALIZER');
+          expect((err as YError).debug).toEqual(['parentService2']);
+          expect(((err as YError).cause as YError).code).toEqual(
             'E_CIRCULAR_DEPENDENCY',
           );
-          expect(
-            ((err as YError).wrappedErrors[0] as YError).debugValues,
-          ).toEqual(['parentService2', 'parentService1', 'parentService2']);
+          expect(((err as YError).cause as YError).debug).toEqual([
+            'parentService2',
+            'parentService1',
+            'parentService2',
+          ]);
         }
       });
 
@@ -1425,18 +1425,19 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          expect((err as YError).code).toEqual('E_BAD_AUTOLOADED_INITIALIZER');
-          expect((err as YError).debugValues).toEqual(['test']);
-          expect(((err as YError).wrappedErrors[0] as YError).code).toEqual(
-            'E_BAD_AUTOLOADER_RESULT',
+          expect((err as YError).code).toEqual('E_BAD_AUTO_LOADED_INITIALIZER');
+          expect((err as YError).debug).toEqual(['test']);
+          expect(((err as YError).cause as YError).code).toEqual(
+            'E_BAD_AUTO_LOADER_RESULT',
           );
-          expect(
-            ((err as YError).wrappedErrors[0] as YError).debugValues,
-          ).toEqual(['test', 'not_an_initializer']);
+          expect(((err as YError).cause as YError).debug).toEqual([
+            'test',
+            'not_an_initializer',
+          ]);
         }
       });
 
-      test('when autoloaded dependencies are not initializers', async () => {
+      test('when auto-loaded dependencies are not initializers', async () => {
         $.register(
           initializer(
             {
@@ -1453,18 +1454,19 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          expect((err as YError).code).toEqual('E_BAD_AUTOLOADED_INITIALIZER');
-          expect((err as YError).debugValues).toEqual(['test']);
-          expect(((err as YError).wrappedErrors[0] as YError).code).toEqual(
-            'E_BAD_AUTOLOADER_RESULT',
+          expect((err as YError).code).toEqual('E_BAD_AUTO_LOADED_INITIALIZER');
+          expect((err as YError).debug).toEqual(['test']);
+          expect(((err as YError).cause as YError).code).toEqual(
+            'E_BAD_AUTO_LOADER_RESULT',
           );
-          expect(
-            ((err as YError).wrappedErrors[0] as YError).debugValues,
-          ).toEqual(['test', 'not_an_initializer']);
+          expect(((err as YError).cause as YError).debug).toEqual([
+            'test',
+            'not_an_initializer',
+          ]);
         }
       });
 
-      test('when autoloaded dependencies are not right initializers', async () => {
+      test('when auto-loaded dependencies are not right initializers', async () => {
         $.register(
           initializer(
             {
@@ -1493,18 +1495,19 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          expect((err as YError).code).toEqual('E_BAD_AUTOLOADED_INITIALIZER');
-          expect((err as YError).debugValues).toEqual(['test']);
-          expect(((err as YError).wrappedErrors[0] as YError).code).toEqual(
-            'E_AUTOLOADED_INITIALIZER_MISMATCH',
+          expect((err as YError).code).toEqual('E_BAD_AUTO_LOADED_INITIALIZER');
+          expect((err as YError).debug).toEqual(['test']);
+          expect(((err as YError).cause as YError).code).toEqual(
+            'E_AUTO_LOADED_INITIALIZER_MISMATCH',
           );
-          expect(
-            ((err as YError).wrappedErrors[0] as YError).debugValues,
-          ).toEqual(['test', 'not-test']);
+          expect(((err as YError).cause as YError).debug).toEqual([
+            'test',
+            'not-test',
+          ]);
         }
       });
 
-      test('when autoload depends on existing autoloaded dependencies', async () => {
+      test('when autoload depends on existing auto-loaded dependencies', async () => {
         $.register(
           initializer(
             {
@@ -1534,7 +1537,7 @@ describe('Knifecycle', () => {
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_UNMATCHED_DEPENDENCY');
-          expect((err as YError).debugValues).toEqual(['__run__', 'test']);
+          expect((err as YError).debug).toEqual(['__run__', 'test']);
         }
       });
     });
@@ -1589,7 +1592,7 @@ describe('Knifecycle', () => {
       });
     });
 
-    test('should work with non instanciated dependencies', async () => {
+    test('should work with non instantiated dependencies', async () => {
       $.register(constant('ENV', ENV));
       $.register(constant('time', time));
       $.register(provider(hashProvider, 'hash', ['ENV']));
@@ -2031,7 +2034,7 @@ describe('Knifecycle', () => {
             },
             {
               pattern: /^hash([0-9]+)$/,
-              className: 'notapplied',
+              className: 'not_applied',
             },
           ],
           shapes: [

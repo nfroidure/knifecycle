@@ -1,7 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
 import { pickOverridenName } from './overrides.js';
 
-describe('pickOverridenName()', () => {
+describe('pickOverriddenName()', () => {
   describe('should not replace the non-matching services', () => {
     test('with simple maps', () => {
       expect(
