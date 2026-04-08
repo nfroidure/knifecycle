@@ -29,6 +29,7 @@ import initFatalError, { type FatalErrorService } from './fatalError.js';
 import initDispose from './dispose.js';
 import { type Overrides, pickOverridenName } from './overrides.js';
 import { type Injector } from './injector.js';
+import initInitializerBuilder from './build.js';
 import './errors.js';
 
 export type * from './build.js';
@@ -44,6 +45,8 @@ export type * from './sequence.js';
 export * from './sequence.js';
 export type * from './util.js';
 export * from './util.js';
+
+export { initInitializerBuilder, initDispose, initFatalError };
 
 export const RUN_DEPENDENT_NAME = '__run__';
 export const SYSTEM_DEPENDENT_NAME = '__system__';
