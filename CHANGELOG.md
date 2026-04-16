@@ -1,3 +1,10 @@
+# [21.1.0](https://github.com/nfroidure/knifecycle/compare/v21.0.1...v21.1.0) (2026-04-16)
+
+
+### Features
+
+* **build:** allow to inject services on built initializers ([4f47d39](https://github.com/nfroidure/knifecycle/commit/4f47d39e6035c66ad6f5c4f17ee444847e7d14c5))
+
 ## [21.0.1](https://github.com/nfroidure/knifecycle/compare/v21.0.0...v21.0.1) (2026-04-08)
 
 
