@@ -27,8 +27,11 @@ export const MANAGED_SERVICES = [
   '$ready',
 ];
 export const DEFAULT_BUILD_CONSTANT_FILTER: BuildConstantFilter = () => false;
+export const DEFAULT_BUILD_INJECTED_SERVICE_FILTER: BuildInjectedServiceFilter =
+  () => false;
 
 export type BuildConstantFilter = (name: string) => boolean;
+export type BuildInjectedServiceFilter = (name: string) => boolean;
 
 interface DependencyTreeNode {
   __name: string;
@@ -72,6 +75,7 @@ export default location(
         '$overrides',
         '$injector',
         '?BUILD_CONSTANT_FILTER',
+        '?BUILD_INJECTED_SERVICE_FILTER',
       ],
     },
     initInitializerBuilder,
@@ -99,11 +103,13 @@ async function initInitializerBuilder({
   $overrides,
   $injector,
   BUILD_CONSTANT_FILTER = DEFAULT_BUILD_CONSTANT_FILTER,
+  BUILD_INJECTED_SERVICE_FILTER = DEFAULT_BUILD_INJECTED_SERVICE_FILTER,
 }: {
   $autoload: Autoloader<Initializer<unknown, Record<string, unknown>>>;
   $overrides: Overrides;
   $injector: Injector<Record<string, unknown>>;
   BUILD_CONSTANT_FILTER?: BuildConstantFilter;
+  BUILD_INJECTED_SERVICE_FILTER?: BuildInjectedServiceFilter;
 }) {
   return buildInitializer;
 
@@ -130,7 +136,13 @@ async function initInitializerBuilder({
     const dependencyTrees = await Promise.all(
       dependencies.map((dependency) =>
         buildDependencyTree(
-          { BUILD_CONSTANT_FILTER, $autoload, $overrides, $injector },
+          {
+            BUILD_CONSTANT_FILTER,
+            BUILD_INJECTED_SERVICE_FILTER,
+            $autoload,
+            $overrides,
+            $injector,
+          },
           dependency,
           [],
         ),
@@ -143,6 +155,7 @@ async function initInitializerBuilder({
       __name: 'main',
       __childNodes: dependencyTrees.filter(identity) as DependencyTreeNode[],
     });
+
     batches.pop();
 
     return `
@@ -173,8 +186,13 @@ ${batches
     (batch, index) => `
 // Definition batch #${index}${batch
       .map((name) => {
+        if (BUILD_INJECTED_SERVICE_FILTER(name)) {
+          return `
+// The service "${name}" will be injected later`;
+        }
         if (dependenciesHash[name].__location === 'managed') {
-          return '';
+          return `
+// The service "${name}" is a managed service`;
         }
         if (dependenciesHash[name].__location === 'no_location') {
           if (
@@ -219,6 +237,12 @@ ${batches
   batchsDisposers[${index}] = [];
   const batch${index} = {${batch
     .map((name) => {
+      if (BUILD_INJECTED_SERVICE_FILTER(name)) {
+        return `
+    ${name}: '${name}' in services ?
+      Promise.resolve(services['${name}']) :
+      Promise.reject(new Error('E_INJECTED_SERVICE_LACKS')),`;
+      }
       if (
         MANAGED_SERVICES.includes(name) ||
         initializerBuilderIsOfType(
@@ -300,11 +324,13 @@ async function buildDependencyTree(
     $overrides,
     $injector,
     BUILD_CONSTANT_FILTER,
+    BUILD_INJECTED_SERVICE_FILTER,
   }: {
     $autoload: Autoloader<Initializer<unknown, Record<string, unknown>>>;
     $overrides: Overrides;
     $injector: Injector<Record<string, unknown>>;
     BUILD_CONSTANT_FILTER: BuildConstantFilter;
+    BUILD_INJECTED_SERVICE_FILTER: BuildInjectedServiceFilter;
   },
   dependencyDeclaration: string,
   parentsNames: string[],
@@ -317,6 +343,9 @@ async function buildDependencyTree(
     mappedName,
   ]);
 
+  if (BUILD_INJECTED_SERVICE_FILTER(finalName)) {
+    return null;
+  }
   if (BUILD_CONSTANT_FILTER(finalName)) {
     return {
       __name: finalName,
@@ -372,6 +401,7 @@ async function buildDependencyTree(
           buildDependencyTree(
             {
               BUILD_CONSTANT_FILTER,
+              BUILD_INJECTED_SERVICE_FILTER,
               $autoload,
               $overrides,
               $injector,
