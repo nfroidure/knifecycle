@@ -12,6 +12,7 @@ import {
   service,
   provider,
   singleton,
+  INTERNAL_SERVICES,
 } from './index.js';
 import type {
   Provider,
@@ -105,9 +106,11 @@ describe('Knifecycle', () => {
       test('should work when overriding a previously set constant', async () => {
         $.register(constant('TEST', 1));
         $.register(constant('TEST', 2));
+
         expect(await $.run<any>(['TEST'])).toEqual({
           TEST: 2,
         });
+        expect($.registered()).toEqual([...INTERNAL_SERVICES, 'TEST']);
       });
 
       test('should work with the $ready service', async () => {

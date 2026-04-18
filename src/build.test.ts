@@ -135,12 +135,23 @@ describe('buildInitializer', () => {
        }
      }
 
+     let finalServicesHash = {};
      let resolveReady;
      const $ready = new Promise((resolve) => {
        resolveReady = resolve;
      });
      const $instance = {
        destroy: $dispose,
+       register: async () => { throw new Error('E_NO_REGISTER_FOR_BUILT_CODE'); },
+       toMermaidGraph: () => { throw new Error('E_GRAPH_NOT_IMPLEMENTED_FOR_BUILT_CODE'); },
+     };
+     const $injector = async (services) => {
+       await $ready;
+
+       return services.reduce((acc, service) => ({
+       ...acc,
+         [service]: finalServicesHash[service],
+       }), {});
      };
 
 
@@ -225,12 +236,16 @@ describe('buildInitializer', () => {
        services['dep3'] = await batch2['dep3'];
 
 
-       resolveReady();
-
-       return {
+       finalServicesHash = {
          dep1: services['dep1'],
          finalMappedDep: services['dep3'],
        };
+
+       $instance.registered = () => Object.keys(finalServicesHash);
+
+       resolveReady();
+
+       return finalServicesHash;
      }
      "
     `);
@@ -271,12 +286,23 @@ describe('buildInitializer', () => {
        }
      }
 
+     let finalServicesHash = {};
      let resolveReady;
      const $ready = new Promise((resolve) => {
        resolveReady = resolve;
      });
      const $instance = {
        destroy: $dispose,
+       register: async () => { throw new Error('E_NO_REGISTER_FOR_BUILT_CODE'); },
+       toMermaidGraph: () => { throw new Error('E_GRAPH_NOT_IMPLEMENTED_FOR_BUILT_CODE'); },
+     };
+     const $injector = async (services) => {
+       await $ready;
+
+       return services.reduce((acc, service) => ({
+       ...acc,
+         [service]: finalServicesHash[service],
+       }), {});
      };
 
 
@@ -356,12 +382,16 @@ describe('buildInitializer', () => {
        services['dep4'] = await batch2['dep4'];
 
 
-       resolveReady();
-
-       return {
+       finalServicesHash = {
          dep1: services['dep1'],
          finalMappedDep: services['dep4'],
        };
+
+       $instance.registered = () => Object.keys(finalServicesHash);
+
+       resolveReady();
+
+       return finalServicesHash;
      }
      "
     `);
@@ -400,12 +430,23 @@ describe('buildInitializer', () => {
        }
      }
 
+     let finalServicesHash = {};
      let resolveReady;
      const $ready = new Promise((resolve) => {
        resolveReady = resolve;
      });
      const $instance = {
        destroy: $dispose,
+       register: async () => { throw new Error('E_NO_REGISTER_FOR_BUILT_CODE'); },
+       toMermaidGraph: () => { throw new Error('E_GRAPH_NOT_IMPLEMENTED_FOR_BUILT_CODE'); },
+     };
+     const $injector = async (services) => {
+       await $ready;
+
+       return services.reduce((acc, service) => ({
+       ...acc,
+         [service]: finalServicesHash[service],
+       }), {});
      };
 
 
@@ -501,9 +542,7 @@ describe('buildInitializer', () => {
        services['dep3'] = await batch2['dep3'];
 
 
-       resolveReady();
-
-       return {
+       finalServicesHash = {
          dep1: services['dep1'],
          finalMappedDep: services['dep3'],
          $fatalError: services['$fatalError'],
@@ -511,6 +550,12 @@ describe('buildInitializer', () => {
          $instance: services['$instance'],
          $siloContext: services['$siloContext'],
        };
+
+       $instance.registered = () => Object.keys(finalServicesHash);
+
+       resolveReady();
+
+       return finalServicesHash;
      }
      "
     `);

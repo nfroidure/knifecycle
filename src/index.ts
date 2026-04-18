@@ -128,6 +128,16 @@ export const UNBUILDABLE_SERVICES = [
   '$siloContext',
 ];
 
+export const INTERNAL_SERVICES = [
+  '$fatalError',
+  '$siloContext',
+  '$ready',
+  '$dispose',
+  '$instance',
+  '$overrides',
+  '$injector',
+];
+
 /* Architecture Note #1: Knifecycle
 
 The `knifecycle` project is intended to be a [dependency
@@ -278,6 +288,15 @@ export class Knifecycle {
     instantiated once for all for each executions silos using
     them (we will cover this topic later on).
   */
+
+  /**
+   * List registered services
+   * @return {string[]}
+   * The service names registered
+   */
+  registered(): ServiceName[] {
+    return Object.keys(this._initializersStates);
+  }
 
   /**
    * Register an initializer

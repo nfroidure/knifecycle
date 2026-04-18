@@ -25,6 +25,7 @@ export const MANAGED_SERVICES = [
   '$dispose',
   '$instance',
   '$ready',
+  '$injector',
 ];
 export const DEFAULT_BUILD_CONSTANT_FILTER: BuildConstantFilter = () => false;
 export const DEFAULT_BUILD_INJECTED_SERVICE_FILTER: BuildInjectedServiceFilter =
@@ -173,12 +174,23 @@ async function $dispose() {
   }
 }
 
+let finalServicesHash = {};
 let resolveReady;
 const $ready = new Promise((resolve) => {
   resolveReady = resolve;
 });
 const $instance = {
   destroy: $dispose,
+  register: async () => { throw new Error('E_NO_REGISTER_FOR_BUILT_CODE'); },
+  toMermaidGraph: () => { throw new Error('E_GRAPH_NOT_IMPLEMENTED_FOR_BUILT_CODE'); },
+};
+const $injector = async (services) => {
+  await $ready;
+
+  return services.reduce((acc, service) => ({
+  ...acc,
+    [service]: finalServicesHash[service],
+  }), {});
 };
 
 ${batches
@@ -300,9 +312,7 @@ ${batch
   )
   .join('')}
 
-  resolveReady();
-
-  return {${dependencies
+  finalServicesHash = {${dependencies
     .map(parseDependencyDeclaration)
     .map(
       ({ serviceName, mappedName }) =>
@@ -313,6 +323,12 @@ ${batch
     )
     .join('')}
   };
+
+  $instance.registered = () => Object.keys(finalServicesHash);
+
+  resolveReady();
+
+  return finalServicesHash;
 }
 `;
   }
