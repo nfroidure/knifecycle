@@ -1,3 +1,10 @@
+# [21.2.0](https://github.com/nfroidure/knifecycle/compare/v21.1.0...v21.2.0) (2026-04-18)
+
+
+### Features
+
+* **core:** add build features ([e31af4d](https://github.com/nfroidure/knifecycle/commit/e31af4d78aa3a4458b2a3c45fd3fe5c914affd1b))
+
 # [21.1.0](https://github.com/nfroidure/knifecycle/compare/v21.0.1...v21.1.0) (2026-04-16)
 
 
