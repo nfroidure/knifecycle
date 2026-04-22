@@ -290,12 +290,22 @@ export class Knifecycle {
   */
 
   /**
-   * List registered services
+   * List registered initializers
    * @return {string[]}
    * The service names registered
    */
   registered(): ServiceName[] {
     return Object.keys(this._initializersStates);
+  }
+
+  /**
+   * Get a previously registered initializer
+   * @param {string} serviceName
+   * @return {Initializer}
+   * The initializer registered
+   */
+  getRegisteredInitializer(serviceName: ServiceName) {
+    return this._initializersStates[serviceName]?.initializer;
   }
 
   /**
