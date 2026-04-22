@@ -1,3 +1,10 @@
+# [21.3.0](https://github.com/nfroidure/knifecycle/compare/v21.2.0...v21.3.0) (2026-04-22)
+
+
+### Features
+
+* allow to list registered initializers ([f0a1c7c](https://github.com/nfroidure/knifecycle/commit/f0a1c7ccba35c9ca5593880c8c17a24b66293530))
+
 # [21.2.0](https://github.com/nfroidure/knifecycle/compare/v21.1.0...v21.2.0) (2026-04-18)
 
 
