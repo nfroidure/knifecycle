@@ -39,7 +39,7 @@ performances and reduce the bundle size (especially for tools like AWS Lambda /
 GCP Functions where each endpoint has its own zip).
 
 You may want to look at the [architecture notes](./ARCHITECTURE.md) to better
-handle the reasonning behind `knifecycle` and its implementation.
+handle the reasoning behind `knifecycle` and its implementation.
 
 At this point you may think that a DI system is useless. My advice is that it
 depends. But at least, you should not make a definitive choice and allow both
@@ -60,17 +60,15 @@ for more context about this statement.
 - isolation: isolate processing in a clean manner, per concerns;
 - functional programming ready: encapsulate global states allowing the rest of
   your application to be purely functional,
-- no circular dependencies for services: while circular dependencies are not a
-  problem within purely functional libraries (require allows it), it may be
-  harmful for your services, `knifecycle` impeach that while providing an
-  `$injector` service à la Angular to allow accessing existing services
-  references if you really need to,
+- no circular dependencies for services: circular dependencies are creating dead
+  locks, `knifecycle` impeach that while providing an `$injector` service à la
+  Angular to allow accessing existing services references if you really need to,
 - generate Mermaid graphs of the dependency tree,
 - auto-detect injected services names,
 - build raw initialization modules to avoid embedding Knifecycle in your builds,
 - optionally autoload services dependencies with custom logic.
 
-You can find all Knifecycle comptabile modules on NPM with the
+You can find all Knifecycle compatible modules on NPM with the
 [knifecycle keyword](https://www.npmjs.com/search?q=keywords:knifecycle).
 
 ## Usage
@@ -85,20 +83,14 @@ Knifecycle:
 // bin.js
 import fs from 'fs';
 import { YError } from 'YError';
-import {
-  Knifecycle,
-  initializer,
-  constant,
-  inject,
-  name
-} from 'knifecycle';
+import { Knifecycle, initializer, constant, inject, name } from 'knifecycle';
 
 // First of all we create a new Knifecycle instance
 const $ = new Knifecycle();
 
 // Some of our code with rely on the process environment
 // let's inject it as a constant instead of directly
-// pickking env vars in `process.env` to make our code
+// picking env vars in `process.env` to make our code
 // easily testable
 $.register(constant('ENV', process.env));
 
@@ -114,21 +106,7 @@ $.register(constant('ARGS', process.argv));
 // In a real world app, you may use the
 // `application-services` module services instead.
 async function initConfig({ ENV = { CONFIG_PATH: '.' } }) {
-  await fs.promises.readFile(
-    ENV.CONFIG_PATH,
-    'utf-8',
-    (err, data) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      try {
-        resolve(JSON.parse(data));
-      } catch (err) {
-        reject(err);
-      }
-    },
-  );
+  const data = JSON.parse(await fs.promises.readFile(ENV.CONFIG_PATH, 'utf-8'));
 }
 
 // We are using the `initializer` decorator to
@@ -150,7 +128,7 @@ $.register(
       // the initializer will return a promise of the actual
       // service
       type: 'service',
-      // We don't want to read the config file everytime we
+      // We don't want to read the config file every time we
       // inject it so declaring it as a singleton
       singleton: true,
     },
@@ -203,13 +181,13 @@ const initDB = initializer(
 // Here we are registering our initializer apart to
 // be able to reuse it, we also declare the required
 // DB_URI constant it needs
-$.register(constant('DB_URI', 'posgresql://xxxx'));
+$.register(constant('DB_URI', 'postgresql://xxxx'));
 $.register(initDB);
 
 // Say we need to use two different DB server
 // We can reuse our initializer by tweaking
 // some of its properties
-$.register(constant('DB_URI2', 'posgresql://yyyy'));
+$.register(constant('DB_URI2', 'postgresql://yyyy'));
 $.register(
   // First we remap the injected dependencies. It will
   // take the `DB_URI2` constant and inject it as
@@ -248,10 +226,7 @@ $.register(
           // Allows to signal that the dependency is not found
           // so that optional dependencies doesn't impeach the
           // injector to resolve the dependency tree
-          throw new YError(
-            'E_UNMATCHED_DEPENDENCY',
-            [serviceName]
-          );
+          throw new YError('E_UNMATCHED_DEPENDENCY', [serviceName]);
         }
         try {
           const path = CONFIG.commands + '/' + ARGS[2];
@@ -266,7 +241,7 @@ $.register(
   ),
 );
 
-// At this point, nothing is running. To instanciate the
+// At this point, nothing is running. To instantiate the
 // services, we have to create an execution silo using
 // them. Note that we required the `$instance` service
 // implicitly created by `knifecycle`
@@ -274,7 +249,7 @@ $.run(['command', '$instance', 'exit', 'log'])
   // Here, command contains the initializer eventually
   // found by automatically loading a NodeJS module
   // in the above `$autoload` service. The db connection
-  // will only be instanciated if that command needs it
+  // will only be instantiated if that command needs it
   .then(async ({ command, $instance, exit, log }) => {
     try {
       command();
@@ -304,15 +279,16 @@ Running the following should make the magic happen:
 
 ```sh
 cat "{ commands: './commands'}" > config.json
-DEBUG=knifecycle CONFIG_PATH=./config.json node -r @babel/register bin.js mycommand test
-// Prints: Could not launch the app: Error: Cannot load command: mycommand!
+DEBUG=knifecycle CONFIG_PATH=./config.json node -r @babel/register bin.js my_command test
+// Prints: Could not launch the app: Error: Cannot load command: my_command!
 // (...stack trace)
 ```
 
-Or at least, we still have to create commands, let's create the `mycommand` one:
+Or at least, we still have to create commands, let's create the `my_command`
+one:
 
 ```js
-// commands/mycommand.js
+// commands/my_command.js
 import { initializer } from './dist';
 
 // A simple command that prints the given args
@@ -333,13 +309,14 @@ export default initializer(
 So now, it works:
 
 ```sh
-DEBUG=knifecycle CONFIG_PATH=./config.json node -r @babel/register bin.js mycommand test
-// Prints: Command args: [ 'mycommand', 'test' ]
+DEBUG=knifecycle CONFIG_PATH=./config.json node -r @babel/register bin.js my_command test
+// Prints: Command args: [ 'my_command', 'test' ]
 // It worked!
 ```
 
 This is a very simple example but you can find a complexer CLI usage with
-`(metapak)[https://github.com/nfroidure/metapak/blob/master/bin/metapak.js]`.
+(`metapak`)[https://github.com/nfroidure/metapak/blob/main/src/index.ts] and
+(`jsarch`)[https://github.com/nfroidure/jsarch/blob/main/src/index.ts].
 
 ## Auto detection
 

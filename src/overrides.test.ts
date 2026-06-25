@@ -1,11 +1,11 @@
 import { describe, expect, test } from '@jest/globals';
-import { pickOverridenName } from './overrides.js';
+import { pickOverriddenName } from './overrides.js';
 
 describe('pickOverriddenName()', () => {
   describe('should not replace the non-matching services', () => {
     test('with simple maps', () => {
       expect(
-        pickOverridenName(
+        pickOverriddenName(
           {
             originalService: 'overriddenService',
           },
@@ -18,7 +18,7 @@ describe('pickOverriddenName()', () => {
   describe('should replace the matching services', () => {
     test('with simple maps', () => {
       expect(
-        pickOverridenName(
+        pickOverriddenName(
           {
             originalService: 'overriddenService',
           },
@@ -29,7 +29,7 @@ describe('pickOverriddenName()', () => {
 
     test('with simple maps and some parents', () => {
       expect(
-        pickOverridenName(
+        pickOverriddenName(
           {
             originalService: 'overriddenService',
           },
@@ -46,7 +46,7 @@ describe('pickOverriddenName()', () => {
 
     test('with 1 level tree maps', () => {
       expect(
-        pickOverridenName(
+        pickOverriddenName(
           {
             parentService: {
               originalService: 'overriddenService',
@@ -59,7 +59,7 @@ describe('pickOverriddenName()', () => {
 
     test('with lots of levels tree maps', () => {
       expect(
-        pickOverridenName(
+        pickOverriddenName(
           {
             parentService1: {
               parentService2: {
@@ -84,7 +84,7 @@ describe('pickOverriddenName()', () => {
 
     test('with lots of levels tree maps and partial parents path', () => {
       expect(
-        pickOverridenName(
+        pickOverriddenName(
           {
             parentService3: {
               parentService4: {

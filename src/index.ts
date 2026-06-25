@@ -27,7 +27,7 @@ import {
 } from './util.js';
 import initFatalError, { type FatalErrorService } from './fatalError.js';
 import initDispose from './dispose.js';
-import { type Overrides, pickOverridenName } from './overrides.js';
+import { type Overrides, pickOverriddenName } from './overrides.js';
 import { type Injector } from './injector.js';
 import initInitializerBuilder from './build.js';
 import './errors.js';
@@ -783,7 +783,7 @@ export class Knifecycle {
     for (const serviceDeclaration of allDependenciesDeclarations) {
       const { mappedName, optional } =
         parseDependencyDeclaration(serviceDeclaration);
-      const finalName = pickOverridenName(overrides, [
+      const finalName = pickOverriddenName(overrides, [
         ...parentsNames,
         mappedName,
       ]);
@@ -846,7 +846,7 @@ export class Knifecycle {
       (finalHash, dependencyDeclaration) => {
         const { serviceName, mappedName, optional } =
           parseDependencyDeclaration(dependencyDeclaration);
-        const finalName = pickOverridenName(overrides, [
+        const finalName = pickOverriddenName(overrides, [
           ...parentsNames,
           mappedName,
         ]);

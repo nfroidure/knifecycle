@@ -56,7 +56,7 @@ describe('reuseSpecialProps', () => {
 
     from.$name = 'from';
     from.$type = 'service';
-    from.$inject = ['ki', 'kooo', 'lol'];
+    from.$inject = ['ki', 'koo', 'lol'];
     from.$singleton = false;
     from.$extra = { httpHandler: true };
 
@@ -124,7 +124,7 @@ describe('wrapInitializer', () => {
     ]);
   });
 
-  test('should work with a provider initialzer', async () => {
+  test('should work with a provider initializer', async () => {
     async function baseInitializer() {
       return { service: () => 'test' };
     }
