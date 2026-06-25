@@ -225,6 +225,50 @@ describe('Knifecycle', () => {
 
         expect(log()).toEqual('log from debugLog');
       });
+
+      test('should work with nested `__self` overrides', async () => {
+        $.register(
+          service(
+            async ({ sendApplicationMessage }: { sendApplicationMessage: () => string }) =>
+              () =>
+                sendApplicationMessage(),
+            'sendMessage',
+            ['sendApplicationMessage'],
+          ),
+        );
+        $.register(
+          service(
+            async ({ SLACK_CONFIG }: { SLACK_CONFIG: string }) =>
+              () =>
+                `slack:${SLACK_CONFIG}`,
+            'sendSlackMessage',
+            ['SLACK_CONFIG'],
+          ),
+        );
+        $.register(
+          service(
+            async ({ SLACK_CONFIG }: { SLACK_CONFIG: string }) =>
+              () =>
+                `app:${SLACK_CONFIG}`,
+            'sendApplicationMessage',
+            ['SLACK_CONFIG'],
+          ),
+        );
+        $.register(constant('SLACK_CONFIG', 'default'));
+        $.register(constant('SLACK_APPLICATION_CONFIG', 'application'));
+        $.register(
+          constant('$overrides', {
+            sendApplicationMessage: {
+              __self: 'sendSlackMessage',
+              SLACK_CONFIG: 'SLACK_APPLICATION_CONFIG',
+            },
+          }),
+        );
+
+        const { sendMessage } = await $.run<any>(['sendMessage']);
+
+        expect(sendMessage()).toEqual('slack:application');
+      });
     });
 
     describe('with providers', () => {

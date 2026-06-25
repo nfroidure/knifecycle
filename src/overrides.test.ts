@@ -57,6 +57,50 @@ describe('pickOverriddenName()', () => {
       ).toMatch('overriddenService');
     });
 
+    test('with a nested map and a `__self` override', () => {
+      expect(
+        pickOverriddenName(
+          {
+            originalService: {
+              __self: 'overriddenService',
+              dependencyService: 'overriddenDependencyService',
+            },
+          },
+          ['originalService'],
+        ),
+      ).toMatch('overriddenService');
+    });
+
+    test('with a nested map and a `__self` override on parent path', () => {
+      expect(
+        pickOverriddenName(
+          {
+            parentService: {
+              originalService: {
+                __self: 'overriddenService',
+                dependencyService: 'overriddenDependencyService',
+              },
+            },
+          },
+          ['parentService', 'originalService'],
+        ),
+      ).toMatch('overriddenService');
+    });
+
+    test('with dependencies of a nested `__self` override', () => {
+      expect(
+        pickOverriddenName(
+          {
+            sendApplicationMessage: {
+              __self: 'sendSlackMessage',
+              SLACK_CONFIG: 'SLACK_APPLICATION_CONFIG',
+            },
+          },
+          ['sendMessage', 'sendSlackMessage', 'SLACK_CONFIG'],
+        ),
+      ).toMatch('SLACK_APPLICATION_CONFIG');
+    });
+
     test('with lots of levels tree maps', () => {
       expect(
         pickOverriddenName(
