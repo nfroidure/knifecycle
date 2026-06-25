@@ -13,6 +13,9 @@ declare module 'yerror' {
     /** Attempted to use or register a service on a destroyed Knifecycle instance */
     E_INSTANCE_DESTROYED: [];
 
+    /** Attempted to use a reserved service name (e.g., `__self`) */
+    E_RESERVED_SERVICE_NAME: [serviceName: ServiceName];
+
     /** Attempted to override a core immutable service (e.g., `$instance`, `$injector`) */
     E_IMMUTABLE_SERVICE_NAME: [serviceName: ServiceName];
 

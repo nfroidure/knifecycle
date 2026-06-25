@@ -81,7 +81,7 @@ Knifecycle:
 
 ```js
 // bin.js
-import fs from 'fs';
+import { readFile } from 'node:fs/promises';
 import { YError } from 'YError';
 import { Knifecycle, initializer, constant, inject, name } from 'knifecycle';
 
@@ -106,7 +106,7 @@ $.register(constant('ARGS', process.argv));
 // In a real world app, you may use the
 // `application-services` module services instead.
 async function initConfig({ ENV = { CONFIG_PATH: '.' } }) {
-  const data = JSON.parse(await fs.promises.readFile(ENV.CONFIG_PATH, 'utf-8'));
+  const data = JSON.parse(await readFile(ENV.CONFIG_PATH, 'utf-8'));
 }
 
 // We are using the `initializer` decorator to
@@ -587,34 +587,20 @@ Decorator that creates an initializer for a provider
 **Example**  
 ```js
 import Knifecycle, { provider } from 'knifecycle'
-import fs from 'fs';
+import { readFile } from 'node:fs/promises';
 
 const $ = new Knifecycle();
 
 $.register(provider(configProvider, 'config'));
 
 async function configProvider() {
-  return new Promise((resolve, reject) {
-    fs.readFile('config.js', function(err, data) {
-      let config;
+  const config = JSON.parse(
+    await readFile('config.js', 'utf-8')
+  );
 
-      if(err) {
-        reject(err);
-        return;
-      }
-
-      try {
-        config = JSON.parse(data.toString);
-      } catch (err) {
-        reject(err);
-        return;
-      }
-
-      resolve({
-        service: config,
-      });
-    });
-  });
+  return {
+    service: config,
+  };
 }
 ```
 <a name="autoProvider"></a>

@@ -319,6 +319,9 @@ export class Knifecycle {
     if (this._shutdownPromise) {
       throw new YError('E_INSTANCE_DESTROYED');
     }
+    if (initializer.$name === '__self') {
+      throw new YError('E_RESERVED_SERVICE_NAME', [initializer.$name]);
+    }
     if (
       this._silosContexts &&
       ['$instance', '$injector', '$siloContext', '$dispose'].includes(

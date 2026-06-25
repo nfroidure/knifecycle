@@ -3,7 +3,8 @@
  * their overridden values at run/build time
  */
 export interface Overrides {
-  [key: string]: Overrides | string;
+  [key: string]: Overrides | string | undefined;
+  __self?: string;
 }
 
 export function pickOverriddenName(
@@ -17,13 +18,26 @@ export function pickOverriddenName(
     let currentOverrides = overrides;
 
     while (currentDepth < servicesDepth) {
-      const candidateOverride = currentOverrides[servicesNames[currentDepth]];
+      const candidateOverride =
+        currentOverrides[servicesNames[currentDepth]] ??
+        Object.values(currentOverrides).find(
+          (override): override is Overrides =>
+            typeof override === 'object' &&
+            typeof override?.__self === 'string' &&
+            override.__self === servicesNames[currentDepth],
+        );
 
       if (typeof candidateOverride === 'string') {
         if (currentDepth === servicesDepth - 1) {
           return candidateOverride;
         }
       } else if (candidateOverride) {
+        if (
+          currentDepth === servicesDepth - 1 &&
+          typeof candidateOverride.__self === 'string'
+        ) {
+          return candidateOverride.__self;
+        }
         currentOverrides = candidateOverride;
       } else {
         break;

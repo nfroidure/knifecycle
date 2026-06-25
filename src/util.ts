@@ -456,34 +456,20 @@ export function autoService<D extends Dependencies<any>, S>(
  * @example
  *
  * import Knifecycle, { provider } from 'knifecycle'
- * import fs from 'fs';
+ * import { readFile } from 'node:fs/promises';
  *
  * const $ = new Knifecycle();
  *
  * $.register(provider(configProvider, 'config'));
  *
  * async function configProvider() {
- *   return new Promise((resolve, reject) {
- *     fs.readFile('config.js', function(err, data) {
- *       let config;
+ *   const config = JSON.parse(
+ *     await readFile('config.js', 'utf-8')
+ *   );
  *
- *       if(err) {
- *         reject(err);
- *         return;
- *       }
- *
- *       try {
- *         config = JSON.parse(data.toString);
- *       } catch (err) {
- *         reject(err);
- *         return;
- *       }
- *
- *       resolve({
- *         service: config,
- *       });
- *     });
- *   });
+ *   return {
+ *     service: config,
+ *   };
  * }
  */
 export function provider<D extends Dependencies<any>, S>(
