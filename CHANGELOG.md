@@ -1,3 +1,10 @@
+# [21.4.0](https://github.com/nfroidure/knifecycle/compare/v21.3.0...v21.4.0) (2026-07-07)
+
+
+### Features
+
+* allow to combine overrides ([d3dd5f7](https://github.com/nfroidure/knifecycle/commit/d3dd5f786a3f2d1e4329b543e9daeca249d64e3c)), closes [#143](https://github.com/nfroidure/knifecycle/issues/143)
+
 # [21.3.0](https://github.com/nfroidure/knifecycle/compare/v21.2.0...v21.3.0) (2026-04-22)
 
 
