@@ -1464,6 +1464,37 @@ describe('Knifecycle', () => {
         }
       });
 
+      test('when autoload uses $injector for the currently auto-loaded dependency', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: ['$injector'],
+              singleton: true,
+            },
+            async ({ $injector }: { $injector: (deps: string[]) => Promise<any> }) =>
+              async (serviceName: string) => {
+                await $injector([serviceName]);
+
+                return constant(serviceName, `autoloader:${serviceName}`);
+              },
+          ),
+        );
+
+        const runStatePromise = $.run<any>(['test']).then(
+          () => 'resolved',
+          () => 'rejected',
+        );
+        const timeoutPromise = new Promise<'timed_out'>((resolve) => {
+          setTimeout(() => resolve('timed_out'), 50);
+        });
+
+        expect(await Promise.race([runStatePromise, timeoutPromise])).toEqual(
+          'timed_out',
+        );
+      });
+
       test('when the autoloader returns bad data', async () => {
         $.register(
           initializer(
