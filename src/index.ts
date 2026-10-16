@@ -1088,6 +1088,14 @@ export class Knifecycle {
       );
 
       if (initializerState.initializerLoadPromise) {
+        if (parentsNames.includes(INJECTOR_DEPENDENT_NAME)) {
+          debug(
+            `${[...parentsNames, serviceName].join(
+              '->',
+            )}: Injector dependency relies on an in-flight autoload.`,
+          );
+          throw new YError('E_AUTO_LOADER_DEPENDS_ON_AUTO_LOAD', [serviceName]);
+        }
         debug(
           `${[...parentsNames, serviceName].join(
             '->',

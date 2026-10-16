@@ -1484,14 +1484,14 @@ describe('Knifecycle', () => {
 
         const runStatePromise = $.run<any>(['test']).then(
           () => 'resolved',
-          () => 'rejected',
+          (err: YError) => err.code,
         );
         const timeoutPromise = new Promise<'timed_out'>((resolve) => {
           setTimeout(() => resolve('timed_out'), 50);
         });
 
         expect(await Promise.race([runStatePromise, timeoutPromise])).toEqual(
-          'timed_out',
+          'E_AUTO_LOADER_DEPENDS_ON_AUTO_LOAD',
         );
       });
 
