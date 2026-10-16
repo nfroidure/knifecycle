@@ -146,5 +146,23 @@ describe('pickOverriddenName()', () => {
         ),
       ).toMatch('overriddenService');
     });
+
+    test('with a real world example', () => {
+      expect(
+        pickOverriddenName(
+          {
+            sendEventMessage: {
+              __self: 'sendTeamsMessage',
+              TEAMS_CONFIG: 'TEAMS_EVENTS_CONFIG',
+            },
+          },
+          [
+            'anyService',
+            'sendEventMessage',
+            'TEAMS_CONFIG',
+          ],
+        ),
+      ).toMatch('TEAMS_EVENTS_CONFIG');
+    });
   });
 });

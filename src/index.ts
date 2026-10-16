@@ -66,7 +66,7 @@ export interface BaseInitializerStateDescriptor<S, D extends Dependencies> {
     name: ServiceName;
     optional: boolean;
   }[];
-  initializerLoadPromise?: Promise<Initializer<S, D>>;
+  initializerLoadPromise?: Promise<Initializer<S, D> | undefined>;
   initializer?: Initializer<S, D>;
   autoloaded: boolean;
 }
@@ -670,10 +670,8 @@ export class Knifecycle {
       loadingSequences: [],
     };
 
-    let resolveReady: (value: void | PromiseLike<void>) => void;
-    const ready = new Promise<void>((resolve) => {
-      resolveReady = resolve;
-    });
+    const { promise: ready, resolve: resolveReady } =
+      Promise.withResolvers<undefined>();
 
     if (this._shutdownPromise) {
       throw new YError('E_INSTANCE_DESTROYED');
@@ -709,9 +707,7 @@ export class Knifecycle {
 
     debug('All dependencies now loaded:', siloContext.loadingSequences);
 
-    // @ts-expect-error The promise initializer is
-    // immediately executed so will never be undefined
-    resolveReady();
+    resolveReady(undefined);
 
     return services as ID;
   }
@@ -760,6 +756,22 @@ export class Knifecycle {
     return;
   }
 
+  _resolveDependencyDeclaration(
+    overrides: Overrides,
+    parentsNames: ServiceName[],
+    dependencyDeclaration: DependencyDeclaration,
+  ) {
+    const parsedDependency = parseDependencyDeclaration(dependencyDeclaration);
+
+    return {
+      ...parsedDependency,
+      finalName: pickOverriddenName(overrides, [
+        ...parentsNames,
+        parsedDependency.mappedName,
+      ]),
+    };
+  }
+
   async _loadInitializerDependencies(
     siloContext: SiloContext,
     parentsNames: ServiceName[],
@@ -784,12 +796,12 @@ export class Knifecycle {
     const lackingDependencies: ServiceName[] = [];
 
     for (const serviceDeclaration of allDependenciesDeclarations) {
-      const { mappedName, optional } =
-        parseDependencyDeclaration(serviceDeclaration);
-      const finalName = pickOverriddenName(overrides, [
-        ...parentsNames,
-        mappedName,
-      ]);
+      const { mappedName, optional, finalName } =
+        this._resolveDependencyDeclaration(
+          overrides,
+          parentsNames,
+          serviceDeclaration,
+        );
 
       if (finalName !== mappedName) {
         debug(
@@ -847,12 +859,12 @@ export class Knifecycle {
 
     return dependenciesDeclarations.reduce(
       (finalHash, dependencyDeclaration) => {
-        const { serviceName, mappedName, optional } =
-          parseDependencyDeclaration(dependencyDeclaration);
-        const finalName = pickOverriddenName(overrides, [
-          ...parentsNames,
-          mappedName,
-        ]);
+        const { serviceName, optional, finalName } =
+          this._resolveDependencyDeclaration(
+            overrides,
+            parentsNames,
+            dependencyDeclaration,
+          );
 
         const provider = this._getServiceProvider(siloContext, finalName);
 
@@ -1035,18 +1047,13 @@ export class Knifecycle {
     if (!('singletonProviderLoadPromise' in autoloaderState)) {
       debug(`${parentsNames.join('->')}: Instantiating the autoloader...`);
 
-      // Trick to ensure the singletonProviderLoadPromise is set
-      let resolveAutoloder: (value: void | PromiseLike<void>) => void;
+      const { promise: autoloaderLoadPromise, resolve: resolveAutoloader } =
+        Promise.withResolvers<undefined>();
 
-      autoloaderState.singletonProviderLoadPromise = new Promise((_resolve) => {
-        resolveAutoloder = _resolve;
-      });
+      autoloaderState.singletonProviderLoadPromise = autoloaderLoadPromise;
 
-      // @ts-expect-error The promise initializer is
-      // immediately executed so will never be undefined
-      resolveAutoloder(
-        await this._loadProvider(siloContext, '$autoload', parentsNames),
-      );
+      await this._loadProvider(siloContext, '$autoload', parentsNames);
+      resolveAutoloader(undefined);
     }
     await autoloaderState.singletonProviderLoadPromise;
 
