@@ -1651,8 +1651,7 @@ describe('Knifecycle', () => {
         }
       });
 
-      // FIXME
-      test.skip('when autoload uses $injector for the currently auto-loaded dependency', async () => {
+      test('when autoload uses $injector for the currently auto-loaded dependency', async () => {
         $.register(
           initializer(
             {

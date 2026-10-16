@@ -37,7 +37,7 @@ It is designed to have a low footprint on services code.
 In fact, the Knifecycle API is aimed to allow to statically
  build its services load/unload code once in production.
 
-[See in context](./src/index.ts#L141-L160)
+[See in context](./src/index.ts#L139-L158)
 
 
 
@@ -52,7 +52,7 @@ A service provider is full of state since its concern is
  [encapsulate](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming))
  your application global states.
 
-[See in context](./src/index.ts#L162-L171)
+[See in context](./src/index.ts#L160-L169)
 
 
 
@@ -121,7 +121,7 @@ Initializers can be of three types:
   instantiated once for all for each executions silos using
   them (we will cover this topic later on).
 
-[See in context](./src/index.ts#L266-L290)
+[See in context](./src/index.ts#L238-L262)
 
 
 
@@ -137,7 +137,7 @@ Depending on your application design, you could run it
  in only one execution silo or into several ones
  according to the isolation level your wish to reach.
 
-[See in context](./src/index.ts#L633-L643)
+[See in context](./src/index.ts#L605-L615)
 
 
 

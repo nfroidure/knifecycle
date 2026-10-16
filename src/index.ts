@@ -7,7 +7,6 @@ import {
   SPECIAL_PROPS,
   constant,
   service,
-  provider,
   parseDependencyDeclaration,
   unwrapInitializerProperties,
   type ServiceName,
@@ -18,7 +17,6 @@ import {
   type Dependencies,
   type DependencyDeclaration,
   type ConstantInitializer,
-  type ProviderInitializerBuilder,
   type ProviderInitializer,
   type ServiceInitializerBuilder,
   type ServiceInitializer,
@@ -233,32 +231,6 @@ export class Knifecycle {
     this.register(constant('$instance', this));
     this.register(constant('$overrides', {}));
 
-    const initInjectorProvider = provider(
-      (async ({
-        $siloContext,
-        $instance,
-      }: {
-        $siloContext: SiloContext;
-        $instance: Knifecycle;
-      }) => ({
-        service: async (dependenciesDeclarations: DependencyDeclaration[]) => {
-          return $instance._loadInitializerDependencies(
-            $siloContext,
-            [INJECTOR_DEPENDENT_NAME],
-            dependenciesDeclarations,
-            [],
-          );
-        },
-      })) as unknown as ProviderInitializerBuilder<Dependencies, Service>,
-      '$injector',
-      ['$siloContext', '$instance'],
-      // Despite its global definition, the injector
-      // depends on the silo context and then needs
-      // to be instantiated once per silo.
-      false,
-    );
-
-    this.register(initInjectorProvider);
     this._silosCounter = 0;
     this._silosContexts = {};
   }
@@ -295,7 +267,7 @@ export class Knifecycle {
    * The service names registered
    */
   registered(): ServiceName[] {
-    return Object.keys(this._initializersStates);
+    return Object.keys(this._initializersStates).concat(['$injector']);
   }
 
   /**
@@ -832,7 +804,10 @@ export class Knifecycle {
       lackingDependencies.length = 0;
 
       for (const mappedName of dependencies) {
-        if (!this._getServiceProvider(siloContext, mappedName)) {
+        if (
+          '$injector' !== mappedName &&
+          !this._getServiceProvider(siloContext, mappedName)
+        ) {
           lackingDependencies.push(mappedName);
           if (!siloContext.loadingServices.includes(mappedName)) {
             siloContext.loadingServices.push(mappedName);
@@ -865,6 +840,19 @@ export class Knifecycle {
             parentsNames,
             dependencyDeclaration,
           );
+
+        if (finalName === '$injector') {
+          finalHash[serviceName] = ((
+            dependenciesDeclarations: DependencyDeclaration[],
+          ) =>
+            this._loadInitializerDependencies(
+              siloContext,
+              [...parentsNames, INJECTOR_DEPENDENT_NAME],
+              dependenciesDeclarations,
+              [],
+            )) as Service;
+          return finalHash;
+        }
 
         const provider = this._getServiceProvider(siloContext, finalName);
 
@@ -1095,6 +1083,21 @@ export class Knifecycle {
       );
 
       if (initializerState.initializerLoadPromise) {
+        if (
+          parentsNames.includes(INJECTOR_DEPENDENT_NAME) &&
+          parentsNames.includes(serviceName)
+        ) {
+          debug(
+            `${[...parentsNames, serviceName].join(
+              '->',
+            )}: Injector dependency relies on an in-flight autoload.`,
+          );
+          throw new YError('E_AUTO_LOADER_DEPENDS_ON_AUTO_LOAD', [
+            serviceName,
+            ...parentsNames,
+          ]);
+        }
+
         debug(
           `${[...parentsNames, serviceName].join(
             '->',
