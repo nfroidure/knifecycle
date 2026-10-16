@@ -1088,185 +1088,212 @@ export class Knifecycle {
 
     // When no initializer try to autoload it
     if (!('initializer' in initializerState)) {
+      await this._loadMissingInitializer(
+        siloContext,
+        serviceName,
+        parentsNames,
+        initializerState,
+      );
+      return;
+    }
+
+    await this._loadRegisteredInitializer(
+      siloContext,
+      serviceName,
+      parentsNames,
+      initializerState,
+    );
+  }
+
+  async _loadMissingInitializer(
+    siloContext: SiloContext,
+    serviceName: ServiceName,
+    parentsNames: ServiceName[],
+    initializerState: InitializerStateDescriptor<any, any>,
+  ): Promise<void> {
+    debug(
+      `${[...parentsNames, serviceName].join(
+        '->',
+      )}: No registered initializer...`,
+    );
+
+    if (initializerState.initializerLoadPromise) {
       debug(
         `${[...parentsNames, serviceName].join(
           '->',
-        )}: No registered initializer...`,
+        )}: Wait for pending initializer registration...`,
       );
+      await initializerState.initializerLoadPromise;
+      return;
+    }
 
-      if (initializerState.initializerLoadPromise) {
+    debug(
+      `${[...parentsNames, serviceName].join(
+        '->',
+      )}: Try to autoload the initializer...`,
+    );
+    await this._autoloadInitializer(
+      siloContext,
+      serviceName,
+      parentsNames,
+      initializerState,
+    );
+  }
+
+  async _autoloadInitializer(
+    siloContext: SiloContext,
+    serviceName: ServiceName,
+    parentsNames: ServiceName[],
+    initializerState: InitializerStateDescriptor<any, any>,
+  ): Promise<void> {
+    initializerState.autoloaded = true;
+
+    const {
+      promise: initializerLoadPromise,
+      resolve: resolveInitializer,
+      reject: rejectInitializer,
+    } = Promise.withResolvers<Initializer<Service, Dependencies> | undefined>();
+
+    initializerState.initializerLoadPromise = initializerLoadPromise;
+
+    try {
+      const autoloader = await this._getAutoloader(siloContext, [
+        ...parentsNames,
+        serviceName,
+      ]);
+
+      if (!autoloader) {
         debug(
-          `${[...parentsNames, serviceName].join(
+          `${parentsNames.join(
             '->',
-          )}: Wait for pending initializer registration...`,
-        );
-        await initializerState.initializerLoadPromise;
-      } else {
-        debug(
-          `${[...parentsNames, serviceName].join(
-            '->',
-          )}: Try to autoload the initializer...`,
-        );
-
-        initializerState.autoloaded = true;
-
-        // Trick to ensure the singletonProviderLoadPromise is set
-        let resolveInitializer: (
-            value: Initializer<Service, Dependencies>,
-          ) => void,
-          rejectInitializer: (reason?: any) => void;
-
-        initializerState.initializerLoadPromise = new Promise<
-          Initializer<Service, Dependencies>
-        >((_resolve, _reject) => {
-          resolveInitializer = _resolve;
-          rejectInitializer = _reject;
-        });
-
-        try {
-          const autoloader = await this._getAutoloader(siloContext, [
-            ...parentsNames,
-            serviceName,
-          ]);
-
-          if (!autoloader) {
-            debug(
-              `${parentsNames.join(
-                '->',
-              )}: No autoloader found, leaving initializer undefined...`,
-            );
-            initializerState.initializer = undefined;
-            // @ts-expect-error The promise initializer is
-            // immediately executed so will never be undefined
-            resolveInitializer(undefined);
-            return;
-          }
-
-          const initializer = await autoloader(serviceName);
-
-          if (!['object', 'function'].includes(typeof initializer)) {
-            throw new YError('E_BAD_AUTO_LOADER_RESULT', [
-              serviceName,
-              initializer,
-            ]);
-          }
-
-          debug(
-            `${[...parentsNames, serviceName].join(
-              '->',
-            )}: Loaded the initializer in location ${
-              initializer[SPECIAL_PROPS.LOCATION]?.url || 'no_location'
-            }...`,
-          );
-
-          if (initializer.$name !== serviceName) {
-            throw new YError('E_AUTO_LOADED_INITIALIZER_MISMATCH', [
-              serviceName,
-              initializer.$name,
-            ]);
-          }
-
-          initializerState.dependents.push({
-            silo: siloContext.index,
-            name: '$autoload',
-            optional: false,
-          });
-          initializerState.initializer = initializer;
-
-          this._buildInitializerState(initializerState, initializer);
-
-          // @ts-expect-error The promise initializer is
-          // immediately executed so will never be undefined
-          resolveInitializer(initializer);
-          return;
-        } catch (err) {
-          if ((err as YError).code === 'E_AUTO_LOADER_DEPENDS_ON_AUTO_LOAD') {
-            initializerState.initializer = undefined;
-            // @ts-expect-error The promise initializer is
-            // immediately executed so will never be undefined
-            rejectInitializer(err);
-            await initializerState.initializerLoadPromise;
-            return;
-          }
-          if (!['E_UNMATCHED_DEPENDENCY'].includes((err as YError).code)) {
-            initializerState.initializer = undefined;
-            // @ts-expect-error The promise initializer is
-            // immediately executed so will never be undefined
-            rejectInitializer(
-              YError.wrap(err as Error, 'E_BAD_AUTO_LOADED_INITIALIZER', [
-                serviceName,
-              ]),
-            );
-            await initializerState.initializerLoadPromise;
-            return;
-          }
-
-          debug(
-            `${[...parentsNames, serviceName].join(
-              '->',
-            )}: Could not autoload the initializer...`,
-            printStackTrace(err as Error),
-          );
-          initializerState.initializer = undefined;
-          // @ts-expect-error The promise initializer is
-          // immediately executed so will never be undefined
-          resolveInitializer(undefined);
-          await initializerState.initializerLoadPromise;
-        }
-        return;
-      }
-    } else {
-      if (initializerState.initializer) {
-        debug(
-          `${[...parentsNames, serviceName].join('->')}: Initializer ready...`,
-        );
-
-        if (initializerState.initializer.$type === 'constant') {
-          const provider = { service: initializerState.initializer.$value };
-          (
-            initializerState as SingletonInitializerStateDescriptor<any, any>
-          ).singletonProvider = provider;
-          (
-            initializerState as SingletonInitializerStateDescriptor<any, any>
-          ).singletonProviderLoadPromise = Promise.resolve();
-        }
-        if (initializerState.initializer.$singleton) {
-          const singletonInitializerState =
-            initializerState as SingletonInitializerStateDescriptor<any, any>;
-
-          if (!('singletonProviderLoadPromise' in singletonInitializerState)) {
-            singletonInitializerState.singletonProviderLoadPromise =
-              this._loadProvider(siloContext, serviceName, parentsNames);
-          }
-          await singletonInitializerState.singletonProviderLoadPromise;
-        } else {
-          const siloedInitializerState =
-            initializerState as SiloedInitializerStateDescriptor<any, any>;
-
-          if (!siloedInitializerState.silosInstances[siloContext.index]) {
-            siloedInitializerState.silosInstances[siloContext.index] = {
-              providerLoadPromise: this._loadProvider(
-                siloContext,
-                serviceName,
-                parentsNames,
-              ),
-            };
-          }
-          await siloedInitializerState.silosInstances[siloContext.index]
-            .providerLoadPromise;
-        }
-      } else {
-        debug(
-          `${[...parentsNames, serviceName].join(
-            '->',
-          )}: Could not find the initializer...`,
+          )}: No autoloader found, leaving initializer undefined...`,
         );
         initializerState.initializer = undefined;
-        (
-          initializerState as SingletonInitializerStateDescriptor<any, any>
-        ).singletonProvider = NO_PROVIDER;
+        resolveInitializer(undefined);
+        return;
       }
+
+      const initializer = await autoloader(serviceName);
+
+      if (!['object', 'function'].includes(typeof initializer)) {
+        throw new YError('E_BAD_AUTO_LOADER_RESULT', [
+          serviceName,
+          initializer,
+        ]);
+      }
+
+      debug(
+        `${[...parentsNames, serviceName].join(
+          '->',
+        )}: Loaded the initializer in location ${
+          initializer[SPECIAL_PROPS.LOCATION]?.url || 'no_location'
+        }...`,
+      );
+
+      if (initializer.$name !== serviceName) {
+        throw new YError('E_AUTO_LOADED_INITIALIZER_MISMATCH', [
+          serviceName,
+          initializer.$name,
+        ]);
+      }
+
+      initializerState.dependents.push({
+        silo: siloContext.index,
+        name: '$autoload',
+        optional: false,
+      });
+      initializerState.initializer = initializer;
+
+      this._buildInitializerState(initializerState, initializer);
+      resolveInitializer(initializer);
+      return;
+    } catch (err) {
+      if ((err as YError).code === 'E_AUTO_LOADER_DEPENDS_ON_AUTO_LOAD') {
+        initializerState.initializer = undefined;
+        rejectInitializer(err);
+        await initializerLoadPromise;
+        return;
+      }
+      if (!['E_UNMATCHED_DEPENDENCY'].includes((err as YError).code)) {
+        initializerState.initializer = undefined;
+        rejectInitializer(
+          YError.wrap(err as Error, 'E_BAD_AUTO_LOADED_INITIALIZER', [
+            serviceName,
+          ]),
+        );
+        await initializerLoadPromise;
+        return;
+      }
+
+      debug(
+        `${[...parentsNames, serviceName].join(
+          '->',
+        )}: Could not autoload the initializer...`,
+        printStackTrace(err as Error),
+      );
+      initializerState.initializer = undefined;
+      resolveInitializer(undefined);
+      await initializerLoadPromise;
     }
+  }
+
+  async _loadRegisteredInitializer(
+    siloContext: SiloContext,
+    serviceName: ServiceName,
+    parentsNames: ServiceName[],
+    initializerState: InitializerStateDescriptor<any, any>,
+  ): Promise<void> {
+    if (!initializerState.initializer) {
+      debug(
+        `${[...parentsNames, serviceName].join(
+          '->',
+        )}: Could not find the initializer...`,
+      );
+      initializerState.initializer = undefined;
+      (
+        initializerState as SingletonInitializerStateDescriptor<any, any>
+      ).singletonProvider = NO_PROVIDER;
+      return;
+    }
+
+    debug(`${[...parentsNames, serviceName].join('->')}: Initializer ready...`);
+
+    if (initializerState.initializer.$type === 'constant') {
+      const provider = { service: initializerState.initializer.$value };
+      (
+        initializerState as SingletonInitializerStateDescriptor<any, any>
+      ).singletonProvider = provider;
+      (
+        initializerState as SingletonInitializerStateDescriptor<any, any>
+      ).singletonProviderLoadPromise = Promise.resolve();
+    }
+
+    if (initializerState.initializer.$singleton) {
+      const singletonInitializerState =
+        initializerState as SingletonInitializerStateDescriptor<any, any>;
+
+      if (!('singletonProviderLoadPromise' in singletonInitializerState)) {
+        singletonInitializerState.singletonProviderLoadPromise =
+          this._loadProvider(siloContext, serviceName, parentsNames);
+      }
+      await singletonInitializerState.singletonProviderLoadPromise;
+      return;
+    }
+
+    const siloedInitializerState =
+      initializerState as SiloedInitializerStateDescriptor<any, any>;
+
+    if (!siloedInitializerState.silosInstances[siloContext.index]) {
+      siloedInitializerState.silosInstances[siloContext.index] = {
+        providerLoadPromise: this._loadProvider(
+          siloContext,
+          serviceName,
+          parentsNames,
+        ),
+      };
+    }
+    await siloedInitializerState.silosInstances[siloContext.index]
+      .providerLoadPromise;
   }
 
   async _resolveDependencies(
