@@ -110,7 +110,9 @@ describe('Knifecycle', () => {
         expect(await $.run<any>(['TEST'])).toEqual({
           TEST: 2,
         });
-        expect($.registered()).toEqual([...INTERNAL_SERVICES, 'TEST']);
+        expect($.registered().sort()).toEqual(
+          [...INTERNAL_SERVICES, 'TEST'].sort(),
+        );
       });
 
       test('should work with the $ready service', async () => {
@@ -238,7 +240,59 @@ describe('Knifecycle', () => {
       test('should work with nested `__self` overrides', async () => {
         $.register(
           service(
-            async ({ sendApplicationMessage }: { sendApplicationMessage: () => string }) =>
+            async ({
+              sendApplicationMessage,
+            }: {
+              sendApplicationMessage: () => string;
+            }) =>
+              () =>
+                sendApplicationMessage(),
+            'sendMessage',
+            ['sendApplicationMessage'],
+          ),
+        );
+        $.register(
+          service(
+            async ({ SLACK_CONFIG }: { SLACK_CONFIG: string }) =>
+              () =>
+                `slack:${SLACK_CONFIG}`,
+            'sendSlackMessage',
+            ['SLACK_CONFIG'],
+          ),
+        );
+        $.register(
+          service(
+            async ({ SLACK_CONFIG }: { SLACK_CONFIG: string }) =>
+              () =>
+                `app:${SLACK_CONFIG}`,
+            'sendApplicationMessage',
+            ['SLACK_CONFIG'],
+          ),
+        );
+        $.register(constant('SLACK_CONFIG', 'default'));
+        $.register(constant('SLACK_APPLICATION_CONFIG', 'application'));
+        $.register(
+          constant('$overrides', {
+            sendApplicationMessage: {
+              __self: 'sendSlackMessage',
+              SLACK_CONFIG: 'SLACK_APPLICATION_CONFIG',
+            },
+          }),
+        );
+
+        const { sendMessage } = await $.run<any>(['sendMessage']);
+
+        expect(sendMessage()).toEqual('slack:application');
+      });
+
+      test('should work with real world overrides', async () => {
+        $.register(
+          service(
+            async ({
+              sendApplicationMessage,
+            }: {
+              sendApplicationMessage: () => string;
+            }) =>
               () =>
                 sendApplicationMessage(),
             'sendMessage',
@@ -1594,6 +1648,45 @@ describe('Knifecycle', () => {
         } catch (err) {
           expect((err as YError).code).toEqual('E_UNMATCHED_DEPENDENCY');
           expect((err as YError).debug).toEqual(['__run__', 'test']);
+        }
+      });
+
+      test('when autoload uses $injector for the currently auto-loaded dependency', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: ['$injector'],
+              singleton: true,
+            },
+            async ({
+              $injector,
+            }: {
+              $injector: (deps: string[]) => Promise<any>;
+            }) =>
+              async (serviceName: string) => {
+                await $injector([serviceName]);
+
+                return constant(serviceName, `autoloader:${serviceName}`);
+              },
+          ),
+        );
+
+        try {
+          await $.run<any>(['test']);
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          expect((err as YError).code).toEqual(
+            'E_AUTO_LOADER_DEPENDS_ON_AUTO_LOAD',
+          );
+          expect((err as YError).debug).toEqual([
+            'test',
+            '__run__',
+            'test',
+            '$autoload',
+            '__injector__',
+          ]);
         }
       });
     });
