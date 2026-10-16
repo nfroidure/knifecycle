@@ -100,7 +100,7 @@ describe('buildInitializer', () => {
       return async function $autoload(name: string) {
         return mockedDepsHash[name]
           ? Promise.resolve(mockedDepsHash[name])
-          : Promise.reject(new YError('E_UNMATCHED_DEPENDENCY', [name]));
+          : Promise.reject(new YError('E_DEPENDENCY_NOT_FOUND', [name]));
       };
     },
   );
