@@ -880,6 +880,19 @@ export class Knifecycle {
           );
         }
 
+        if (finalName === '$injector') {
+          finalHash[serviceName] = ((
+            dependenciesDeclarations: DependencyDeclaration[],
+          ) =>
+            this._loadInitializerDependencies(
+              siloContext,
+              [INJECTOR_DEPENDENT_NAME, ...parentsNames],
+              dependenciesDeclarations,
+              [],
+            )) as Service;
+          return finalHash;
+        }
+
         finalHash[serviceName] = (provider as Provider<unknown>).service;
         return finalHash;
       },
@@ -1088,7 +1101,10 @@ export class Knifecycle {
       );
 
       if (initializerState.initializerLoadPromise) {
-        if (parentsNames.includes(INJECTOR_DEPENDENT_NAME)) {
+        if (
+          parentsNames.includes(INJECTOR_DEPENDENT_NAME) &&
+          parentsNames.includes(serviceName)
+        ) {
           debug(
             `${[...parentsNames, serviceName].join(
               '->',
