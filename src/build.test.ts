@@ -560,4 +560,77 @@ describe('buildInitializer', () => {
      "
     `);
   });
+
+  test('should autoload shared dependencies only once', async () => {
+    const $ = new Knifecycle();
+    const autoloadCalls: string[] = [];
+    const sharedDepsHash: any = {
+      serviceA: initializer(
+        {
+          inject: ['shared'],
+          type: 'service',
+          name: 'serviceA',
+          location: {
+            url: `file://services/serviceA`,
+            exportName: 'default',
+          },
+        },
+        aProvider,
+      ),
+      serviceB: initializer(
+        {
+          inject: ['shared'],
+          type: 'service',
+          name: 'serviceB',
+          location: {
+            url: `file://services/serviceB`,
+            exportName: 'default',
+          },
+        },
+        aProvider,
+      ),
+      shared: initializer(
+        {
+          inject: [],
+          type: 'service',
+          name: 'shared',
+          location: {
+            url: `file://services/shared`,
+            exportName: 'default',
+          },
+        },
+        aProvider,
+      ),
+    };
+
+    $.register(constant('BUILD_CONSTANT_FILTER', () => false));
+    $.register(constant('BUILD_INJECTED_SERVICE_FILTER', () => false));
+    $.register(
+      initializer(
+        {
+          name: '$autoload',
+          type: 'service',
+          inject: [],
+          singleton: true,
+        },
+        async () => {
+          return async function $autoload(name: string) {
+            autoloadCalls.push(name);
+            return sharedDepsHash[name]
+              ? Promise.resolve(sharedDepsHash[name])
+              : Promise.reject(new YError('E_UNMATCHED_DEPENDENCY', [name]));
+          };
+        },
+      ),
+    );
+    $.register(initInitializerBuilder);
+
+    const { buildInitializer } = await $.run<any>(['buildInitializer']);
+
+    await buildInitializer(['serviceA', 'serviceB']);
+
+    expect(
+      autoloadCalls.filter((serviceName) => serviceName === 'shared'),
+    ).toEqual(['shared']);
+  });
 });

@@ -48,6 +48,10 @@ interface DependencyTreeNode {
 export type BuildInitializer = (
   dependencies: DependencyDeclaration[],
 ) => Promise<string>;
+type AutoloadedInitializers = Map<
+  string,
+  Promise<Initializer<unknown, Record<string, unknown>>>
+>;
 
 /* Architecture Note #2: Build
 
@@ -134,6 +138,7 @@ async function initInitializerBuilder({
   async function buildInitializer(
     dependencies: DependencyDeclaration[],
   ): Promise<string> {
+    const autoloadedInitializers: AutoloadedInitializers = new Map();
     const dependencyTrees = await Promise.all(
       dependencies.map((dependency) =>
         buildDependencyTree(
@@ -143,6 +148,7 @@ async function initInitializerBuilder({
             $autoload,
             $overrides,
             $injector,
+            autoloadedInitializers,
           },
           dependency,
           [],
@@ -341,12 +347,14 @@ async function buildDependencyTree(
     $injector,
     BUILD_CONSTANT_FILTER,
     BUILD_INJECTED_SERVICE_FILTER,
+    autoloadedInitializers,
   }: {
     $autoload: Autoloader<Initializer<unknown, Record<string, unknown>>>;
     $overrides: Overrides;
     $injector: Injector<Record<string, unknown>>;
     BUILD_CONSTANT_FILTER: BuildConstantFilter;
     BUILD_INJECTED_SERVICE_FILTER: BuildInjectedServiceFilter;
+    autoloadedInitializers: AutoloadedInitializers;
   },
   dependencyDeclaration: string,
   parentsNames: string[],
@@ -395,7 +403,11 @@ async function buildDependencyTree(
   }
 
   try {
-    const initializer = await $autoload(finalName);
+    const initializerPromise =
+      autoloadedInitializers.get(finalName) ||
+      Promise.resolve().then(() => $autoload(finalName));
+    autoloadedInitializers.set(finalName, initializerPromise);
+    const initializer = await initializerPromise;
     const inject = pickInitializerBuilderProp(initializer, '$inject') || [];
     const node: DependencyTreeNode = {
       __name: finalName,
@@ -421,6 +433,7 @@ async function buildDependencyTree(
               $autoload,
               $overrides,
               $injector,
+              autoloadedInitializers,
             },
             childDependencyDeclaration,
             [...parentsNames, finalName],
