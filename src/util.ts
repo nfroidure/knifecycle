@@ -41,8 +41,8 @@ export const ALLOWED_INITIALIZER_TYPES = [
 export type InitializerTypes = (typeof ALLOWED_INITIALIZER_TYPES)[number];
 export type ServiceName = string;
 export type Service = any;
-export type Disposer = () => Promise<void>;
-export type FatalErrorPromise = Promise<void>;
+export type Disposer = () => Promise<undefined>;
+export type FatalErrorPromise = Promise<undefined>;
 export interface Provider<S extends Service> {
   service: S;
   dispose?: Disposer;

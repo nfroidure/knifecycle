@@ -589,81 +589,166 @@ describe('Knifecycle', () => {
       $.register(provider(hashProvider, 'hash'));
     });
 
-    test('should fail with direct circular dependencies', () => {
+    test('should fail with direct circular dependencies', async () => {
       try {
         $.register(provider(hashProvider, 'hash', ['hash']));
+        await $.run(['hash']);
 
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
-        expect((err as YError).debug).toEqual(['hash']);
+        expect((err as YError).debug).toEqual([
+          'hash',
+          [
+            {
+              dependencyName: 'hash',
+              finalName: 'hash',
+              optional: false,
+              serviceName: 'hash',
+            },
+          ],
+        ]);
       }
     });
 
-    test('should fail with direct circular dependencies on mapped services', () => {
+    test('should fail with direct circular dependencies on mapped services', async () => {
       try {
-        $.register(provider(hashProvider, 'hash', ['hash>lol']));
+        $.register(provider(hashProvider, 'hash', ['lol>hash']));
+        await $.run(['hash']);
 
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
-        expect((err as YError).debug).toEqual(['hash']);
+        expect((err as YError).debug).toEqual([
+          'hash',
+          [
+            {
+              dependencyName: 'hash',
+              finalName: 'hash',
+              optional: false,
+              serviceName: 'lol',
+            },
+          ],
+        ]);
       }
     });
 
-    test('should fail with circular dependencies', () => {
+    test('should fail with circular dependencies', async () => {
       try {
         $.register(provider(inject(['hash3'], hashProvider), 'hash'));
         $.register(provider(inject(['hash'], hashProvider), 'hash1'));
         $.register(provider(inject(['hash1'], hashProvider), 'hash2'));
         $.register(provider(inject(['hash'], hashProvider), 'hash3'));
+        await $.run(['hash3']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
-        expect((err as YError).debug).toEqual(['hash3', 'hash', 'hash3']);
+        expect((err as YError).debug).toEqual([
+          'hash3',
+          [
+            {
+              dependencyName: 'hash3',
+              finalName: 'hash',
+              optional: false,
+              serviceName: 'hash',
+            },
+            {
+              dependencyName: 'hash',
+              finalName: 'hash3',
+              optional: false,
+              serviceName: 'hash3',
+            },
+            {
+              dependencyName: 'hash3',
+            },
+          ],
+        ]);
       }
     });
 
-    test('should fail with deeper circular dependencies', () => {
+    test('should fail with deeper circular dependencies', async () => {
       try {
         $.register(provider(inject(['hash1'], hashProvider), 'hash'));
         $.register(provider(inject(['hash2'], hashProvider), 'hash1'));
         $.register(provider(inject(['hash3'], hashProvider), 'hash2'));
         $.register(provider(inject(['hash'], hashProvider), 'hash3'));
+        await $.run(['hash3']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
         expect((err as YError).debug).toEqual([
           'hash3',
-          'hash',
-          'hash1',
-          'hash2',
-          'hash3',
+          [
+            {
+              dependencyName: 'hash3',
+              finalName: 'hash',
+              optional: false,
+              serviceName: 'hash',
+            },
+            {
+              dependencyName: 'hash',
+              finalName: 'hash1',
+              optional: false,
+              serviceName: 'hash1',
+            },
+            {
+              dependencyName: 'hash1',
+              finalName: 'hash2',
+              optional: false,
+              serviceName: 'hash2',
+            },
+            {
+              dependencyName: 'hash2',
+              finalName: 'hash3',
+              optional: false,
+              serviceName: 'hash3',
+            },
+            {
+              dependencyName: 'hash3',
+            },
+          ],
         ]);
       }
     });
 
-    test('should fail with circular dependencies on mapped services', () => {
+    test('should fail with circular dependencies on mapped services', async () => {
       try {
-        $.register(provider(inject(['hash3>aHash3'], hashProvider), 'hash'));
-        $.register(provider(inject(['hash>aHash'], hashProvider), 'hash1'));
-        $.register(provider(inject(['hash1>aHash1'], hashProvider), 'hash2'));
-        $.register(provider(inject(['hash>aHash'], hashProvider), 'hash3'));
+        $.register(provider(inject(['aHash3>hash3'], hashProvider), 'hash'));
+        $.register(provider(inject(['aHash>hash'], hashProvider), 'hash1'));
+        $.register(provider(inject(['aHash1>hash1'], hashProvider), 'hash2'));
+        $.register(provider(inject(['aHash>hash'], hashProvider), 'hash3'));
+        await $.run(['hash3']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
         expect((err as YError).debug).toEqual([
           'hash3',
-          'hash>aHash',
-          'hash3>aHash3',
+          [
+            {
+              dependencyName: 'hash3',
+              finalName: 'hash',
+              optional: false,
+              serviceName: 'aHash',
+            },
+            {
+              dependencyName: 'hash',
+              finalName: 'hash3',
+              optional: false,
+              serviceName: 'aHash3',
+            },
+            {
+              dependencyName: 'hash3',
+            },
+          ],
         ]);
       }
     });
 
-    test('should fail with singleton depending on siloed services', () => {
+    test('should fail with singleton depending on siloed services', async () => {
       try {
         $.register(provider(hashProvider, 'hash', [], false));
         $.register(provider(hashProvider, 'hash1', ['hash'], true));
+        await $.run(['hash1']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_BAD_SINGLETON_DEPENDENCIES');
@@ -671,10 +756,11 @@ describe('Knifecycle', () => {
       }
     });
 
-    test('should fail when setting siloed services depended on by a singleton', () => {
+    test('should fail when setting siloed services depended on by a singleton', async () => {
       try {
         $.register(provider(hashProvider, 'hash1', ['hash'], true));
         $.register(provider(hashProvider, 'hash', [], false));
+        await $.run(['hash1']);
         throw new YError('E_UNEXPECTED_SUCCESS');
       } catch (err) {
         expect((err as YError).code).toEqual('E_BAD_SINGLETON_DEPENDENCIES');
@@ -912,7 +998,7 @@ describe('Knifecycle', () => {
 
         try {
           await $.run<any>(['lol']);
-          throw new Error('E_UNEXPECTED_SUCCESS');
+          throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_BAD_SERVICE_PROMISE');
           expect((err as YError).debug).toEqual(['lol']);
@@ -923,7 +1009,7 @@ describe('Knifecycle', () => {
         $.register(provider((() => undefined) as any, 'lol'));
         try {
           await $.run<any>(['lol']);
-          throw new Error('E_UNEXPECTED_SUCCESS');
+          throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_BAD_SERVICE_PROVIDER');
           expect((err as YError).debug).toEqual(['lol']);
@@ -932,9 +1018,10 @@ describe('Knifecycle', () => {
 
       test('with bad service in a provider', async () => {
         $.register(provider(() => Promise.resolve() as any, 'lol'));
+
         try {
           await $.run<any>(['lol']);
-          throw new Error('E_UNEXPECTED_SUCCESS');
+          throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_BAD_SERVICE_PROVIDER');
           expect((err as YError).debug).toEqual(['lol']);
@@ -944,10 +1031,25 @@ describe('Knifecycle', () => {
       test('with undeclared dependencies', async () => {
         try {
           await $.run<any>(['lol']);
-          throw new Error('E_UNEXPECTED_SUCCESS');
+          throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_UNMATCHED_DEPENDENCY');
-          expect((err as YError).debug).toEqual(['__run__', 'lol']);
+          expect((err as YError).debug).toEqual([
+            'lol',
+            [
+              [
+                {
+                  dependencyName: '__run__',
+                  finalName: 'lol',
+                  optional: false,
+                  serviceName: 'lol',
+                },
+                {
+                  dependencyName: 'lol',
+                },
+              ],
+            ],
+          ]);
         }
       });
 
@@ -959,14 +1061,99 @@ describe('Knifecycle', () => {
 
         try {
           await $.run<any>(['time', 'hash']);
-          throw new Error('E_UNEXPECTED_SUCCESS');
+          throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_UNMATCHED_DEPENDENCY');
           expect((err as YError).debug).toEqual([
-            '__run__',
-            'hash',
-            'hash2',
             'lol',
+            [
+              [
+                {
+                  dependencyName: '__run__',
+                  finalName: 'hash',
+                  optional: false,
+                  serviceName: 'hash',
+                },
+                {
+                  dependencyName: 'hash',
+                  finalName: 'hash2',
+                  optional: false,
+                  serviceName: 'hash2',
+                },
+                {
+                  dependencyName: 'hash2',
+                  finalName: 'lol',
+                  optional: false,
+                  serviceName: 'lol',
+                },
+                {
+                  dependencyName: 'lol',
+                },
+              ],
+            ],
+          ]);
+        }
+      });
+
+      test('with direct circular dependencies', async () => {
+        $.register(
+          service(
+            async () => {
+              return () => 'human';
+            },
+            'human',
+            ['tree'],
+          ),
+        );
+        $.register(
+          service(
+            async () => {
+              return () => 'tree';
+            },
+            'tree',
+            ['earth'],
+          ),
+        );
+        $.register(
+          service(
+            async () => {
+              return () => 'earth';
+            },
+            'earth',
+            ['human'],
+          ),
+        );
+
+        try {
+          await $.run<any>(['human']);
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
+          expect((err as YError).debug).toEqual([
+            'human',
+            [
+              {
+                dependencyName: 'human',
+                finalName: 'tree',
+                optional: false,
+                serviceName: 'tree',
+              },
+              {
+                dependencyName: 'tree',
+                finalName: 'earth',
+                optional: false,
+                serviceName: 'earth',
+              },
+              {
+                dependencyName: 'earth',
+                finalName: 'human',
+                optional: false,
+                serviceName: 'human',
+              },
+              {
+                dependencyName: 'human',
+              },
+            ],
           ]);
         }
       });
@@ -1003,15 +1190,34 @@ describe('Knifecycle', () => {
 
         try {
           await $.run<any>(['human']);
-          throw new Error('E_UNEXPECTED_SUCCESS');
+          throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
           expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
           expect((err as YError).debug).toEqual([
-            '__run__',
             'human',
-            'tree',
-            'earth',
-            'human',
+            [
+              {
+                dependencyName: 'human',
+                finalName: 'tree',
+                optional: false,
+                serviceName: 'tree',
+              },
+              {
+                dependencyName: 'tree',
+                finalName: 'earth',
+                optional: false,
+                serviceName: 'earth',
+              },
+              {
+                dependencyName: 'earth',
+                finalName: 'human',
+                optional: false,
+                serviceName: 'person',
+              },
+              {
+                dependencyName: 'human',
+              },
+            ],
           ]);
         }
       });
@@ -1023,30 +1229,32 @@ describe('Knifecycle', () => {
         $.register(provider(dbProvider, 'db', ['ENV']));
         $.register(provider(processProvider, 'process', ['$fatalError']));
 
-        function processProvider({
+        async function processProvider({
           $fatalError,
         }: {
           $fatalError: FatalErrorService;
         }) {
-          return Promise.resolve({
+          return {
             service: {
               fatalErrorPromise: $fatalError.errorPromise,
             },
-          });
+          };
         }
 
         async function dbProvider({ ENV }: { ENV: Record<string, string> }) {
-          let service;
-          const fatalErrorPromise = new Promise<void>((resolve, reject) => {
-            service = {
-              resolve,
-              reject,
-              ENV,
-            };
-          });
+          const {
+            promise: fatalErrorPromise,
+            resolve,
+            reject,
+          } = Promise.withResolvers<undefined>();
 
           return {
-            service,
+            service: {
+              resolve,
+              reject,
+              promise: fatalErrorPromise,
+              ENV,
+            },
             fatalErrorPromise,
           };
         }
@@ -1059,11 +1267,11 @@ describe('Knifecycle', () => {
         ]);
 
         try {
-          db.reject(new Error('E_DB_ERROR'));
+          db.reject(new YError('E_DB_ERROR'));
           await process.fatalErrorPromise;
-          throw new Error('E_UNEXPECTED_SUCCESS');
+          throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          expect((err as Error).message).toEqual('E_DB_ERROR');
+          expect((err as YError).code).toEqual('E_DB_ERROR');
         }
       });
     });
@@ -1197,7 +1405,7 @@ describe('Knifecycle', () => {
             },
             async () => async (serviceName: string) => {
               if ('ENV' === serviceName) {
-                throw new YError('E_UNMATCHED_DEPENDENCY');
+                throw new YError('E_DEPENDENCY_NOT_FOUND');
               }
 
               return location(
@@ -1218,7 +1426,7 @@ describe('Knifecycle', () => {
 
         const dependencies = await $.run<any>(['hash', '?ENV']);
 
-        expect(Object.keys(dependencies)).toEqual(['hash', 'ENV']);
+        expect(Object.keys(dependencies)).toEqual(['hash']);
       });
 
       test('and instantiate services once', async () => {
@@ -1374,6 +1582,73 @@ describe('Knifecycle', () => {
         expect(Object.keys(dependencies)).toEqual(['test']);
       });
 
+      test('when autoload depends on dependencies depending on optional and not existing auto-loaded dependencies', async () => {
+        $.register(provider(hashProvider, 'hash', ['?ENV'], true));
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: ['hash'],
+              singleton: true,
+            },
+            async () => async (serviceName: string) =>
+              initializer(
+                {
+                  type: 'service',
+                  name: serviceName,
+                  inject: [],
+                  location: {
+                    url: `file://path/of/${serviceName}`,
+                    exportName: 'default',
+                  },
+                },
+                async () => `THE_${serviceName.toUpperCase()}:` + serviceName,
+              ),
+          ),
+        );
+
+        const dependencies = await $.run<any>(['test']);
+
+        expect(Object.keys(dependencies)).toEqual(['test']);
+      });
+
+      test('when autoload depends on deeper dependencies depending on optional and not existing auto-loaded dependencies', async () => {
+        $.register(provider(hashProvider, 'hash', ['?ENV'], true));
+        $.register(provider(hashProvider, 'hash2', ['hash', '?ENV'], true));
+        $.register(provider(hashProvider, 'hash3', ['hash2', '?ENV'], true));
+        $.register(provider(hashProvider, 'hash4', ['hash3', '?ENV'], true));
+        $.register(provider(hashProvider, 'hash5', ['hash4', '?ENV'], true));
+        $.register(provider(hashProvider, 'hash6', ['hash5', '?ENV'], true));
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: ['hash3'],
+              singleton: true,
+            },
+            async () => async (serviceName: string) =>
+              initializer(
+                {
+                  type: 'service',
+                  name: serviceName,
+                  inject: [],
+                  location: {
+                    url: `file://path/of/${serviceName}`,
+                    exportName: 'default',
+                  },
+                },
+                async () => `THE_${serviceName.toUpperCase()}:` + serviceName,
+              ),
+          ),
+        );
+
+        const dependencies = await $.run<any>(['test']);
+
+        expect(Object.keys(dependencies)).toEqual(['test']);
+      });
+
       test('when autoload depends on deeper optional and not existing auto-loaded dependencies', async () => {
         $.register(
           initializer(
@@ -1404,6 +1679,7 @@ describe('Knifecycle', () => {
                   type: 'service',
                   name: serviceName,
                   inject: [],
+                  singleton: serviceName === 'LOG_ROUTING',
                   location: {
                     url: `file://path/of/${serviceName}`,
                     exportName: 'default',
@@ -1417,6 +1693,107 @@ describe('Knifecycle', () => {
         const dependencies = await $.run<any>(['test', 'log']);
 
         expect(Object.keys(dependencies)).toEqual(['test', 'log']);
+      });
+
+      test('when autoload uses $injector for the currently auto-loaded optional dependency', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: ['$injector'],
+              singleton: true,
+            },
+            async ({
+              $injector,
+            }: {
+              $injector: (deps: string[]) => Promise<any>;
+            }) =>
+              async (serviceName: string) => {
+                await $injector([serviceName]);
+
+                return constant(serviceName, `autoloader:${serviceName}`);
+              },
+          ),
+        );
+
+        const services = await $.run<any>(['?test']);
+
+        expect(Object.keys(services)).toEqual([]);
+      });
+
+      test('when autoload uses $injector for deeper auto-loaded optional dependency', async () => {
+        $.register(provider(hashProvider, 'hash', ['?ENV'], true));
+        $.register(provider(hashProvider, 'hash2', ['hash', '?ENV'], true));
+        $.register(provider(hashProvider, 'hash3', ['hash2', '?ENV'], true));
+        $.register(provider(hashProvider, 'hash4', ['hash3', '?ENV'], true));
+        $.register(provider(hashProvider, 'hash5', ['hash4', '?ENV'], true));
+        $.register(provider(hashProvider, 'hash6', ['hash5', '?ENV'], true));
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: ['$injector'],
+              singleton: true,
+            },
+            async ({
+              $injector,
+            }: {
+              $injector: (deps: string[]) => Promise<any>;
+            }) =>
+              async (serviceName: string) => {
+                await $injector([serviceName]);
+
+                return constant(serviceName, `autoloader:${serviceName}`);
+              },
+          ),
+        );
+
+        const services = await $.run<any>(['hash6', '?ENV']);
+
+        expect(Object.keys(services)).toEqual(['hash6']);
+      });
+
+      test('when autoload uses $injector for deeper auto-loaded dependency', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: ['$injector'],
+              singleton: true,
+            },
+            async ({
+              $injector,
+            }: {
+              $injector: (deps: string[]) => Promise<any>;
+            }) =>
+              async (serviceName: string) => {
+                if (serviceName.startsWith('hash')) {
+                  const number = parseInt(
+                    serviceName.substring('hash'.length),
+                    10,
+                  );
+
+                  return provider(
+                    hashProvider,
+                    serviceName,
+                    number > 0 ? [`hash${number - 1}`, '?ENV'] : ['?ENV'],
+                    true,
+                  );
+                }
+
+                await $injector([serviceName]);
+
+                return constant(serviceName, `autoloader:${serviceName}`);
+              },
+          ),
+        );
+
+        const services = await $.run<any>(['hash6', '?ENV']);
+
+        expect(Object.keys(services)).toEqual(['hash6']);
       });
     });
 
@@ -1440,7 +1817,7 @@ describe('Knifecycle', () => {
               singleton: true,
             },
             async () => async (serviceName: string) => {
-              throw new YError('E_CANNOT_AUTO_LOAD', [serviceName]);
+              throw new YError('E_DEPENDENCY_NOT_FOUND', [serviceName]);
             },
           ),
         );
@@ -1449,12 +1826,47 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          expect((err as YError).code).toEqual('E_BAD_AUTO_LOADED_INITIALIZER');
+          expect((err as YError).code).toEqual('E_UNMATCHED_DEPENDENCY');
+          expect((err as YError).debug).toEqual([
+            'test',
+            [
+              [
+                {
+                  dependencyName: '__run__',
+                  finalName: 'test',
+                  optional: false,
+                  serviceName: 'test',
+                },
+                {
+                  dependencyName: 'test',
+                },
+              ],
+            ],
+          ]);
+        }
+      });
+
+      test('when autoloader fails', async () => {
+        $.register(
+          initializer(
+            {
+              type: 'service',
+              name: '$autoload',
+              inject: [],
+              singleton: true,
+            },
+            async () => async (serviceName: string) => {
+              throw new YError('E_PARSE', [serviceName]);
+            },
+          ),
+        );
+
+        try {
+          await $.run<any>(['test']);
+          throw new YError('E_UNEXPECTED_SUCCESS');
+        } catch (err) {
+          expect((err as YError).code).toEqual('E_PARSE');
           expect((err as YError).debug).toEqual(['test']);
-          expect(((err as YError).cause as YError).code).toEqual(
-            'E_CANNOT_AUTO_LOAD',
-          );
-          expect(((err as YError).cause as YError).debug).toEqual(['test']);
         }
       });
 
@@ -1505,15 +1917,26 @@ describe('Knifecycle', () => {
           await $.run<any>(['test', 'log']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          expect((err as YError).code).toEqual('E_BAD_AUTO_LOADED_INITIALIZER');
-          expect((err as YError).debug).toEqual(['parentService2']);
-          expect(((err as YError).cause as YError).code).toEqual(
-            'E_CIRCULAR_DEPENDENCY',
-          );
-          expect(((err as YError).cause as YError).debug).toEqual([
-            'parentService2',
-            'parentService1',
-            'parentService2',
+          expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
+          expect((err as YError).debug).toEqual([
+            'log',
+            [
+              {
+                dependencyName: 'log',
+                finalName: '$autoload',
+                optional: true,
+                serviceName: '$autoload',
+              },
+              {
+                dependencyName: '$autoload',
+                finalName: 'log',
+                optional: true,
+                serviceName: 'log',
+              },
+              {
+                dependencyName: 'log',
+              },
+            ],
           ]);
         }
       });
@@ -1646,13 +2069,31 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          expect((err as YError).code).toEqual('E_UNMATCHED_DEPENDENCY');
-          expect((err as YError).debug).toEqual(['__run__', 'test']);
+          expect((err as YError).code).toEqual('E_CIRCULAR_DEPENDENCY');
+          expect((err as YError).debug).toEqual([
+            '$autoload',
+            [
+              {
+                dependencyName: '$autoload',
+                finalName: 'ENV',
+                optional: false,
+                serviceName: 'ENV',
+              },
+              {
+                dependencyName: 'ENV',
+                finalName: '$autoload',
+                optional: true,
+                serviceName: '$autoload',
+              },
+              {
+                dependencyName: '$autoload',
+              },
+            ],
+          ]);
         }
       });
 
-      // FIXME
-      test.skip('when autoload uses $injector for the currently auto-loaded dependency', async () => {
+      test('when autoload uses $injector for the currently auto-loaded dependency', async () => {
         $.register(
           initializer(
             {
@@ -1678,15 +2119,35 @@ describe('Knifecycle', () => {
           await $.run<any>(['test']);
           throw new YError('E_UNEXPECTED_SUCCESS');
         } catch (err) {
-          expect((err as YError).code).toEqual(
-            'E_AUTO_LOADER_DEPENDS_ON_AUTO_LOAD',
-          );
+          expect((err as YError).code).toEqual('E_DEAD_LOCK');
           expect((err as YError).debug).toEqual([
-            'test',
-            '__run__',
-            'test',
-            '$autoload',
-            '__injector__',
+            ['test'],
+            [
+              [
+                [
+                  {
+                    dependencyName: '__run__',
+                    finalName: 'test',
+                    optional: false,
+                    serviceName: 'test',
+                  },
+                  {
+                    dependencyName: 'test',
+                  },
+                ],
+                [
+                  {
+                    dependencyName: '__injector__',
+                    finalName: 'test',
+                    optional: false,
+                    serviceName: 'test',
+                  },
+                  {
+                    dependencyName: 'test',
+                  },
+                ],
+              ],
+            ],
           ]);
         }
       });
@@ -2022,7 +2483,7 @@ describe('Knifecycle', () => {
     });
 
     test('should delay service shutdown to their deeper dependencies', async () => {
-      const servicesShutdownCalls = jest.fn(() => Promise.resolve());
+      const servicesShutdownCalls = jest.fn(() => Promise.resolve(undefined));
 
       $.register(
         provider(
