@@ -84,7 +84,10 @@ declare module 'yerror' {
     ];
 
     /** The autoloader itself depends on a service that requires auto-loading (infinite loop protection) */
-    E_AUTO_LOADER_DEPENDS_ON_AUTO_LOAD: [serviceName: ServiceName];
+    E_AUTO_LOADER_DEPENDS_ON_AUTO_LOAD: [
+      serviceName: ServiceName,
+      ...stack: ServiceName[],
+    ];
 
     /** An error occurred during the auto-loading process of a specific service */
     E_BAD_AUTO_LOADED_INITIALIZER: [serviceName: ServiceName];

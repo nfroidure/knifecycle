@@ -107,6 +107,10 @@ export interface SiloContext {
   index: SiloIndex;
   loadingServices: ServiceName[];
   loadingSequences: ServiceName[][];
+  autoloadingServices: {
+    serviceName: ServiceName;
+    parentsNames: ServiceName[];
+  }[];
   _shutdownPromise?: Promise<void>;
 }
 
@@ -668,6 +672,7 @@ export class Knifecycle {
       index: siloIndex,
       loadingServices: [],
       loadingSequences: [],
+      autoloadingServices: [],
     };
 
     const { promise: ready, resolve: resolveReady } =
@@ -1100,6 +1105,28 @@ export class Knifecycle {
             '->',
           )}: Wait for pending initializer registration...`,
         );
+        const recursiveAutoloadingService = siloContext.autoloadingServices
+          .slice()
+          .reverse()
+          .find(
+            ({
+              serviceName: autoloadingServiceName,
+              parentsNames: previousPath,
+            }) =>
+              autoloadingServiceName === serviceName &&
+              previousPath.includes(RUN_DEPENDENT_NAME) &&
+              parentsNames.includes(INJECTOR_DEPENDENT_NAME),
+          );
+
+        if (recursiveAutoloadingService) {
+          throw new YError('E_AUTO_LOADER_DEPENDS_ON_AUTO_LOAD', [
+            serviceName,
+            ...recursiveAutoloadingService.parentsNames,
+            serviceName,
+            '$autoload',
+            ...parentsNames,
+          ]);
+        }
         await initializerState.initializerLoadPromise;
       } else {
         debug(
@@ -1142,7 +1169,26 @@ export class Knifecycle {
             return;
           }
 
-          const initializer = await autoloader(serviceName);
+          const autoloadingService = {
+            serviceName,
+            parentsNames,
+          };
+          let initializer: Initializer<Service, Dependencies>;
+
+          siloContext.autoloadingServices.push(autoloadingService);
+          try {
+            initializer = await autoloader(serviceName);
+          } finally {
+            const autoloadingServiceIndex =
+              siloContext.autoloadingServices.indexOf(autoloadingService);
+
+            if (autoloadingServiceIndex !== -1) {
+              siloContext.autoloadingServices.splice(
+                autoloadingServiceIndex,
+                1,
+              );
+            }
+          }
 
           if (!['object', 'function'].includes(typeof initializer)) {
             throw new YError('E_BAD_AUTO_LOADER_RESULT', [
