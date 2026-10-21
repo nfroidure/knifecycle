@@ -233,6 +233,18 @@ export class Knifecycle {
 
     this._silosCounter = 0;
     this._silosContexts = {};
+
+    if (process.env.DEBUG) {
+      process.on('exit', (code) => {
+        if (code === 13) {
+          debug(
+            'Deadlock detected:',
+            JSON.stringify(this._silosContexts, null, 2),
+            this._initializersStates,
+          );
+        }
+      });
+    }
   }
 
   /* Architecture Note #1.3: Registering initializers
