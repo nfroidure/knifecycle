@@ -1,3 +1,4 @@
+import { type DependencyChain } from './index.js';
 import {
   type Dependencies,
   type Initializer,
@@ -34,7 +35,7 @@ declare module 'yerror' {
     ];
 
     /** A circular dependency path was detected in the service graph */
-    E_CIRCULAR_DEPENDENCY: [serviceName: ServiceName, ...stack: string[]];
+    E_CIRCULAR_DEPENDENCY: [serviceName: ServiceName, chain: DependencyChain];
 
     /** Internal error: Attempted to read the state of an unregistered service */
     E_UNEXPECTED_SERVICE_READ: [];
@@ -45,10 +46,13 @@ declare module 'yerror' {
       parents: ServiceName[],
     ];
 
-    /** A required dependency was not found in the registry or autoloader */
+    /** A required dependency was not found by the autoloader */
+    E_DEPENDENCY_NOT_FOUND: [serviceName: ServiceName];
+
+    /** A required dependency was not found in the registry */
     E_UNMATCHED_DEPENDENCY: [
       serviceName: ServiceName,
-      ...parents: ServiceName[],
+      chains: DependencyChain[],
     ];
 
     /** Internal error: Initializer state is missing while attempting to load a provider */
@@ -83,8 +87,11 @@ declare module 'yerror' {
       actualName: ServiceName,
     ];
 
-    /** The autoloader itself depends on a service that requires auto-loading (infinite loop protection) */
-    E_AUTO_LOADER_DEPENDS_ON_AUTO_LOAD: [serviceName: ServiceName];
+    /** The autoloader tries to load a service via the injector it is already auto-loading */
+    E_AUTO_LOADER_RECURSION_DEAD_LOCK: [
+      serviceName: ServiceName,
+      chains: DependencyChain[],
+    ];
 
     /** An error occurred during the auto-loading process of a specific service */
     E_BAD_AUTO_LOADED_INITIALIZER: [serviceName: ServiceName];
