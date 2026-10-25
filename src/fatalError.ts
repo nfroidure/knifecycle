@@ -9,19 +9,18 @@ const debug = initDebug('knifecycle');
  * errors.
  */
 export interface FatalErrorService {
-  errorPromise: Promise<void>;
-  registerErrorPromise: (errorPromise: Promise<void>) => void;
-  unregisterErrorPromise: (errorPromise: Promise<void>) => void;
+  errorPromise: Promise<undefined>;
+  registerErrorPromise: (errorPromise: Promise<undefined>) => void;
+  unregisterErrorPromise: (errorPromise: Promise<undefined>) => void;
   throwFatalError: (err: Error) => void;
 }
 
 async function initFatalError(): Promise<FatalErrorService> {
-  const errorPromises: Promise<void>[] = [];
+  const errorPromises: Promise<undefined>[] = [];
   let errorCatchStep = 0;
-  let rejectFatalError: (reason?: Error) => void;
-  const errorPromise = new Promise<void>((_resolve, reject) => {
-    rejectFatalError = reject;
-  });
+  const { promise: errorPromise, reject: rejectFatalError } =
+    Promise.withResolvers<undefined>();
+
   const throwFatalError = (err: Error) => {
     debug('Handled a fatal error', printStackTrace(err));
     rejectFatalError(err);
@@ -43,12 +42,17 @@ async function initFatalError(): Promise<FatalErrorService> {
 
   return {
     errorPromise,
-    registerErrorPromise: (errorPromise: Promise<void>) => {
+    registerErrorPromise: (errorPromise: Promise<undefined>) => {
       errorPromises.push(errorPromise);
       handleErrorCatch();
     },
-    unregisterErrorPromise: (errorPromise: Promise<void>) => {
-      errorPromises.filter((anErrorPromise) => anErrorPromise !== errorPromise);
+    unregisterErrorPromise: (errorPromise: Promise<undefined>) => {
+      const index = errorPromises.indexOf(errorPromise);
+
+      if (index !== -1) {
+        errorPromises.splice(index, 1);
+      }
+
       handleErrorCatch();
     },
     throwFatalError,
